@@ -6,7 +6,7 @@
 
 **대화 입력 로직(유닛)**: E2E와 별도로 `npm run test:frontend:chat-pipeline` — `chatInputUtils`·스트리밍 등. 유틸 수정 후 `npm run sync:frontend-chat-input-utils` — [guides/RESPONSE_CLEANING.md](../docs/guides/RESPONSE_CLEANING.md).
 
-**라우트·앱 셸·사이드바(유닛, E2E 전 점검)**: `npm run test:routes` · `npm run test:app-unified` · `npm run test:sidebar-context` — [TESTING_GUIDE.md](../TESTING_GUIDE.md). 원격 push 막힘: [docs/PUSH_BLOCK_HANDOFF.md](../docs/PUSH_BLOCK_HANDOFF.md).
+**라우트·앱 셸·사이드바(유닛, E2E 전 점검)**: `npm run test:routes` · `npm run test:app-unified` · `npm run test:sidebar-context`(수동 §14.5 [CHAT_UI_TEST_SCENARIOS](../docs/guides/CHAT_UI_TEST_SCENARIOS.md)) — [TESTING_GUIDE.md](../TESTING_GUIDE.md). 원격 push 막힘: [docs/PUSH_BLOCK_HANDOFF.md](../docs/PUSH_BLOCK_HANDOFF.md).
 
 ## 사전 준비
 
@@ -68,6 +68,20 @@ npm run test:e2e:debug
 | `project-detail-view` | ChatGPTInterface (메인) | 프로젝트 클릭 시 상세 뷰 래퍼 |
 | `project-detail-settings-btn` | ChatGPTInterface (프로젝트 상세 헤더) | 프로젝트 설정 열기 버튼 |
 | `project-sources-tab` | ChatGPTInterface (프로젝트) | 대화/소스 탭 중 소스 탭 |
+| `project-sources-add-btn` | ChatGPTInterface (소스 탭) | + 소스 추가 버튼 |
+| `project-sources-empty-cta` | ChatGPTInterface (소스 탭) | 빈 상태 «추가하기» CTA |
+| `project-sources-list` | ChatGPTInterface (소스 탭) | 파일·웹소스 목록 `ul` |
+| `project-sources-file-item` | ChatGPTInterface (소스 탭) | 업로드된 파일 행 (`data-source-name`) |
+| `project-sources-file-remove` | ChatGPTInterface (소스 탭) | 파일 행 제거 버튼 |
+| `project-sources-uploading` | ChatGPTInterface (소스 탭) | 업로드·제거 처리 중 상태 |
+| `project-sources-web-item` | ChatGPTInterface (소스 탭) | 웹 URL 소스 행 |
+| `project-sources-web-remove` | ChatGPTInterface (소스 탭) | 웹 소스 행 제거 버튼 |
+| `add-source-modal` | AddSourceModal | 소스 추가 모달 |
+| `add-source-modal-upload` | AddSourceModal | 파일 업로드 버튼 |
+| `add-source-modal-file-input` | AddSourceModal | 숨김 file input |
+| `add-source-modal-url-panel` | AddSourceModal | 웹 URL 입력 패널 |
+| `add-source-modal-url-input` | AddSourceModal | URL 입력 필드 |
+| `add-source-modal-url-submit` | AddSourceModal | URL 추가 제출 버튼 |
 | `project-sources-input-hint` | ChatGPTInterface (소스 탭) | 입력창 위 소스 탭 안내 영역 |
 | `project-sources-go-chat-tab-btn` | ChatGPTInterface (소스 탭) | 대화 탭으로 전환 버튼 |
 | `messages-container` | ChatGPTInterface | 메시지·소스 목록 스크롤 영역 (`project-content-panel`) |
@@ -79,7 +93,15 @@ npm run test:e2e:debug
 | `chat-delete-conversation` | ChatGPTInterface (헤더) | 현재 대화 스레드 삭제 요청 |
 | `chat-delete-conversation-cancel` / `chat-delete-conversation-confirm` | ChatGPTInterface | 대화 삭제 모달 취소·확정 |
 | `chat-input` | ChatGPTInterface | 대화 입력 textarea |
+| `input-container` | ChatGPTInterface | 웰컴·대화 입력 dock (`CHAT_INPUT_CONTAINER`) |
+| `conversation-graph-chat-attached-file` | ChatGPTInterface | /chat 대화 TXT·CSV 첨부 칩 |
+| `conversation-graph-chat-handoff-banner` | ChatGPTInterface | 관계도 생성 의도 시 handoff 배너 |
+| `conversation-graph-chat-handoff-open` | ChatGPTInterface | handoff 배너 「관계도 화면에서 만들기」 |
 | `composer-response-mode` | ChatGPTInterface | 공동입력창 응답 스타일 드롭다운 (Auto/간결/상세) |
+| `composer-genspark-generation-status` | ChatGPTInterface | 입력창 하단 5단계 생성 진행 UI |
+| `composer-multi-request-checklist` | ChatGPTInterface | 다중 요청 항목별 순차 처리 체크리스트 |
+| `chat-composer-structure-chips` | WorkspaceQueryComposer | 질문·요구·요청 삽입 칩 |
+| `chat-composer-input-hint` | ChatGPTInterface | 다중 요청·질문+요구 미리보기 안내 |
 | `send-button` | ChatGPTInterface | 전송 버튼 |
 | `structured-input-assist-toggle` | ChatGPTInterface | 질문+요구 도우미 퀵 스위치(⚙) |
 | `structured-input-guard` | ChatGPTInterface | 질문/요구 누락 자동 보정 가드 버튼 |
@@ -110,6 +132,7 @@ npm run test:e2e:debug
 
 E2E에서 사용하는 경로 상수. `src/config/routes` allAppPaths·VOICE_GENERATION_PATH와 동기화 유지.
 - `PATHS.HOME`, `PATHS.PROJECTS`, `PATHS.VOICE_GENERATION` — 공개 경로
+- `PATHS.CONVERSATION_GRAPH` — 대화 관계도 (`CONVERSATION_GRAPH_PATH`)
 - `LEGACY_REDIRECT_PATHS` — 구버전 경로(리다이렉트 검증용): FEATURES, NOTEBOOK, FILE_ANALYSIS, ANALYTICS, FEATURES_MAP
 - `NOT_FOUND_PATH` — 404 검증용
 
@@ -118,10 +141,13 @@ E2E에서 사용하는 경로 상수. `src/config/routes` allAppPaths·VOICE_GEN
 ## 테스트 파일
 
 ### example.spec.ts
-기본 앱 기능 테스트 (**33 tests**): 앱 로드·스킵 링크·대화 영역·**홈(/) 입력 영역에 메시지 입력창(chat-input)과 전송 버튼(send-button) 표시**·메시지 전송·`/agents`·프로젝트·설정·문서·템플릿·검색·연동·팀·학습·구독·워크스페이스·자동화·커뮤니티 등 라우트 스모크·구버전 리다이렉트·사이드바 새 대화/프로젝트/목소리 생성·404 등. **baseURL(localhost:3000)에 Dev 서버가 응답하지 않으면** `isServerReachable` 체크로 스킵.
+기본 앱 기능 테스트 (**36 tests**): 앱 로드·스킵 링크·대화 영역·**홈(/) 입력 영역에 메시지 입력창(chat-input)과 전송 버튼(send-button) 표시**·메시지 전송·`/agents`·**`/conversation-graph` 대화 관계도**·**`/conversation-graph` API 모킹 관계도 검색·답변 패널**·**`/chat` CSV 첨부 + 관계도 handoff 배너**·프로젝트·설정·문서·템플릿·검색·연동·팀·학습·구독·워크스페이스·자동화·커뮤니티 등 라우트 스모크·구버전 리다이렉트·사이드바 새 대화/프로젝트/목소리 생성·404 등. **baseURL(localhost:3000)에 Dev 서버가 응답하지 않으면** `isServerReachable` 체크로 스킵.
 
 ### projectManagement.spec.ts
 프로젝트 관리 E2E: 프로젝트 목록 표시·새 프로젝트 생성·편집·삭제·**편집 모달 파일·지침 섹션**·**파일 추가 버튼(project-edit-file-add) 가시성**·**단축키 도움말(프로젝트·대화 팁)** 검증. `data-testid="project-list"`, `new-project-button`, `edit-project`, `delete-project`, `project-edit-file-add` 우선 사용. 목록/버튼이 보일 때까지 대기(최대 8~10초) 후 미표시 시 skip.
+
+### conversationGraph.spec.ts
+대화 관계도 E2E (**12 tests**, Chromium 기준): 관계도 검색·입장 필터·CSV 프리셋·답변 패널·카카오 CSV 업로드·답변 생성 스트림·Mermaid 카드·session/chat handoff·`/chat` 초안·바로 전송. 로컬(서버 선기동): `test:e2e:conversation-graph:chromium` (`E2E_SERVER_READY=1`). CI·자동 기동: `test:e2e:conversation-graph:ci`. 통합: `npm run verify:conversation-graph`. 헬퍼: `conversationGraphApiMock.ts`, `conversationGraphPage.ts`. **CI**: `e2e-tests.yml` `conversation-graph-e2e`.
 
 ### chat.spec.ts
 대화 E2E (**15 tests**): 대화 입력 필드·메시지 전송·AI 응답·스트리밍·응답 스타일·에러·**사이드바 대화 삭제** 확정·취소·**ESC 닫기**·**헤더 대화 삭제** 확정·취소·**ESC 닫기**(`sidebar-conversation-delete`, `chat-delete-conversation`, 삭제 확인 `role=dialog`). 추가 수동 검증으로 질문+요구 도우미(누락 가드 클릭 자동 보정, 구조화 배지 미리보기, 복사/전송/닫기, ESC·외부 클릭 닫기, 퀵 스위치 ⚙ 상태 점·툴팁)를 확인. `data-testid="chat-input"`, `send-button` 우선.
@@ -158,6 +184,9 @@ PWA·Service Worker 동작 E2E.
 - `E2E_SERVER_READY=1`일 때는 webServer를 띄우지 않고 `http://localhost:3000`에 이미 서버가 있다고 가정합니다.
 - **샌드박스/CI** 등에서 localhost에 접근 불가한 환경에서는 `isServerReachable`로 skip되거나 `page.goto` 타임아웃이 발생할 수 있습니다. E2E는 **localhost 접근 가능한 환경**에서 실행하는 것을 권장합니다.
 - **E2E_SERVER_READY=1**을 설정하면 (1) Playwright가 webServer를 띄우지 않고, (2) example·projectManagement·chat 스펙에서 서버 도달 가능 여부 fetch를 생략하고 곧바로 테스트를 실행합니다. 서버를 수동으로 띄운 뒤 `E2E_SERVER_READY=1 npm run test:e2e:no-server`로 실행할 때 유용합니다.
+- **컴포저 E2E(선택, Chromium)**: 로컬: `test:e2e:composer-pipeline:all` · CI: `test:e2e:composer-pipeline:ci:all` · job `composer-pipeline-e2e`. 입력 대기: `chatComposerPage.ts`.
+- **관계도 E2E(선택, Chromium)**: 로컬: `test:e2e:conversation-graph:chromium` · CI: `test:e2e:conversation-graph:ci` · job `conversation-graph-e2e`.
+- **한 번에(컴포저+관계도)**: 로컬 `test:e2e:pipelines:all`(15건) · CI `test:e2e:pipelines:ci:all`.
 
 ## CI/CD 통합
 
@@ -165,5 +194,5 @@ GitHub Actions에서 E2E 테스트를 실행하려면 `.github/workflows/e2e.yml
 
 ## 개발자 검증
 
-저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · `npm run test:views`(확장 뷰·라우트) · (권장) `npm run test:sidebar-context`(수동 §14.5 [CHAT_UI_TEST_SCENARIOS](../docs/guides/CHAT_UI_TEST_SCENARIOS.md)) · (선택) `npm run check:doc-verification-hub` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
 

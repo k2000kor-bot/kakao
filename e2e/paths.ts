@@ -24,6 +24,8 @@ export const PATHS = {
   WORKSPACE: '/workspace',
   AUTOMATION: '/automation',
   COMMUNITY: '/community',
+  /** 대화 관계도 — `CONVERSATION_GRAPH_PATH` (`src/config/routes.ts`) */
+  CONVERSATION_GRAPH: '/conversation-graph',
 } as const;
 
 /** 구버전 경로 — 리다이렉트 검증용 (/notebook·/file-analysis 는 프로젝트 UI 켤 때 /projects, 아니면 /chat) */

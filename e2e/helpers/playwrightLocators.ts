@@ -1,0 +1,38 @@
+import type { Locator, Page } from '@playwright/test';
+
+/** 여러 셀렉터 중 첫 번째로 보이는 locator (없으면 null) */
+export async function pickVisibleLocator(page: Page, selectors: string[]): Promise<Locator | null> {
+  for (const selector of selectors) {
+    const locator = page.locator(selector).first();
+    if (await locator.isVisible().catch(() => false)) {
+      return locator;
+    }
+  }
+  return null;
+}
+
+/** CRA/webpack dev 오버레이가 떠 있는지 */
+export async function hasWebpackErrorOverlay(page: Page): Promise<boolean> {
+  return (await page.locator('#webpack-dev-server-client-overlay').count()) > 0;
+}
+
+/**
+ * 셀렉터 목록을 순서대로 `waitFor({ state: 'visible' })` — 첫 성공 시 해당 locator 반환.
+ * (`pickVisibleLocator`는 즉시 isVisible만 보므로, 늦게 나타나는 UI에는 이쪽 사용)
+ */
+export async function waitForFirstVisibleLocator(
+  page: Page,
+  selectors: string[],
+  timeout = 10_000
+): Promise<Locator | null> {
+  const perSelectorTimeout = Math.max(500, Math.floor(timeout / Math.max(1, selectors.length)));
+  for (const selector of selectors) {
+    const locator = page.locator(selector).first();
+    const ok = await locator
+      .waitFor({ state: 'visible', timeout: perSelectorTimeout })
+      .then(() => true)
+      .catch(() => false);
+    if (ok) return locator;
+  }
+  return null;
+}

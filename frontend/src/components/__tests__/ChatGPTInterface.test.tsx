@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { render, screen, waitFor, act, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, RouterProvider, createMemoryRouter, useLocation } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -26,10 +26,17 @@ import {
   AGENTS_QUERY_PARAM_ID,
   MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY,
   MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY,
+  CONVERSATION_GRAPH_CHAT_AUTOSEND_STATE_KEY,
+  CONVERSATION_GRAPH_CHAT_CONTEXT_STATE_KEY,
+  CONVERSATION_GRAPH_CHAT_DRAFT_STATE_KEY,
+  CONVERSATION_GRAPH_PATH,
+  CONVERSATION_GRAPH_PASTE_STATE_KEY,
 } from '../../config/routes';
+import { GRAPH_ANSWER_CONTEXT_FLAG } from '../../views/conversationGraphAnswerGeneration';
 import { GENSPARK_REFERENCE_AGENT_ID } from '../../services/gensparkReferenceAgentPreset';
 import { STANDALONE_CHAT_PATH } from '../../config/uiPreferences';
-import { CHATGPT_CONVERSATIONS_STORAGE_KEY } from '../../services/chatGptUiStorageKeys';
+import { WORKSPACE_WELCOME_SUGGESTION_CHIPS } from '../../constants/workspaceHomeCopy';
+import { CHATGPT_CONVERSATIONS_STORAGE_KEY, SIDEBAR_CHATS_UPDATED_EVENT } from '../../services/chatGptUiStorageKeys';
 import { projectService } from '../../services/projectService';
 import projectsReducer from '../../store/slices/projectsSlice';
 import sessionsReducer from '../../store/slices/sessionsSlice';
@@ -128,6 +135,46 @@ jest.mock('../ProjectManagement/ProjectEditModal', () => {
   };
 });
 
+jest.mock('../ProjectManagement/AddSourceModal', () => {
+  const { TEST_IDS: TIDS } = require('../../constants/testIds');
+  return function MockAddSourceModal({
+    isOpen,
+    onFilesSelected,
+    onWebUrlSubmit,
+    onClose,
+  }: {
+    isOpen: boolean;
+    onFilesSelected?: (files: File[]) => void;
+    onWebUrlSubmit?: (url: string) => void;
+    onClose: () => void;
+  }) {
+    if (!isOpen) return null;
+    return (
+      <div data-testid={TIDS.ADD_SOURCE_MODAL} role="dialog">
+        <button
+          type="button"
+          data-testid={TIDS.ADD_SOURCE_MODAL_UPLOAD}
+          onClick={() => {
+            onFilesSelected?.([new File(['hello'], 'unit-source.txt', { type: 'text/plain' })]);
+          }}
+        >
+          업로드
+        </button>
+        <button
+          type="button"
+          data-testid={TIDS.ADD_SOURCE_MODAL_URL_SUBMIT}
+          onClick={() => onWebUrlSubmit?.('https://example.com/page')}
+        >
+          URL 추가
+        </button>
+        <button type="button" onClick={onClose}>
+          닫기
+        </button>
+      </div>
+    );
+  };
+});
+
 jest.mock('../../services/projectService', () => {
   const mockProjectService = {
     getProjects: jest.fn(),
@@ -135,6 +182,12 @@ jest.mock('../../services/projectService', () => {
     createProject: jest.fn(),
     updateProject: jest.fn(),
     deleteProject: jest.fn(),
+    uploadProjectFile: jest.fn(),
+    appendProjectSourceFiles: jest.fn(),
+    removeProjectSourceFile: jest.fn(),
+    appendProjectWebSource: jest.fn(),
+    removeProjectWebSource: jest.fn(),
+    syncNotebookSourceRemoval: jest.fn(),
     getNotebookSuggestedQuestions: jest.fn().mockResolvedValue([]),
   };
   return {
@@ -582,6 +635,262 @@ describe('ChatGPTInterface', () => {
     });
   });
 
+  describe('대화 관계도 → 독립 대화', () => {
+    it('location.state 초안을 입력창에 반영한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      const draft = '관계도 기반 질문';
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: STANDALONE_CHAT_PATH,
+              state: { [CONVERSATION_GRAPH_CHAT_DRAFT_STATE_KEY]: draft },
+              key: 'graph-draft',
+            },
+          ]}
+        >
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        const inputs = screen.getAllByTestId(TEST_IDS.CHAT_INPUT);
+        const filled = inputs.find((el) => (el as HTMLTextAreaElement).value === draft);
+        expect(filled).toBeTruthy();
+      }, { timeout: 12_000 });
+    });
+
+    it('autosend 시 API context에 관계도 분석 플래그가 포함된다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      const draft = '관계도 보고서 작성';
+      const graphContext = {
+        [GRAPH_ANSWER_CONTEXT_FLAG]: true,
+        conversation_graph_title: '단체 채팅',
+      };
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: STANDALONE_CHAT_PATH,
+              state: {
+                [CONVERSATION_GRAPH_CHAT_DRAFT_STATE_KEY]: draft,
+                [CONVERSATION_GRAPH_CHAT_CONTEXT_STATE_KEY]: graphContext,
+                [CONVERSATION_GRAPH_CHAT_AUTOSEND_STATE_KEY]: true,
+              },
+              key: 'graph-autosend',
+            },
+          ]}
+        >
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(mockedAxios.post).toHaveBeenCalled();
+      }, { timeout: 12_000 });
+
+      const withContext = mockedAxios.post.mock.calls.find((call) => {
+        const body = call[1] as { context?: Record<string, unknown> } | undefined;
+        return body?.context?.[GRAPH_ANSWER_CONTEXT_FLAG] === true;
+      });
+      expect(withContext).toBeTruthy();
+    });
+
+    it('대화 파일 첨부와 관계도 생성 의도 입력 시 handoff 배너·첨부 칩을 표시한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter initialEntries={[STANDALONE_CHAT_PATH]}>
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.CHAT_INPUT)).toBeInTheDocument();
+      });
+
+      const fileInput = screen.getByLabelText('대화 파일 첨부 (TXT/CSV)');
+      const csv = new File(['Date,User,Message\n2026-05-13,A,hi'], 'chat.csv', { type: 'text/csv' });
+      await act(async () => {
+        fireEvent.change(fileInput, { target: { files: [csv] } });
+      });
+
+      const chatInput = screen.getByTestId(TEST_IDS.CHAT_INPUT) as HTMLTextAreaElement;
+      await act(async () => {
+        fireEvent.change(chatInput, { target: { value: '관계도를 만들어줘' } });
+      });
+
+      expect(screen.getByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_ATTACHED_FILE)).toHaveTextContent('chat.csv');
+      expect(screen.getByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_BANNER)).toBeInTheDocument();
+      expect(screen.getByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_OPEN)).toBeInTheDocument();
+    });
+
+    it('handoff 버튼 클릭 시 관계도 경로로 이동하고 붙여넣기 state를 전달한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+
+      const csvBody = 'Date,User,Message\n2026-05-13,알파,handoff-nav';
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+
+      function GraphHandoffLanding() {
+        const location = useLocation();
+        const state = location.state as Record<string, string> | null;
+        return (
+          <div data-testid="graph-handoff-paste">
+            {state?.[CONVERSATION_GRAPH_PASTE_STATE_KEY] ?? ''}
+          </div>
+        );
+      }
+
+      const router = createMemoryRouter(
+        [
+          {
+            path: STANDALONE_CHAT_PATH,
+            element: (
+              <Provider store={store}>
+                <ChatGPTInterface />
+              </Provider>
+            ),
+          },
+          { path: CONVERSATION_GRAPH_PATH, element: <GraphHandoffLanding /> },
+        ],
+        { initialEntries: [STANDALONE_CHAT_PATH] },
+      );
+
+      render(<RouterProvider router={router} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.CHAT_INPUT)).toBeInTheDocument();
+      });
+
+      const fileInput = screen.getByLabelText('대화 파일 첨부 (TXT/CSV)');
+      await act(async () => {
+        fireEvent.change(fileInput, {
+          target: {
+            files: [new File([csvBody], 'nav.csv', { type: 'text/csv' })],
+          },
+        });
+      });
+
+      const chatInput = screen.getByTestId(TEST_IDS.CHAT_INPUT) as HTMLTextAreaElement;
+      await act(async () => {
+        fireEvent.change(chatInput, { target: { value: '관계도를 만들어줘' } });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_OPEN));
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('graph-handoff-paste')).toHaveTextContent(/알파/);
+      });
+      expect(router.state.location.pathname).toBe(CONVERSATION_GRAPH_PATH);
+    });
+
+    it('첨부 파일과 관계도 생성 의도 전송 시 API context에 관계도 intent가 병합된다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter initialEntries={[STANDALONE_CHAT_PATH]}>
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.CHAT_INPUT)).toBeInTheDocument();
+      });
+
+      const csvBody = 'Date,User,Message\n2026-05-13,알파,send-context';
+      const fileInput = screen.getByLabelText('대화 파일 첨부 (TXT/CSV)');
+      await act(async () => {
+        fireEvent.change(fileInput, {
+          target: {
+            files: [new File([csvBody], 'send.csv', { type: 'text/csv' })],
+          },
+        });
+      });
+
+      const chatInput = screen.getByTestId(TEST_IDS.CHAT_INPUT) as HTMLTextAreaElement;
+      await act(async () => {
+        fireEvent.change(chatInput, { target: { value: '관계도를 만들어줘' } });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId(TEST_IDS.SEND_BUTTON));
+      });
+
+      await waitFor(() => {
+        expect(mockedAxios.post).toHaveBeenCalled();
+      }, { timeout: 12_000 });
+
+      const graphCall = mockedAxios.post.mock.calls.find((call) => {
+        const body = call[1] as { context?: Record<string, unknown> } | undefined;
+        return (
+          body?.context?.[GRAPH_ANSWER_CONTEXT_FLAG] === true &&
+          body?.context?.input_intent_hint === 'conversation_graph_create'
+        );
+      });
+      expect(graphCall).toBeTruthy();
+      const ctx = (graphCall![1] as { context: Record<string, unknown> }).context;
+      const filePayload = String(
+        ctx.conversation_file_content ?? ctx.conversation_graph_raw_conversation ?? '',
+      );
+      expect(filePayload).toMatch(/알파/);
+    });
+
+    it('첨부 칩 제거 시 handoff 배너가 사라진다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter initialEntries={[STANDALONE_CHAT_PATH]}>
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.CHAT_INPUT)).toBeInTheDocument();
+      });
+
+      const fileInput = screen.getByLabelText('대화 파일 첨부 (TXT/CSV)');
+      await act(async () => {
+        fireEvent.change(fileInput, {
+          target: {
+            files: [new File(['Date,User,Message\nx'], 'rm.csv', { type: 'text/csv' })],
+          },
+        });
+      });
+
+      const chatInput = screen.getByTestId(TEST_IDS.CHAT_INPUT) as HTMLTextAreaElement;
+      await act(async () => {
+        fireEvent.change(chatInput, { target: { value: '관계도를 만들어줘' } });
+      });
+
+      expect(screen.getByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_BANNER)).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('대화 파일 첨부 제거'));
+      });
+
+      expect(screen.queryByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_ATTACHED_FILE)).not.toBeInTheDocument();
+      expect(screen.queryByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_BANNER)).not.toBeInTheDocument();
+    });
+  });
+
   describe('에이전트 라우트 세션', () => {
     const agentId = GENSPARK_REFERENCE_AGENT_ID;
 
@@ -789,6 +1098,150 @@ describe('ChatGPTInterface', () => {
       }, { timeout: 3000 });
     });
 
+    it('소스 탭에서 파일 추가 시 appendProjectSourceFiles 호출 후 목록에 표시되어야 함', async () => {
+      const projectId = 'proj-source-upload-1';
+      const mockProject = {
+        id: projectId,
+        name: '소스 업로드 테스트',
+        description: '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        files: [],
+        webSources: [],
+      };
+      const updatedProject = {
+        ...mockProject,
+        files: [
+          {
+            id: 'file-1',
+            name: 'unit-source.txt',
+            type: 'document' as const,
+            size: 5,
+            uploadedAt: new Date(),
+          },
+        ],
+      };
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      jest.mocked(mockProjectService.getProject).mockResolvedValue(mockProject);
+      jest.mocked(mockProjectService.appendProjectSourceFiles).mockResolvedValue({
+        project: updatedProject,
+        uploadFailedCount: 0,
+      });
+
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      renderWithRedux(<ChatGPTInterface initialProjectId={projectId} />, { store });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('project-detail-view')).toBeInTheDocument();
+      }, { timeout: 5000 });
+
+      fireEvent.click(await screen.findByTestId(TEST_IDS.PROJECT_SOURCES_TAB));
+      fireEvent.click(await screen.findByTestId(TEST_IDS.PROJECT_SOURCES_ADD_BTN));
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.ADD_SOURCE_MODAL)).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId(TEST_IDS.ADD_SOURCE_MODAL_UPLOAD));
+
+      await waitFor(() => {
+        expect(mockProjectService.appendProjectSourceFiles).toHaveBeenCalledWith(
+          projectId,
+          [],
+          expect.arrayContaining([expect.any(File)]),
+        );
+      });
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.PROJECT_SOURCES_FILE_ITEM)).toHaveTextContent('unit-source.txt');
+      });
+      await waitFor(() => {
+        expect(screen.queryByTestId(TEST_IDS.ADD_SOURCE_MODAL)).not.toBeInTheDocument();
+      });
+    });
+
+    it('소스 탭에서 웹 URL 추가 시 appendProjectWebSource 호출', async () => {
+      const projectId = 'proj-source-url-1';
+      const mockProject = {
+        id: projectId,
+        name: 'URL 추가 테스트',
+        description: '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        files: [],
+        webSources: [],
+      };
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      jest.mocked(mockProjectService.getProject).mockResolvedValue(mockProject);
+      jest.mocked(mockProjectService.appendProjectWebSource).mockResolvedValue({
+        project: {
+          ...mockProject,
+          webSources: [{ id: 'w1', type: 'document' as const, url: 'https://example.com', addedAt: new Date() }],
+        },
+        duplicate: false,
+      });
+
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      renderWithRedux(<ChatGPTInterface initialProjectId={projectId} />, { store });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('project-detail-view')).toBeInTheDocument();
+      }, { timeout: 5000 });
+
+      fireEvent.click(await screen.findByTestId(TEST_IDS.PROJECT_SOURCES_TAB));
+      fireEvent.click(await screen.findByTestId(TEST_IDS.PROJECT_SOURCES_ADD_BTN));
+      fireEvent.click(await screen.findByTestId(TEST_IDS.ADD_SOURCE_MODAL_URL_SUBMIT));
+
+      await waitFor(() => {
+        expect(mockProjectService.appendProjectWebSource).toHaveBeenCalledWith(
+          projectId,
+          [],
+          'https://example.com/page',
+        );
+      });
+    });
+
+    it('소스 탭에서 파일 제거 시 removeProjectSourceFile 호출', async () => {
+      const projectId = 'proj-source-remove-1';
+      const mockProject = {
+        id: projectId,
+        name: '소스 제거 테스트',
+        description: '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        files: [
+          {
+            id: 'file-rm-1',
+            name: 'remove-me.txt',
+            type: 'document' as const,
+            size: 3,
+            uploadedAt: new Date(),
+          },
+        ],
+        webSources: [],
+      };
+      const updatedProject = { ...mockProject, files: [] };
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      jest.mocked(mockProjectService.getProject).mockResolvedValue(mockProject);
+      jest.mocked(mockProjectService.removeProjectSourceFile).mockResolvedValue(updatedProject);
+
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      renderWithRedux(<ChatGPTInterface initialProjectId={projectId} />, { store });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('project-detail-view')).toBeInTheDocument();
+      }, { timeout: 5000 });
+
+      fireEvent.click(await screen.findByTestId(TEST_IDS.PROJECT_SOURCES_TAB));
+      const removeBtn = await screen.findByTestId(TEST_IDS.PROJECT_SOURCES_FILE_REMOVE);
+      fireEvent.click(removeBtn);
+
+      await waitFor(() => {
+        expect(mockProjectService.removeProjectSourceFile).toHaveBeenCalledWith(
+          projectId,
+          expect.arrayContaining([expect.objectContaining({ id: 'file-rm-1' })]),
+          'file-rm-1',
+        );
+      });
+    });
+
     it.skip('프로젝트 상세에서 소스 탭 선택 시 최신순·모두 정렬·필터가 노출되어야 함', async () => {
       // 소스 탭은 currentProject 시 bw-project-tabs 내에 렌더되나, 테스트 환경에서 탭이 DOM에 안 나타나는 이슈로 스킵. E2E 또는 수동 검증. testid: PROJECT_SOURCES_TAB.
       const projectId = 'proj-sources-1';
@@ -831,6 +1284,151 @@ describe('ChatGPTInterface', () => {
         const inputFields = screen.queryAllByRole('textbox');
         expect(inputFields.length).toBeGreaterThan(0);
       });
+    });
+
+    it('웰컴(대화 없음)에서 입력창 위 추천 질문 칩을 표시한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      renderWithRedux(<ChatGPTInterface />, { store });
+
+      const dock = await screen.findByTestId(TEST_IDS.CHAT_INPUT_DOCK_SUGGESTIONS);
+      expect(dock).toHaveClass('brainwave-quick-suggestions');
+      expect(dock).toHaveTextContent('추천 질문:');
+
+      for (const chip of WORKSPACE_WELCOME_SUGGESTION_CHIPS) {
+        expect(screen.getByRole('button', { name: new RegExp(chip) })).toBeInTheDocument();
+      }
+    });
+
+    it('입력창에 질문·요구·요청 삽입 칩과 다중 요청 미리보기를 표시한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      renderWithRedux(<ChatGPTInterface />, { store });
+
+      expect(await screen.findByTestId(TEST_IDS.CHAT_COMPOSER_STRUCTURE_CHIPS)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '질문 블록 삽입' })).toBeInTheDocument();
+
+      const input = await screen.findByTestId(TEST_IDS.CHAT_INPUT);
+      fireEvent.change(input, { target: { value: '1. 첫 번째\n2. 두 번째' } });
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.CHAT_COMPOSER_INPUT_HINT)).toHaveTextContent(/순서/);
+      });
+    });
+
+    it('다중 요청 전송 시 입력창 하단에 항목별 체크리스트를 표시한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      mockedAxios.post.mockImplementation(
+        () =>
+          new Promise(() => {
+            /* hang for loading UI */
+          }),
+      );
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      renderWithRedux(<ChatGPTInterface />, { store });
+
+      const input = await screen.findByTestId(TEST_IDS.CHAT_INPUT);
+      fireEvent.change(input, {
+        target: { value: '1. 첫 질문입니다\n2. 둘째 요청입니다' },
+      });
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', shiftKey: false });
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.COMPOSER_GENSPARK_GENERATION_STATUS)).toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.COMPOSER_MULTI_REQUEST_CHECKLIST)).toBeInTheDocument();
+      });
+      expect(screen.getByText(/처리 중/)).toBeInTheDocument();
+    });
+
+    it('웰컴 추천 칩 클릭 시 해당 문구로 메시지 전송을 시도한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      mockedAxios.post.mockClear();
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      renderWithRedux(<ChatGPTInterface />, { store });
+
+      const chipLabel = WORKSPACE_WELCOME_SUGGESTION_CHIPS[0];
+      const chip = await screen.findByRole('button', { name: new RegExp(chipLabel) });
+      fireEvent.click(chip);
+
+      await waitFor(
+        () => {
+          const sent = mockedAxios.post.mock.calls.some((call) => {
+            const body = call[1] as { message?: string } | undefined;
+            return typeof body?.message === 'string' && body.message.includes(chipLabel);
+          });
+          expect(sent).toBe(true);
+        },
+        { timeout: 8000 },
+      );
+    });
+
+    it('프로젝트 웰컴에서 소스 추천 질문을 입력 도크 위에 표시하고 본문 그리드는 숨긴다', async () => {
+      const mockProject = {
+        id: 'proj-welcome-suggest',
+        name: '테스트 프로젝트',
+        description: '',
+        createdAt: '2026-05-01T00:00:00.000Z',
+        updatedAt: '2026-05-01T00:00:00.000Z',
+        files: [],
+        webSources: [],
+      };
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      jest.mocked(mockProjectService.getProject).mockResolvedValue(mockProject);
+      jest.mocked(mockProjectService.getNotebookSuggestedQuestions).mockResolvedValue([
+        '소스에서 나온 질문 A',
+        '소스에서 나온 질문 B',
+      ]);
+
+      const emptyConversation = {
+        id: 'conv-empty',
+        title: '새 대화',
+        messages: [],
+        projectId: mockProject.id,
+        createdAt: '2026-05-01T00:00:00.000Z',
+        updatedAt: '2026-05-01T00:00:00.000Z',
+      };
+      localStorage.setItem(
+        CHATGPT_CONVERSATIONS_STORAGE_KEY,
+        JSON.stringify([emptyConversation]),
+      );
+
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: `/projects/${mockProject.id}`,
+              state: { conversationId: emptyConversation.id },
+              key: 't0',
+            },
+          ]}
+        >
+          <Provider store={store}>
+            <ChatGPTInterface initialProjectId={mockProject.id} />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('project-detail-view')).toBeInTheDocument();
+      });
+
+      await waitFor(
+        () => {
+          const dock = screen.getByTestId(TEST_IDS.CHAT_INPUT_DOCK_SUGGESTIONS);
+          expect(dock).toHaveClass('brainwave-quick-suggestions');
+          expect(dock).toHaveTextContent('소스에서 나온 질문 A');
+        },
+        { timeout: 8000 },
+      );
+
+      expect(screen.queryByTestId(TEST_IDS.SUGGESTED_QUESTIONS_FROM_SOURCE)).not.toBeInTheDocument();
     });
 
     // frontend 패키지는 루트 node_modules 심링크 + package.json jest moduleNameMapper(react-router*) 조합에서
@@ -893,15 +1491,17 @@ describe('ChatGPTInterface', () => {
 
       await waitFor(() => {
         const raw = localStorage.getItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
-        expect(raw).toBeTruthy();
-        const list = JSON.parse(raw || '[]') as Array<{ title?: string; messages?: Array<{ role: string }> }>;
-        expect(list.length).toBeGreaterThan(0);
+        const list = raw ? (JSON.parse(raw) as Array<{ title?: string; messages?: Array<{ role: string }> }>) : [];
         const first = list[0];
-        expect(first?.messages?.some((m) => m.role === 'user')).toBe(true);
-        expect(first?.title).toBeDefined();
-        expect(first.title).not.toBe(longQuestion);
-        expect(first.title?.endsWith('...')).toBe(true);
-        expect((first.title || '').length).toBeLessThanOrEqual(33);
+        const ok =
+          !!raw &&
+          list.length > 0 &&
+          !!first?.messages?.some((m) => m.role === 'user') &&
+          first?.title !== undefined &&
+          first.title !== longQuestion &&
+          !!first.title?.endsWith('...') &&
+          (first.title || '').length <= 33;
+        expect(ok).toBe(true);
       }, { timeout: 8000 });
     });
 
@@ -927,7 +1527,7 @@ describe('ChatGPTInterface', () => {
         ]),
       );
       const onSidebarChatsUpdated = jest.fn();
-      window.addEventListener('sidebar-chats-updated', onSidebarChatsUpdated as EventListener);
+      window.addEventListener(SIDEBAR_CHATS_UPDATED_EVENT, onSidebarChatsUpdated as EventListener);
       try {
         renderWithRedux(<ChatGPTInterface />);
 
@@ -938,25 +1538,27 @@ describe('ChatGPTInterface', () => {
         fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', shiftKey: false });
 
         await waitFor(() => {
-          expect(onSidebarChatsUpdated).toHaveBeenCalled();
           const raw = localStorage.getItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
-          expect(raw).toBeTruthy();
-          const list = JSON.parse(raw || '[]') as Array<{
-            id: string;
-            messages?: Array<{ role: string; content?: string }>;
-          }>;
-          expect(list.length).toBeGreaterThanOrEqual(2);
-          expect(list.some((conv) => conv.id === existingId)).toBe(true);
-          expect(
+          const list = raw
+            ? (JSON.parse(raw) as Array<{
+                id: string;
+                messages?: Array<{ role: string; content?: string }>;
+              }>)
+            : [];
+          const ok =
+            onSidebarChatsUpdated.mock.calls.length > 0 &&
+            !!raw &&
+            list.length >= 2 &&
+            list.some((conv) => conv.id === existingId) &&
             list.some(
               (conv) =>
                 conv.id !== existingId &&
                 (conv.messages || []).some((m) => m.role === 'user' && m.content === question),
-            ),
-          ).toBe(true);
+            );
+          expect(ok).toBe(true);
         }, { timeout: 8000 });
       } finally {
-        window.removeEventListener('sidebar-chats-updated', onSidebarChatsUpdated as EventListener);
+        window.removeEventListener(SIDEBAR_CHATS_UPDATED_EVENT, onSidebarChatsUpdated as EventListener);
         localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
       }
     });
@@ -964,7 +1566,7 @@ describe('ChatGPTInterface', () => {
     it('깨진 저장값이어도 첫 전송 후 대화 목록 저장이 정상 복구된다', async () => {
       localStorage.setItem(CHATGPT_CONVERSATIONS_STORAGE_KEY, '{broken-json');
       const onSidebarChatsUpdated = jest.fn();
-      window.addEventListener('sidebar-chats-updated', onSidebarChatsUpdated as EventListener);
+      window.addEventListener(SIDEBAR_CHATS_UPDATED_EVENT, onSidebarChatsUpdated as EventListener);
       try {
         renderWithRedux(<ChatGPTInterface />);
         const main = await screen.findByRole('main', { name: /대화 영역/i });
@@ -974,23 +1576,25 @@ describe('ChatGPTInterface', () => {
         fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', shiftKey: false });
 
         await waitFor(() => {
-          expect(onSidebarChatsUpdated).toHaveBeenCalled();
           const raw = localStorage.getItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
-          expect(raw).toBeTruthy();
-          const list = JSON.parse(raw || '[]') as Array<{
-            id: string;
-            messages?: Array<{ role: string; content?: string }>;
-          }>;
-          expect(Array.isArray(list)).toBe(true);
-          expect(list.length).toBeGreaterThanOrEqual(1);
-          expect(
+          const list = raw
+            ? (JSON.parse(raw) as Array<{
+                id: string;
+                messages?: Array<{ role: string; content?: string }>;
+              }>)
+            : [];
+          const ok =
+            onSidebarChatsUpdated.mock.calls.length > 0 &&
+            !!raw &&
+            Array.isArray(list) &&
+            list.length >= 1 &&
             list.some((conv) =>
               (conv.messages || []).some((m) => m.role === 'user' && m.content === question),
-            ),
-          ).toBe(true);
+            );
+          expect(ok).toBe(true);
         }, { timeout: 8000 });
       } finally {
-        window.removeEventListener('sidebar-chats-updated', onSidebarChatsUpdated as EventListener);
+        window.removeEventListener(SIDEBAR_CHATS_UPDATED_EVENT, onSidebarChatsUpdated as EventListener);
         localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
       }
     });

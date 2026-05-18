@@ -1,7 +1,7 @@
 {
   "name": "corbu-ai",
   "version": "0.1.0",
-  "description": "CORBU.AI — 검증 표·명령: TESTING_GUIDE.md · 사이드바·맥락 회귀 npm run test:sidebar-context · 원격 push: docs/PUSH_BLOCK_HANDOFF.md",
+  "description": "유시민 스타일 통합 고급 AI 시스템입니다.",
   "private": true,
   "proxy": "http://localhost:5002",
   "dependencies": {
@@ -33,6 +33,7 @@
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.534.0",
     "mammoth": "^1.11.0",
+    "mermaid": "^11.15.0",
     "ml-matrix": "^6.12.1",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.0",
@@ -65,8 +66,12 @@
     "try:serve": "bash scripts/try-serve-build.sh",
     "check:access": "bash scripts/check-access.sh",
     "verify:api": "bash scripts/verify-api.sh",
+    "verify:conversation-graph-api": "bash scripts/verify-conversation-graph-api.sh",
     "test:integration": "bash scripts/integration-test.sh",
     "verify:final": "bash scripts/final-verify.sh",
+    "verify:pre-deploy": "bash scripts/pre-deploy-verify.sh",
+    "test:e2e:pipelines:all": "npm run test:e2e:composer-pipeline:all && npm run test:e2e:conversation-graph:chromium",
+    "test:e2e:pipelines:ci:all": "npm run test:e2e:composer-pipeline:ci:all && npm run test:e2e:conversation-graph:ci",
     "start:safe": "PORT=3000 HOST=0.0.0.0 NODE_OPTIONS=--max-old-space-size=8192 BROWSER=none react-scripts start",
     "build": "NODE_OPTIONS=--max-old-space-size=8192 react-scripts build",
     "pretest": "npm run check:test-imports && npm run check:src-frontend-parity",
@@ -108,6 +113,8 @@
     "typecheck": "npx tsc --noEmit",
     "typecheck:adaptive-learning-tests": "npx tsc --noEmit -p src/services/__tests__/tsconfig.json",
     "typecheck:adaptive-learning-tests:all": "npm run typecheck:adaptive-learning-tests && npm run typecheck:adaptive-learning-tests --prefix frontend",
+    "typecheck:views-tests": "npx tsc --noEmit -p src/views/tsconfig.json",
+    "typecheck:views-tests:all": "npm run typecheck:views-tests",
     "check:test-imports": "node frontend/scripts/check-broken-test-imports.mjs src frontend/src",
     "check:src-frontend-parity": "node scripts/check-src-frontend-parity.mjs",
     "check:doc-verification-hub": "node scripts/check-doc-verification-hub.mjs",
@@ -119,9 +126,27 @@
     "test:e2e": "playwright test",
     "test:e2e:no-server": "E2E_SERVER_READY=1 playwright test",
     "test:e2e:genspark-context": "E2E_GENSPARK_CHAT_BODY=1 E2E_SERVER_READY=1 playwright test e2e/gensparkSuperAgentChatContext.spec.ts",
+    "test:e2e:composer-pipeline": "E2E_AGENTS_COMPOSER_PIPELINE=1 E2E_SERVER_READY=1 playwright test e2e/gensparkAgentsComposerPipeline.spec.ts --project=chromium",
+    "test:e2e:composer-pipeline:ci": "E2E_AGENTS_COMPOSER_PIPELINE=1 playwright test e2e/gensparkAgentsComposerPipeline.spec.ts --project=chromium",
+    "test:e2e:chat-multi-request-checklist": "E2E_CHAT_MULTI_REQUEST_CHECKLIST=1 E2E_SERVER_READY=1 playwright test e2e/chat.spec.ts -g \"다중 요청\" --project=chromium",
+    "test:e2e:chat-multi-request-checklist:ci": "E2E_CHAT_MULTI_REQUEST_CHECKLIST=1 playwright test e2e/chat.spec.ts -g \"다중 요청\" --project=chromium",
+    "test:e2e:composer-pipeline:all": "npm run test:e2e:composer-pipeline && npm run test:e2e:chat-multi-request-checklist",
+    "test:e2e:composer-pipeline:ci:all": "npm run test:e2e:composer-pipeline:ci && npm run test:e2e:chat-multi-request-checklist:ci",
+    "verify:composer-pipeline": "npm run test:composer-pipeline",
     "test:e2e:build": "npm run build && E2E_USE_BUILD=1 playwright test",
     "test:tts:all": "npm test -- --testPathPattern=\"AdvancedFeaturesPanel|scriptStyleAPI|qwenTtsService\" --watchAll=false && (cd backend && (if [ -x .venv/bin/python ]; then .venv/bin/python -m pytest tests/test_tts_api.py -v; elif [ -x venv/bin/python ]; then venv/bin/python -m pytest tests/test_tts_api.py -v; else python3 -m pytest tests/test_tts_api.py -v; fi))",
-    "test:p4:services": "npm test -- --testPathPattern=\"notebookLLMStreamingService|chatGPTProjectService|chatService\\.test|fileLearningService|services/__tests__/api\\.test|services/__tests__/intentApi|projectService\\.test|pipelineTuningService\\.test\" --watchAll=false",
+    "test:p4:services": "npm test -- --testPathPattern=\"notebookLLMStreamingService|chatGPTProjectService|chatService\\.test|fileLearningService|services/__tests__/api\\.test|services/__tests__/intentApi|projectService\\.test|pipelineTuningService\\.test|conversationGraphService\\.test\" --watchAll=false",
+    "test:backend:conversation-graph": "bash scripts/run-backend-pytest.sh tests/test_conversation_graph.py -v",
+    "test:composer-pipeline": "bash scripts/test-composer-pipeline.sh",
+    "test:conversation-graph": "npm run pretest && CI=true react-scripts test --testPathPattern='conversationGraph|ConversationGraphView|ConversationGraphAnswer|generateGraphAnswer|conversationGraphTestIds|kakaoTalk' --watchAll=false",
+    "test:e2e:conversation-graph": "E2E_SERVER_READY=1 playwright test e2e/conversationGraph.spec.ts",
+    "test:e2e:conversation-graph:chromium": "E2E_SERVER_READY=1 playwright test e2e/conversationGraph.spec.ts --project=chromium",
+    "verify:conversation-graph:unit": "npm run typecheck:views-tests && npm run test:conversation-graph && npm run test:backend:conversation-graph",
+    "verify:conversation-graph": "npm run verify:conversation-graph:unit && npm run test:e2e:conversation-graph:chromium",
+    "test:e2e:conversation-graph:ci": "playwright test e2e/conversationGraph.spec.ts --project=chromium",
+    "test:conversation-graph:chat-handoff": "npm run pretest && CI=true react-scripts test --testPathPattern='conversationGraphChatContextEnhancer|conversationGraphHandoff|ChatGPTInterface.test' --testNamePattern='handoff|관계도' --watchAll=false",
+    "verify:project-sources": "npm test -- --testPathPattern=\"projectService.test|ChatGPTInterface.test\" --watchAll=false && npm run test:backend -- tests/test_project_session_api.py::TestProjectAPI::test_upload_project_file -q && E2E_SERVER_READY=1 playwright test e2e/projectManagement.spec.ts -g \"소스 탭에서\" --project=chromium",
+    "test:app-unified": "npm run pretest && CI=true react-scripts test --testPathPattern=AppUnified.test --watchAll=false",
     "test:views": "npm run pretest && react-scripts test src/views src/config/__tests__/routes.test.ts --watchAll=false",
     "test:views:services": "npm test -- --testPathPattern=\"ViewService\" --watchAll=false",
     "test:e2e:ui": "playwright test --ui",
@@ -142,6 +167,7 @@
       "<rootDir>/corbu-ai/"
     ],
     "moduleNameMapper": {
+      "^d3$": "<rootDir>/src/__mocks__/d3.js",
       "^react-router-dom$": "<rootDir>/node_modules/react-router-dom/dist/index.js",
       "^react-router/dom$": "<rootDir>/node_modules/react-router/dist/development/dom-export.js",
       "\\.(css|less|scss|sass)$": "<rootDir>/src/__mocks__/styleMock.js"
@@ -171,10 +197,13 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
+    "@types/d3": "^7.4.3",
     "@types/node": "^24.1.0",
     "source-map-explorer": "^2.5.3"
   },
-  "description": "유시민 스타일 통합 고급 AI 시스템입니다.",
+  "overrides": {
+    "@types/d3-dispatch": "3.0.5"
+  },
   "main": ".eslintrc.js",
   "directories": {
     "doc": "docs"

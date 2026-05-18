@@ -100,12 +100,17 @@
 
 ## 14. 품질·생성 능력 확인 시나리오
 
+이 절은 UI 관점의 빠른 확인표입니다. **대화 이력·재진입·재생성·편집·첨부**까지 포함한 전체 수동 점검은 [CHAT_ANSWER_FLOW_VERIFICATION §5.6·§8](./CHAT_ANSWER_FLOW_VERIFICATION.md)(표 **행 9**)와 [FEATURE_LOGIC_AND_STRENGTHS §3.5·§5.3](../FEATURE_LOGIC_AND_STRENGTHS.md)과 교차합니다.
+
 | # | 시나리오 | 조치 | 기대 결과 |
 |---|----------|------|-----------|
 | 14.1 | 품질 상향 | "차이점 알려줘" 등 검색·자료 활용 문구 입력 후 전송 | 요청 시 API에 전달되는 quality가 사용자 선택보다 한 단계 이상 상향(간결→enhanced, Auto→ultimate) |
 | 14.2 | 기본 모드 | 저장값 없이 대화 화면 첫 진입 후 드롭다운 확인 | 응답 모드가 **상세**로 표시됨(기본 ultimate) |
 | 14.3 | 입력 힌트 | 요약/비교/설명 등 입력 시 푸터 확인 | "검색·자료 활용해 답변" 문구가 표시될 수 있음 |
 | 14.4 | API quality 전달 | 네트워크 탭에서 /api/chat 또는 /api/unified/chat 요청 확인 | 요청 body에 `quality`(basic \| enhanced \| ultimate) 필드 포함. 미포함 시 백엔드 기본값 enhanced 적용 |
+| 14.5 | 재생성·편집 + 첨부 | 스레드 첨부 또는 입력창 .txt/.csv 후 짧은 질문만 전송 → **재생성** 또는 사용자 메시지 **편집 후 재전송** | `context.thread_attached_file_contents`·`conversation_file_content`(해당 시)가 요청에 포함되고, 답변이 첨부 맥락을 반영. [CHAT_ANSWER_FLOW_VERIFICATION §8](./CHAT_ANSWER_FLOW_VERIFICATION.md) **행 9**와 동일 시나리오 |
+| 14.6 | 관계도 handoff | `/chat` 웰컴·대화 화면에서 📎로 `.csv`/`.txt` 첨부 → 입력에 「관계도를 만들어줘」 | **첨부 칩**(`conversation-graph-chat-attached-file`)·**「관계도 화면에서 만들기」** 배너 표시. 배너 클릭 시 `/conversation-graph`로 이동·붙여넣기란에 대화 반영·답변 패널 표시. 자동: `npm run test:e2e:conversation-graph:chromium` · [CONVERSATION_GRAPH.md](../CONVERSATION_GRAPH.md) |
+| 14.7 | 컴포저 다중 요청 | 입력에 `1. 첫 질문\n2. 둘째 요청` 입력(또는 **질문·요구·요청** 칩) → Enter 전송 | 전송 전 **미리보기**(`chat-composer-input-hint`). 생성 중 **5단계 UI**(`composer-genspark-generation-status`)·**체크리스트**(`composer-multi-request-checklist`, 「처리 중」). **재생성·편집 후 재전송**도 동일 UI·순차 API 적용. Jest: `npm run verify:composer-pipeline` · 배포 전: `npm run verify:final` 6단계 포함 · E2E(선택): `npm run test:e2e:composer-pipeline:all` · 순차 API(선택): `REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST`(+ `..._STREAM` SSE). 다단계(선택): `REACT_APP_COMPOSER_MULTI_STEP_MULTI_REQUEST` — 항목별 `generateMultiStepResponse`(순차 API·SSE보다 우선순위 낮음). 전송·재생성·편집 공통. `multiStepResponseGenerator`는 동일 `multi_request_*` 컨텍스트로 복잡도 분석에도 반영. |
 
 ## 15. 다음 개선 후보
 
@@ -113,9 +118,9 @@
 
 ---
 
-*최종 업데이트: §13 스트리밍·생성 능력, §14 품질 확인 시나리오*
+*최종 업데이트: §14.7 컴포저 다중 요청·순차 API*
 
 ## 개발자 검증
 
-저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · `npm run test:views`(확장 뷰·라우트) · (권장) `npm run test:sidebar-context`(수동 §14.5 [CHAT_UI_TEST_SCENARIOS](./CHAT_UI_TEST_SCENARIOS.md)) · (선택) `npm run check:doc-verification-hub` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
 

@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { PATHS, LEGACY_REDIRECT_PATHS, NOT_FOUND_PATH } from './paths';
 import { NOT_FOUND_PAGE_HEADING } from '../src/config/routes';
 import { TEST_IDS, byTestId } from './testIds';
+import { mockConversationsApi } from './helpers/conversationGraphApiMock';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';
 const SKIP_REACHABILITY = process.env.E2E_SKIP_REACHABILITY_CHECK === '1';
@@ -84,7 +85,42 @@ test.describe('기본 앱 기능', () => {
     }
     await page.goto(PATHS.AGENTS, { waitUntil: 'domcontentloaded', timeout: 30_000 });
     await expect(page.getByTestId('genspark-agents-hub')).toBeAttached({ timeout: 15_000 });
-    await expect(page.getByRole('heading', { name: /에이전트 \(Genspark 링크\)/ })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /에이전트와 대화를 시작하세요/ })).toBeVisible();
+  });
+
+  test('/conversation-graph 대화 관계도 페이지가 로드되고 핵심 섹션이 보여야 함', async ({ page }) => {
+    if (!(await isServerReachable())) {
+      test.skip(true, `Dev server not reachable at ${BASE_URL}. Run "npm start" then "npm run test:e2e:no-server".`);
+      return;
+    }
+    await page.goto(PATHS.CONVERSATION_GRAPH, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_VIEW)).toBeAttached({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { level: 2, name: '대화 업로드' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: '업로드된 대화' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: '대화 관계도' })).toBeVisible();
+  });
+
+  test('/conversation-graph API 모킹 시 관계도 검색으로 그래프가 표시된다', async ({ page }) => {
+    if (!(await isServerReachable())) {
+      test.skip(true, `Dev server not reachable at ${BASE_URL}. Run "npm start" then "npm run test:e2e:no-server".`);
+      return;
+    }
+    await page.route(
+      '**/api/conversations**',
+      mockConversationsApi(
+        [{ id: 'n1', label: 'E2E참여자', message_count: 1 }],
+        [],
+        { uploadId: 'e2e-1', listName: 'E2E 대화' },
+      ),
+    );
+
+    await page.goto(PATHS.CONVERSATION_GRAPH, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_VIEW)).toBeAttached({ timeout: 15_000 });
+    await expect(page.getByRole('radio', { name: /대화 선택: E2E 대화/ })).toBeVisible({ timeout: 15_000 });
+    await page.getByRole('button', { name: '관계도 검색' }).click();
+    await expect(page.getByRole('img', { name: '대화 관계도 그래프' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('conversation-graph-status')).toContainText(/참여자 1명/);
+    await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PANEL)).toBeVisible();
   });
 
   test('독립 대화(/chat)에서 메시지 입력 후 전송 시 사용자 메시지가 표시되어야 함', async ({ page }) => {
@@ -112,6 +148,36 @@ test.describe('기본 앱 기능', () => {
     await expect(userBubble.or(sentToast)).toBeVisible({ timeout: 12_000 });
   });
 
+  test('/chat에서 대화 CSV 첨부·관계도 의도 입력 시 handoff 배너가 표시된다', async ({ page }) => {
+    if (!(await isServerReachable())) {
+      test.skip(true, `Dev server not reachable at ${BASE_URL}. Run "npm start" then "npm run test:e2e:no-server".`);
+      return;
+    }
+    await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+
+    const chatInput = page.getByTestId(TEST_IDS.CHAT_INPUT).first();
+    await expect(chatInput).toBeVisible({ timeout: 15_000 });
+
+    const csv = `Date,User,Message\n2026-05-13 10:00:00,"알파","안녕"`;
+    await page
+      .getByTestId(TEST_IDS.CHAT_INPUT_CONTAINER)
+      .locator('input[type="file"]')
+      .first()
+      .setInputFiles({
+        name: 'smoke-chat.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(csv),
+      });
+    await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_ATTACHED_FILE)).toContainText(
+      'smoke-chat.csv',
+      { timeout: 5_000 },
+    );
+    await chatInput.fill('관계도를 만들어줘');
+    await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_BANNER)).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+
   test('독립 대화(/chat)에 메시지 입력창과 전송 버튼이 있어야 함', async ({ page }) => {
     if (!(await isServerReachable())) {
       test.skip(true, `Dev server not reachable at ${BASE_URL}. Run "npm start" then "npm run test:e2e:no-server".`);
@@ -131,14 +197,30 @@ test.describe('기본 앱 기능', () => {
       return;
     }
     await page.goto(PATHS.PROJECTS, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    /* 프로젝트 UI가 꺼져 있으면 <Navigate>로 /agents 전환. 켜져 있으면 lazy(ProjectsPage) 로딩 중 Suspense fallback 에는 "프로젝트" 문구가 없을 수 있음(WebKit 등). */
+    await page.waitForURL(
+      (url) => {
+        const path = new URL(url).pathname.replace(/\/$/, '') || '/';
+        return path === PATHS.PROJECTS || path === PATHS.AGENTS;
+      },
+      { timeout: 15_000 }
+    );
 
     const title = await page.title();
     expect(title).toMatch(/프로젝트|에이전트|CORBU.AI/i);
-    if (page.url().includes('/projects')) {
+    await page.waitForFunction(
+      () =>
+        !!document.querySelector('[data-testid="genspark-agents-hub"]') ||
+        !!document.querySelector('[data-testid="project-hub-root"]') ||
+        !!document.querySelector('nav[aria-label="현재 위치"]'),
+      { timeout: 25_000 }
+    );
+    const path = new URL(page.url()).pathname.replace(/\/$/, '') || '/';
+    if (path === PATHS.PROJECTS) {
       const projectContent = page.getByText('프로젝트').or(page.locator(byTestId(TEST_IDS.PROJECT_LIST)));
-      await expect(projectContent.first()).toBeAttached({ timeout: 10_000 });
+      await expect(projectContent.first()).toBeAttached({ timeout: 5_000 });
     } else {
-      await expect(page.getByTestId('genspark-agents-hub')).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByTestId('genspark-agents-hub')).toBeVisible({ timeout: 5_000 });
     }
   });
 
@@ -147,11 +229,11 @@ test.describe('기본 앱 기능', () => {
       test.skip(true, `Dev server not reachable at ${BASE_URL}. Run "npm start" then "npm run test:e2e:no-server".`);
       return;
     }
-    await page.goto(PATHS.HOME, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    const toolsSection = page.getByText('도구', { exact: true }).first();
-    await expect(toolsSection).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByRole('link', { name: '설정으로 이동' })).toBeAttached();
-    await expect(page.getByRole('link', { name: '도움말으로 이동' })).toBeAttached();
+    /* 루트(/)는 마케팅·워크스페이스 우선 등으로 사이드바 "도구" 문구가 없을 수 있어, 사이드바가 있는 독립 대화에서 더보기 메뉴로 검증 */
+    await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await page.getByTestId('sidebar-brand-more-btn').click();
+    await expect(page.getByRole('menuitem', { name: /^설정$/ })).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('menuitem', { name: /^도움말$/ })).toBeVisible();
   });
 
   test('구버전 /features 경로가 독립 대화(/chat)로 리다이렉트되어야 함', async ({ page }) => {
@@ -170,8 +252,14 @@ test.describe('기본 앱 기능', () => {
       return;
     }
     await page.goto(LEGACY_REDIRECT_PATHS.NOTEBOOK, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    const path = new URL(page.url()).pathname.replace(/\/$/, '') || '/';
-    expect(path === '/' || path === PATHS.CHAT || path === '/projects').toBe(true);
+    /* React Router Navigate 는 하이드레이션 이후 적용되므로, domcontentloaded 직후에는 /notebook 이 남을 수 있음 */
+    await page.waitForURL(
+      (url) => {
+        const path = new URL(url).pathname.replace(/\/$/, '') || '/';
+        return path === '/' || path === PATHS.CHAT || path === '/projects';
+      },
+      { timeout: 15_000 }
+    );
   });
 
   test('사이드바에서 새 대화 링크 클릭 시 독립 대화(/chat)로 이동해야 함', async ({ page }) => {
@@ -197,10 +285,11 @@ test.describe('기본 앱 기능', () => {
       test.skip(true, `Dev server not reachable at ${BASE_URL}. Run "npm start" then "npm run test:e2e:no-server".`);
       return;
     }
-    await page.goto(PATHS.HOME, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    const voiceLink = page.getByRole('link', { name: /목소리 생성/i }).first();
-    await expect(voiceLink).toBeAttached({ timeout: 10_000 });
-    await voiceLink.click();
+    await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await page.getByTestId('sidebar-brand-more-btn').click();
+    const voiceItem = page.getByRole('menuitem', { name: /^목소리 생성$/ });
+    await expect(voiceItem).toBeAttached({ timeout: 10_000 });
+    await voiceItem.click();
     await expect(page).toHaveURL(/\/voice-generation/, { timeout: 10_000 });
   });
 
@@ -250,8 +339,13 @@ test.describe('기본 앱 기능', () => {
       return;
     }
     await page.goto(LEGACY_REDIRECT_PATHS.FILE_ANALYSIS, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    const path = new URL(page.url()).pathname.replace(/\/$/, '') || '/';
-    expect(path === '/' || path === PATHS.CHAT || path === '/projects').toBe(true);
+    await page.waitForURL(
+      (url) => {
+        const path = new URL(url).pathname.replace(/\/$/, '') || '/';
+        return path === '/' || path === PATHS.CHAT || path === '/projects';
+      },
+      { timeout: 15_000 }
+    );
   });
 
   test('/analytics 경로에서 분석 뷰가 표시되어야 함', async ({ page }) => {
@@ -265,14 +359,19 @@ test.describe('기본 앱 기능', () => {
     await expect(page.getByRole('heading', { level: 2, name: '사용 통계' })).toBeVisible({ timeout: 3_000 });
   });
 
-  test('구버전 /features-map 경로가 홈(/)으로 리다이렉트되어야 함', async ({ page }) => {
+  test('구버전 /features-map 경로가 홈(/) 또는 독립 대화(/chat)로 리다이렉트되어야 함', async ({ page }) => {
     if (!(await isServerReachable())) {
       test.skip(true, `Dev server not reachable at ${BASE_URL}. Run "npm start" then "npm run test:e2e:no-server".`);
       return;
     }
     await page.goto(LEGACY_REDIRECT_PATHS.FEATURES_MAP, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    const baseEscaped = BASE_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    await expect(page).toHaveURL(new RegExp(`^${baseEscaped}/?(\\?|$)`), { timeout: 5_000 });
+    await page.waitForURL(
+      (url) => {
+        const path = new URL(url).pathname.replace(/\/$/, '') || '/';
+        return path === '/' || path === PATHS.CHAT;
+      },
+      { timeout: 15_000 }
+    );
   });
 
   test('/voice-generation 경로에서 목소리 생성 화면이 표시되어야 함', async ({ page }) => {

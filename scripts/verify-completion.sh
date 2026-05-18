@@ -16,7 +16,7 @@ DEV_CHECK_SKIP_BACKEND=1 bash "$ROOT/scripts/dev-check.sh" || {
 }
 
 echo ""
-echo "--- 2. P4 서비스 (8 suites, 170 tests) ---"
+echo "--- 2. P4 서비스 (npm run test:p4:services) ---"
 npm run test:p4:services || {
   echo "2단계 실패. npm run test:p4:services 확인."
   exit 1
@@ -24,5 +24,7 @@ npm run test:p4:services || {
 
 echo ""
 echo "=== 완성도 검증 완료 ==="
-echo "권장(별도): npm run test:sidebar-context — TESTING_GUIDE.md · 원격 push: docs/PUSH_BLOCK_HANDOFF.md"
+echo "권장(별도): npm run verify:pre-deploy (sidebar + composer + 관계도 unit)"
+echo "풀 스택: npm run verify:final · E2E: test:e2e:composer-pipeline:all · verify:conversation-graph"
+echo "원격 push: docs/PUSH_BLOCK_HANDOFF.md"
 echo "선택 점검: DOC_HUB_STRICT=1 npm run check:doc-verification-hub — TESTING_GUIDE.md · scripts/README.md"

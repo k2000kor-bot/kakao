@@ -1,30 +1,103 @@
 /**
- * WorkspaceQueryComposer — 워크스페이스 홈 질의 카드와 동일한 스타일
- * (GensparkMarketingHomeView 페이지 레이아웃과 분리)
+ * WorkspaceQueryComposer — ChatGPTInterface `.input-wrapper` 클래식 입력과 동일 토큰
+ * (테두리·그림자·포커스 링·라운드 필 실루엣·여백)
  */
 .wq-composer {
-  background: var(--bg-primary, #ffffff);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 22px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 4px 16px rgba(15, 23, 42, 0.06);
+  background: var(--bg-primary);
+  border: var(--border-width-md, 2px) solid var(--border-color);
+  /* 참조 UI: 필형 카드 — 16px (--radius-2xl), 클래식 입력보다 한 단계 둥글게 */
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   min-width: 0;
   width: 100%;
-  max-width: 800px;
+  max-width: min(52rem, 100%);
   box-sizing: border-box;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: background-color var(--transition-base, 0.2s ease),
+    border-color var(--transition-base, 0.2s ease),
+    box-shadow var(--transition-base, 0.2s ease);
 }
 
 .wq-composer:focus-within {
-  border-color: var(--accent-info-figma, #3b82f6);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-info-figma, #3b82f6) 25%, transparent),
-    0 4px 20px rgba(15, 23, 42, 0.08);
+  border-color: var(--accent-info-figma, var(--border-hover));
+  box-shadow: 0 0 0 2px var(--accent-primary-glow, rgba(0, 132, 255, 0.25)), var(--shadow-sm);
 }
 
 .dark-mode .wq-composer {
-  background: #1e293b;
-  border-color: #334155;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  background: var(--bg-primary, #1e293b);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.dark-mode .wq-composer:focus-within {
+  border-color: var(--accent-info-figma, var(--border-hover));
+  box-shadow: 0 0 0 2px var(--accent-primary-glow, rgba(0, 132, 255, 0.25)), var(--shadow-sm);
+}
+
+.wq-composer--minimal-toolbar .wq-composer__bar {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wq-composer__left--minimal-attach {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  gap: var(--spacing-xs);
+}
+
+.wq-composer__response-mode {
+  flex-shrink: 0;
+  height: 2.25rem;
+  padding: 0 1.5rem 0 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  font-family: var(--font-family-base, inherit);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M2.5 4.5L6 8l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.wq-composer__response-mode:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.wq-composer__status-footer {
+  padding: 0 var(--spacing-md) var(--spacing-xs);
+  font-size: var(--font-size-xs, 12px);
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.wq-composer__status-footer p {
+  margin: 0;
+}
+
+/* 클래식 + 버튼에 가깝게: 원형·은은한 배경 */
+.wq-composer__left--minimal-attach .wq-composer__icon-btn {
+  border-radius: var(--radius-full);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.wq-composer__left--minimal-attach .wq-composer__icon-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  box-shadow: none;
+}
+
+.dark-mode .wq-composer__left--minimal-attach .wq-composer__icon-btn {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .wq-composer__input {
@@ -33,11 +106,12 @@
   min-width: 0;
   box-sizing: border-box;
   margin: 0;
-  padding: 14px 16px 8px;
-  font-size: 1rem;
-  line-height: 1.6;
-  font-family: inherit;
-  color: var(--text-primary, #0f172a);
+  /* `.input-wrapper`와 동일한 호흡 — 상·좌우 여유 */
+  padding: var(--spacing-lg) var(--spacing-md) var(--spacing-sm);
+  font-size: var(--font-size-base, 1rem);
+  line-height: var(--line-height-relaxed, 1.6);
+  font-family: var(--font-family-base, inherit);
+  color: var(--text-primary);
   background: transparent;
   border: none;
   resize: none;
@@ -46,18 +120,44 @@
   overflow-y: auto;
   overflow-x: hidden;
   transition: height 0.1s ease;
+  caret-color: var(--text-primary);
+}
+
+/* 네이티브 삽입 커서 깜빡임 — caret-animation 지원 브라우저(Chromium·Safari 최신 등) */
+@supports (caret-animation: auto) {
+  @media (prefers-reduced-motion: no-preference) {
+    .wq-composer__input {
+      caret-animation: auto;
+    }
+  }
 }
 
 .wq-composer__input::placeholder {
-  color: var(--text-secondary, #94a3b8);
+  color: var(--text-secondary);
+  opacity: 1;
 }
 
-.wq-composer__input:focus {
+.wq-composer__input:focus,
+.wq-composer__input:focus-visible {
   outline: none;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+}
+
+/* 포커스 링은 .wq-composer:focus-within 한 겹만 — 내부 textarea는 강조 없음 */
+.wq-composer:focus-within .wq-composer__input,
+.wq-composer:focus-within .wq-composer__input:focus,
+.wq-composer:focus-within .wq-composer__input:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border: none;
+  background: transparent;
 }
 
 .dark-mode .wq-composer__input {
-  color: #f1f5f9;
+  color: var(--text-primary);
+  caret-color: var(--text-primary);
 }
 
 .wq-composer__bar {
@@ -65,16 +165,15 @@
   flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  padding: 8px 12px 10px;
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-md) var(--spacing-md);
   border-top: none;
   background: transparent;
   min-width: 0;
 }
 
 .dark-mode .wq-composer__bar {
-  border-top-color: #334155;
-  background: rgba(15, 23, 42, 0.5);
+  background: transparent;
 }
 
 .wq-composer__left,
@@ -172,35 +271,40 @@
   border-color: transparent;
 }
 
-/* NavLink·button 공통 — 주요 전송/이동 CTA */
+/* NavLink·button 공통 — 검은 필형 「대화」 CTA (참조 UI) */
 .wq-composer__chat-cta {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.45rem 1rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #fff;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1.1rem;
+  min-height: 2.25rem;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--on-accent, #fff);
   text-decoration: none;
-  background: #111827;
+  background: #141718;
   border: none;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  font-family: var(--font-family-base, inherit);
+  transition: background var(--transition-base, 0.2s ease),
+    box-shadow var(--transition-base, 0.2s ease),
+    opacity var(--transition-base, 0.2s ease);
   white-space: nowrap;
   line-height: 1;
 }
 
 .wq-composer__chat-cta:hover {
-  color: #fff;
-  filter: brightness(1.06);
+  color: var(--on-accent, #fff);
+  background: #2a2d2f;
+  filter: none;
 }
 
 .wq-composer__chat-cta:focus-visible {
-  outline: 2px solid #93c5fd;
-  outline-offset: 2px;
+  outline: var(--focus-ring-figma, 2px solid var(--accent-info-figma));
+  outline-offset: var(--focus-ring-offset, 2px);
 }
 
 .wq-composer__chat-cta:disabled,
@@ -327,7 +431,13 @@
   font-size: 12px;
   max-width: 220px;
 }
-.wq-attachment-icon { font-size: 13px; flex-shrink: 0; }
+.wq-attachment-icon {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold, 600);
+  flex-shrink: 0;
+  min-width: 2.5rem;
+  color: var(--text-secondary, #64748b);
+}
 .wq-attachment-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #334155; }
 .wq-attachment-size { color: #94a3b8; flex-shrink: 0; font-size: 11px; }
 .wq-attachment-remove {
@@ -361,11 +471,21 @@
   to   { transform: scale(1.2); opacity: 1; }
 }
 .wq-listening-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   color: #ef4444;
   white-space: nowrap;
   animation: wq-hint-fade 0.3s ease;
   align-self: center;
+}
+.wq-listening-hint__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
 }
 @keyframes wq-hint-fade {
   from { opacity: 0; transform: translateX(-4px); }
@@ -471,4 +591,98 @@
   .wq-snippet-search { background: #0f172a; color: #f1f5f9; border-color: #334155; }
   .wq-snippet-item-title { color: #f1f5f9; }
   .wq-snippet-item:hover { background: #0f172a; }
+}
+
+.wq-composer__structure-chips {
+  margin: 0 12px 4px;
+  padding-bottom: 4px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  min-width: 0;
+}
+
+.wq-composer__status-footer {
+  padding: 0 12px 8px;
+}
+
+.wq-composer__status-footer .genspark-generation-status {
+  margin: 0;
+}
+
+.wq-composer__pipeline-hint {
+  margin: 8px 0 0;
+  font-size: var(--font-size-xs, 12px);
+  color: var(--text-secondary);
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.composer-multi-request-checklist {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.composer-multi-request-checklist__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-secondary, #f8fafc);
+}
+
+.composer-multi-request-checklist__item--active {
+  border-color: var(--accent-info-figma, #3b82f6);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.composer-multi-request-checklist__item--done {
+  opacity: 0.65;
+}
+
+.composer-multi-request-checklist__index {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.composer-multi-request-checklist__item--active .composer-multi-request-checklist__index {
+  background: var(--accent-info-figma, #3b82f6);
+  color: #fff;
+  border-color: transparent;
+}
+
+.composer-multi-request-checklist__text {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-primary, #111827);
+}
+
+.composer-multi-request-checklist__badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-info-figma, #2563eb);
 }

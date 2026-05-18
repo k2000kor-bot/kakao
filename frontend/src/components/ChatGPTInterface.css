@@ -46,6 +46,7 @@
 .chatgpt-interface .main-content > section.input-container.genspark-chat-input-wrap,
 .chatgpt-interface .chat-layout-body > section.input-container.genspark-chat-input-wrap,
 .chatgpt-interface .welcome-screen section.input-container.genspark-chat-input-wrap,
+.chatgpt-interface .chat-main-stage section.input-container.genspark-chat-input-wrap,
 .chatgpt-interface .project-detail-body section.input-container.genspark-chat-input-wrap {
     max-width: 52rem;
     margin-left: auto;
@@ -102,6 +103,77 @@
 .chat-layout-body > .bw-project-tabs,
 .chat-layout-body > .bw-project-guidance-hint {
     flex-shrink: 0;
+}
+
+/* 빈 대화 웰컴: 메시지 영역과 동일하게 세로 유연 채움 */
+.chat-layout-body > .welcome-screen.chat-welcome-root,
+.project-detail-view > .welcome-screen.chat-welcome-root {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* 웰컴·대화 통합 스테이지: 스크롤 영역 + 하단 입력 도크 (위치 점프 방지) */
+.chat-main-stage {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chat-main-stage__scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.chat-main-stage > .input-container,
+.chat-main-stage > section.input-container.genspark-chat-input-wrap,
+.chat-main-stage > .chat-input-dock,
+.chat-main-stage > .bw-page-input-dock {
+    flex-shrink: 0;
+}
+
+.chat-main-stage > .bw-project-guidance-hint,
+.chat-main-stage > .project-sources-input-hint {
+    flex-shrink: 0;
+}
+
+/* 웰컴: 히어로는 스크롤 안, 입력은 하단 고정 — 대화 시작 후와 동일 52rem 도크 */
+.chat-main-stage--welcome .chat-main-stage__scroll.chat-welcome-scroll {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.chat-main-stage--welcome .brainwave-welcome-content {
+    flex: 0 1 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.chat-main-stage--welcome .welcome-content.brainwave-welcome-content {
+    padding: var(--spacing-lg) var(--spacing-md) var(--spacing-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: min(36vh, 280px);
+}
+
+.chat-main-stage--welcome .brainwave-welcome-inner--workspace {
+    max-width: 52rem;
+    margin: 0 auto;
+}
+
+.chat-input-dock--welcome,
+.chat-input-dock--conversation {
+    width: 100%;
 }
 
 /* 메인 콘텐츠 내부: 헤더(고정) + 메시지(스크롤) + 입력 프레임(고정) */
@@ -613,13 +685,38 @@
     padding: var(--spacing-md) var(--spacing-lg);
     border-bottom: var(--border-width) solid var(--border-color);
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: stretch;
     gap: var(--spacing-sm);
     background: var(--bg-primary);
     flex-shrink: 0;
     min-width: 0;
+}
+.brainwave-chat-header__primary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    min-width: 0;
+}
+.brainwave-chat-header__primary .brainwave-chat-header-thread-line,
+.brainwave-chat-header__primary .brainwave-chat-header-title {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+.brainwave-chat-header__primary .brainwave-chat-header-actions {
+    flex: 0 1 auto;
+    justify-content: flex-end;
+}
+.brainwave-chat-header__secondary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    width: 100%;
+    min-width: 0;
+    padding-top: 2px;
+    border-top: 1px solid var(--border-color);
 }
 .brainwave-chat-header-title {
     margin: 0;
@@ -647,9 +744,273 @@
     gap: var(--spacing-sm);
     justify-content: flex-end;
     min-width: 0;
-    flex: 1 1 auto;
 }
 
+/* 프로젝트 상세: 상단 카드에 프로젝트명·탭이 있으므로 채팅 헤더는 한 줄 스레드 제목만 */
+.brainwave-chat-header--in-project {
+    padding-top: var(--spacing-sm);
+    padding-bottom: var(--spacing-sm);
+}
+.brainwave-chat-header-thread-line {
+    margin: 0;
+    min-width: 0;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 대화 헤더 보조 행: 태그 */
+.conv-tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.conv-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px 2px 10px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    border-radius: 999px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    line-height: 1.35;
+}
+.conv-tag-chip-del {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0 2px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary, var(--text-secondary));
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 4px;
+}
+.conv-tag-chip-del:hover {
+    color: var(--accent-error, #c00);
+    background: var(--bg-hover);
+}
+.conv-tag-add-btn {
+    padding: 4px 10px;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    line-height: 1.35;
+    transition:
+        background var(--transition-base),
+        border-color var(--transition-base),
+        color var(--transition-base);
+}
+.conv-tag-add-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+    border-color: var(--accent-info-figma, var(--accent-info));
+}
+.conv-tag-add-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.conv-tag-input {
+    width: 7.5rem;
+    max-width: 40vw;
+    padding: 4px 8px;
+    font-size: var(--font-size-xs);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+.conv-tag-input:focus {
+    outline: none;
+    border-color: var(--accent-info-figma);
+    box-shadow: 0 0 0 2px var(--accent-primary-glow, rgba(0, 132, 255, 0.2));
+}
+.conv-tag-add-confirm,
+.conv-tag-add-cancel {
+    padding: 4px 8px;
+    font-size: var(--font-size-xs);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+.conv-tag-add-confirm:hover,
+.conv-tag-add-cancel:hover {
+    background: var(--bg-hover);
+}
+
+.msg-pinned-banner {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
+.msg-pinned-banner-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    font: inherit;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background var(--transition-base), color var(--transition-base);
+}
+.msg-pinned-banner-toggle:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+.msg-pinned-list {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.msg-pinned-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    font-size: var(--font-size-xs);
+    line-height: 1.4;
+}
+.msg-pinned-role {
+    flex-shrink: 0;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-tertiary, var(--text-secondary));
+}
+.msg-pinned-preview {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+.msg-pinned-unpin {
+    flex-shrink: 0;
+    padding: 0 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary, var(--text-secondary));
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    border-radius: 4px;
+}
+.msg-pinned-unpin:hover {
+    color: var(--accent-error, #c00);
+    background: var(--bg-hover);
+}
+
+/* 스레드 컨텍스트 패널 — 메시지 영역·입력창과 동일 읽기 폭(52rem, GensparkQALayout.css) */
+.bw-thread-context-panel {
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 52rem;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: var(--spacing-sm);
+    box-sizing: border-box;
+    padding: 0 var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    overflow: hidden;
+}
+.bw-thread-context-panel__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+}
+.bw-thread-context-panel__title {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    line-height: 1.35;
+}
+.bw-thread-context-panel__body {
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+.bw-thread-context-panel__hint {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+.bw-thread-context-panel__label {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+}
+.bw-thread-context-panel__textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    line-height: 1.45;
+    resize: vertical;
+    min-height: 4.5rem;
+}
+.bw-thread-context-panel__textarea:focus {
+    outline: none;
+    border-color: var(--accent-info-figma);
+    box-shadow: 0 0 0 2px var(--accent-primary-glow, rgba(0, 132, 255, 0.2));
+}
+.bw-thread-context-panel__files {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+.bw-thread-context-panel__files-meta {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary, var(--text-secondary));
+}
+.bw-thread-context-panel__file-list {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+}
 /* 메인 콘텐츠 (Figma node 7-3 — Chat list + Input dock) */
 .main-content {
     flex: 1;
@@ -787,24 +1148,25 @@
 
 .project-detail-view .project-detail-header {
     flex-shrink: 0;
-    padding: var(--spacing-lg) var(--spacing-xl);
+    padding: var(--spacing-md) var(--spacing-xl);
     border-bottom: 1px solid var(--border-color);
-    /* 프로젝트 목록(stat-card·project-card)과 동일 톤의 단색 배경 */
     background: var(--bg-secondary);
 }
 
+.project-detail-view .project-detail-header .project-detail-header-inner.bw-detail-header-inner,
 .project-detail-view .project-detail-header .bw-detail-header-inner {
-    align-items: flex-start;
+    align-items: center;
     min-width: 0;
     width: 100%;
     gap: var(--spacing-md);
 }
 
+.project-detail-view .project-detail-header .project-detail-header-left.bw-detail-header-left,
 .project-detail-view .project-detail-header .bw-detail-header-left {
-    align-items: flex-start;
+    align-items: center;
     min-width: 0;
     flex: 1 1 auto;
-    gap: var(--spacing-md);
+    gap: 0;
 }
 
 .project-detail-view .project-detail-header-text {
@@ -814,20 +1176,27 @@
 
 .project-detail-view .project-detail-header .bw-detail-header-actions {
     flex-shrink: 0;
-    align-self: flex-start;
+    align-self: center;
 }
 
-.project-detail-view .project-detail-header .bw-detail-header-icon {
-    flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    padding: 0;
+.project-detail-view .project-detail-settings-btn.bw-btn-secondary {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
-    background: var(--accent-info-muted);
-    border: 1px solid var(--accent-info-border, var(--border-color));
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 14px;
     border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+}
+
+.project-detail-view .project-detail-settings-btn.bw-btn-secondary svg {
+    flex-shrink: 0;
+}
+
+.project-detail-view .project-detail-settings-btn__label {
+    line-height: 1.2;
 }
 
 .project-detail-view .project-detail-header .bw-detail-title {
@@ -843,31 +1212,12 @@
 
 .project-detail-view .project-detail-header .bw-detail-desc {
     margin: 0;
-    font-size: 14px;
+    font-size: var(--font-size-sm);
     line-height: 1.5;
     color: var(--text-secondary);
     max-width: min(42rem, 100%);
     overflow-wrap: anywhere;
     word-break: break-word;
-}
-
-.project-detail-view .bw-detail-meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: var(--spacing-md);
-    padding-top: var(--spacing-md);
-    border-top: 1px solid var(--border-color);
-}
-
-.project-detail-view .bw-detail-meta-text {
-    font-size: 12px;
-    color: var(--text-secondary);
-    padding: 5px 12px;
-    background: var(--bg-tertiary);
-    border-radius: 999px;
-    border: 1px solid var(--border-color);
-    line-height: 1.3;
 }
 
 /* 프로젝트 상세 탭 — 세그먼트(대화 / 소스) */
@@ -1002,10 +1352,11 @@
 }
 
 /* 소스 탭: 입력창 위 안내(대화 탭 기능 vs 여기서 전송 가능) */
-.project-detail-view .project-sources-input-hint {
+.project-detail-view .project-sources-input-hint,
+.chat-main-stage > .project-sources-input-hint {
     flex-shrink: 0;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: var(--spacing-sm) var(--spacing-md);
     margin: 0 auto;
@@ -1021,14 +1372,13 @@
     border-bottom: 1px solid var(--border-color);
 }
 
-.project-detail-view .project-sources-input-hint__lead {
-    flex-shrink: 0;
-    line-height: 1.4;
-}
-
-.project-detail-view .project-sources-input-hint__text {
-    flex: 1 1 12rem;
+.project-detail-view .project-sources-input-hint__text,
+.chat-main-stage > .project-sources-input-hint__text {
+    flex: 1 1 auto;
     min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .project-detail-view .project-sources-input-hint strong {
@@ -1436,6 +1786,9 @@
     margin: 0 0 var(--spacing-sm) 0;
     font-size: var(--font-size-xs);
     color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .bw-project-tabs {
     display: flex;
@@ -1563,6 +1916,9 @@
 }
 .project-sources-item-icon {
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: var(--accent-info);
 }
 .project-sources-item-name {
@@ -1576,6 +1932,32 @@
     flex-shrink: 0;
     color: var(--text-tertiary);
     font-size: var(--font-size-xs);
+}
+.project-sources-item-remove {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xs);
+    margin: calc(-1 * var(--spacing-xs));
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+}
+.project-sources-item-remove:hover:not(:disabled) {
+    color: var(--accent-danger, #c53030);
+    background: var(--bg-hover);
+}
+.project-sources-item-remove:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.project-sources-uploading {
+    margin: 0 0 var(--spacing-md) 0;
+    font-size: var(--font-size-sm);
+    color: var(--accent-info);
 }
 .project-sources-empty-wrap {
     margin-top: var(--spacing-lg);
@@ -1610,14 +1992,21 @@
 
 .suggested-questions-grid {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: var(--spacing-sm);
-    justify-content: center;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    max-width: 100%;
 }
 
 .suggested-question-chip {
     padding: var(--spacing-sm) var(--spacing-md);
     font-size: var(--font-size-sm);
+    flex-shrink: 0;
+    white-space: nowrap;
     border: var(--border-width) solid var(--accent-info-border);
     border-radius: var(--radius-lg);
     background: var(--accent-info-muted);
@@ -1974,6 +2363,69 @@
     flex-direction: column;
     align-items: center;
 }
+
+/* Genspark 입력 도크: 상단 고급 옵션·첨부·컴포저를 동일 52rem 컬럼에 정렬 */
+.chatgpt-interface section.input-container.genspark-chat-input-wrap {
+    align-items: stretch;
+}
+
+.chat-input-dock-inner {
+    width: 100%;
+    max-width: 52rem;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.chat-input-dock-inner > .generation-advanced-options {
+    width: 100%;
+    min-width: 0;
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--bg-secondary);
+    overflow: hidden;
+}
+
+.chat-input-dock-inner > .generation-advanced-options[open] {
+    margin-bottom: 0;
+}
+
+.chat-input-dock-inner > .brainwave-quick-suggestions {
+    width: 100%;
+    border: var(--border-width) solid var(--border-color);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: none;
+    background: var(--bg-secondary);
+}
+
+.chat-input-dock-inner > .brainwave-quick-suggestions + .wq-composer,
+.chat-input-dock-inner > .conversation-graph-chat-attached-file + .wq-composer,
+.chat-input-dock-inner > .conversation-graph-chat-handoff-banner + .wq-composer {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.chat-input-dock-inner > .conversation-graph-chat-attached-file,
+.chat-input-dock-inner > .conversation-graph-chat-handoff-banner,
+.chat-input-dock-inner > .wq-composer {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.genspark-chat-input-wrap > .bw-input-dock-disclaimer {
+    width: 100%;
+    max-width: 52rem;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
 .input-container .input-wrapper,
 .input-container .bw-shared-input,
 .input-container form {
@@ -1990,11 +2442,13 @@
 .chatgpt-interface .main-content > section.input-container.genspark-chat-input-wrap,
 .chatgpt-interface .chat-layout-body > section.input-container.genspark-chat-input-wrap,
 .chatgpt-interface .welcome-screen section.input-container.genspark-chat-input-wrap,
+.chatgpt-interface .chat-main-stage section.input-container.genspark-chat-input-wrap,
 .chatgpt-interface .project-detail-body section.input-container.genspark-chat-input-wrap {
     padding-bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom, 0px));
 }
 
-.chatgpt-interface .welcome-screen.brainwave-welcome--minimal section.input-container.genspark-chat-input-wrap {
+.chatgpt-interface .welcome-screen.brainwave-welcome--minimal section.input-container.genspark-chat-input-wrap,
+.chatgpt-interface .chat-main-stage--welcome section.input-container.genspark-chat-input-wrap {
     padding-bottom: calc(var(--spacing-xl) + env(safe-area-inset-bottom, 0px));
 }
 
@@ -2038,11 +2492,13 @@
     box-shadow: var(--shadow-sm);
     transition: background-color var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
 }
-/* 입력창·+ 버튼 가시성 보장 */
+/* 입력창·+ 버튼 가시성 보장 (내부 필드는 투명 — 포커스 링은 wrapper 한 겹만) */
 .input-wrapper.bw-composer .message-input,
 .input-wrapper.bw-composer .bw-composer-field {
     color: var(--text-primary);
-    background: var(--bg-primary);
+    background: transparent;
+    border: none;
+    box-shadow: none;
 }
 .input-wrapper.bw-composer .input-icon-btn,
 .input-wrapper.bw-composer .bw-composer-add {
@@ -2443,10 +2899,34 @@
     background: var(--bg-hover);
 }
 
-/* Brainwave Figma: 입력 포커스 시 Primary Blue 링 */
+/* Brainwave Figma: 입력 포커스 시 Primary Blue 링 (바깥 wrapper만) */
 .input-wrapper:focus-within {
     border-color: var(--accent-info-figma);
     box-shadow: var(--shadow-input-figma);
+}
+
+/* 내부 textarea/필드는 이중 하이라이트 없음 */
+.input-wrapper:focus-within .message-input,
+.input-wrapper:focus-within .message-input:focus,
+.input-wrapper:focus-within .message-input:focus-visible,
+.input-wrapper:focus-within .bw-composer-field,
+.input-wrapper:focus-within .bw-composer-field:focus,
+.input-wrapper:focus-within .bw-composer-field:focus-visible,
+.input-wrapper:focus-within .bw-shared-input-field,
+.input-wrapper:focus-within .bw-shared-input-field:focus,
+.input-wrapper:focus-within .bw-shared-input-field:focus-visible,
+.input-wrapper.bw-composer:focus-within .message-input,
+.input-wrapper.bw-composer:focus-within .bw-composer-field,
+.bw-page-input-dock .input-wrapper.bw-shared-input:focus-within .bw-shared-input-field,
+.bw-page-input-dock .input-wrapper.bw-shared-input.bw-composer-genspark:focus-within .bw-shared-input-inner,
+.bw-page-input-dock .input-wrapper.bw-shared-input.bw-composer-genspark:focus-within .bw-shared-input-field,
+.wq-composer:focus-within .wq-composer__input,
+.wq-composer:focus-within .wq-composer__input:focus,
+.wq-composer:focus-within .wq-composer__input:focus-visible {
+    outline: none;
+    box-shadow: none;
+    border: none;
+    background: transparent;
 }
 
 .message-input {
@@ -2461,6 +2941,15 @@
     overflow-y: auto;
     font-family: inherit;
     line-height: var(--line-height-normal);
+    caret-color: var(--text-primary);
+}
+
+@supports (caret-animation: auto) {
+    @media (prefers-reduced-motion: no-preference) {
+        .message-input {
+            caret-animation: auto;
+        }
+    }
 }
 
 .message-input:focus {
@@ -2660,6 +3149,41 @@
     min-height: 0;
 }
 
+/* 빈 대화: 웰컴 스크롤 영역 + 입력창을 같은 52rem 컬럼에 두고, 상단부터 쌓기(입력창과 한 흐름) */
+.chat-welcome-root {
+    min-height: 0;
+}
+.chat-welcome-with-input {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.chat-welcome-scroll {
+    width: 100%;
+}
+/* 하단 면책 문구와 겹치는 한 줄 안내는 숨김 */
+.chat-welcome-with-input .brainwave-welcome-promo-hint {
+    display: none;
+}
+.chat-welcome-with-input .brainwave-welcome-content {
+    flex: 0 1 auto;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: var(--spacing-lg) var(--spacing-md) var(--spacing-sm);
+}
+.chat-welcome-with-input .brainwave-welcome-inner--workspace {
+    max-width: 100%;
+}
+.chat-welcome-with-input .brainwave-welcome--minimal .brainwave-welcome-inner {
+    max-width: 100%;
+}
+.chat-welcome-with-input .welcome-workspace-panel--compact {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--spacing-xs) 0 var(--spacing-md);
+}
+
 .brainwave-welcome--minimal .brainwave-welcome-content {
     flex: 1;
     display: flex;
@@ -2675,10 +3199,16 @@
 
 .brainwave-welcome-quick-btns {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: var(--spacing-sm);
-    justify-content: center;
+    justify-content: flex-start;
     margin-top: var(--spacing-md);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    max-width: 100%;
+    padding-bottom: 2px;
 }
 
 .brainwave-welcome--minimal .brainwave-welcome-headline {
@@ -4015,11 +4545,7 @@
     outline: none;
 }
 
-/* 입력 영역 포커스 시 wrapper 강조 (접근성·포커스 링) */
-.input-wrapper:focus-within {
-    border-color: var(--accent-info-figma, var(--border-hover));
-    box-shadow: 0 0 0 2px var(--accent-primary-glow, rgba(0, 132, 255, 0.25)), var(--shadow-sm);
-}
+/* 입력 영역 포커스 시 wrapper 강조 (접근성·포커스 링 — 내부 필드는 위 규칙으로 제외) */
 .input-wrapper.bw-composer:focus-within {
     border-color: var(--accent-info-figma, var(--border-hover));
     box-shadow: 0 0 0 2px var(--accent-primary-glow, rgba(0, 132, 255, 0.25)), var(--shadow-sm);
@@ -4758,10 +5284,14 @@
 
 .brainwave-style-bar {
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
     border-bottom: var(--border-width) solid var(--border-color);
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-width: 0;
 }
 
 .brainwave-style-trigger {
@@ -4862,19 +5392,26 @@
     outline-offset: var(--focus-ring-offset);
 }
 
-/* 빠른 질문 제안 */
+/* 빠른 질문 제안 — 입력창 위 한 줄(넘치면 가로 스크롤) */
 .brainwave-quick-suggestions {
     display: flex;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
     border-bottom: var(--border-width) solid var(--border-color);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    min-width: 0;
 }
 
 .brainwave-quick-suggestions-label {
     font-size: var(--font-size-xs);
     color: var(--text-secondary);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .brainwave-quick-suggestion-btn {
@@ -4886,6 +5423,8 @@
     color: var(--accent-info);
     cursor: pointer;
     transition: background var(--transition-base), border-color var(--transition-base);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .brainwave-quick-suggestion-btn:hover {
@@ -4900,24 +5439,34 @@
 
 .generation-preset-bar {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
     border-bottom: var(--border-width) solid var(--border-color);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    min-width: 0;
 }
 
 .generation-variation-bar {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
     border-bottom: var(--border-width) solid var(--border-color);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    min-width: 0;
 }
 
 .generation-advanced-options {
-    border-bottom: var(--border-width) solid var(--border-color);
+    border-bottom: none;
 }
 
 .generation-advanced-summary {
@@ -4927,6 +5476,9 @@
     font-size: var(--font-size-xs);
     color: var(--text-secondary);
     user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .generation-advanced-summary::-webkit-details-marker {
@@ -4939,8 +5491,10 @@
 
 .generation-style-version-list {
     display: inline-flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: var(--spacing-xs);
+    overflow-x: auto;
+    max-width: 100%;
 }
 
 .generation-style-version-item {
@@ -4973,6 +5527,8 @@
 .generation-preset-label {
     font-size: var(--font-size-xs);
     color: var(--text-secondary);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .generation-preset-btn {
@@ -4984,6 +5540,8 @@
     font-size: var(--font-size-xs);
     cursor: pointer;
     transition: background var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .generation-preset-btn:hover {
@@ -5003,9 +5561,11 @@
 }
 
 .generation-preset-hint {
-    margin-left: auto;
+    margin-left: var(--spacing-sm);
     font-size: var(--font-size-xs);
     color: var(--text-tertiary);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 /* 스트리밍 중지 버튼 */

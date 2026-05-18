@@ -9,6 +9,54 @@ on:
   workflow_dispatch:
 
 jobs:
+  composer-pipeline-e2e:
+    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    name: 컴포저 파이프라인 E2E (Chromium)
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Chromium
+      run: npx playwright install --with-deps chromium
+
+    - name: Composer pipeline E2E (/agents + /chat)
+      run: npm run test:e2e:composer-pipeline:ci:all
+      env:
+        CI: true
+
+  conversation-graph-e2e:
+    timeout-minutes: 35
+    runs-on: ubuntu-latest
+    name: 대화 관계도 E2E (Chromium)
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Chromium
+      run: npx playwright install --with-deps chromium
+
+    - name: Conversation graph E2E
+      run: npm run test:e2e:conversation-graph:ci
+      env:
+        CI: true
+
   e2e-tests:
     timeout-minutes: 60
     runs-on: ubuntu-latest

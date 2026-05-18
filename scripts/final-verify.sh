@@ -62,5 +62,16 @@ else
   exit 1
 fi
 
+# 6. 컴포저 다중 요청·순차 API Jest (백엔드 불필요)
+echo ""
+echo "--- 6. 컴포저 파이프라인 Jest (verify:composer-pipeline) ---"
+if npm run verify:composer-pipeline; then
+  echo "  OK verify:composer-pipeline"
+else
+  echo "  FAIL verify:composer-pipeline"
+  exit 1
+fi
+
 echo ""
 echo "최종 검증 완료."
+echo "권장(별도): npm run test:sidebar-context · verify:conversation-graph:unit · E2E: test:e2e:composer-pipeline:all · verify:conversation-graph (Dev 서버)"

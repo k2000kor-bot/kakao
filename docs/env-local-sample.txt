@@ -8,3 +8,10 @@
 
 # API를 프록시 대신 직접 지정 (비우면 package.json 의 proxy 로 /api → localhost:5002)
 # REACT_APP_API_URL=http://localhost:5002
+
+# 컴포저 다중 요청 — 항목별 순차 API (기본: 단일 API + UI만 순차 추정)
+# REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST=true
+# 위와 함께 SSE 항목별 순차(메인 전송·재생성·편집 공통)
+# REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST_STREAM=true
+# 항목별 multiStepResponseGenerator (순차 API보다 우선순위 낮음, 스트리밍 우회·비스트리밍)
+# REACT_APP_COMPOSER_MULTI_STEP_MULTI_REQUEST=true

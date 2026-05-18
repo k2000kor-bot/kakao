@@ -3,10 +3,32 @@ import { flushSync } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { projectService } from '../services/projectService';
+import type { ProjectFile, ProjectLearningSource } from '../types/project';
 import projectShareService from '../services/projectShareService';
 import LoadingSkeleton from './LoadingSkeleton';
 import { WelcomeWorkspacePanel } from './WelcomeWorkspacePanel';
-import { WorkspaceQueryComposer } from './WorkspaceQueryComposer';
+import { ChatInputDock } from './ChatInputDock';
+import {
+  WorkspaceQueryComposer,
+  type ComposerResponseModeUi,
+  type WorkspaceQueryComposerHandle,
+} from './WorkspaceQueryComposer';
+import { readComposerAttachmentsForSend } from '../utils/composerAttachmentPayload';
+import { buildComposerMultiRequestProgressState } from '../utils/composerMultiRequestProgress';
+import {
+    type SequentialMultiRequestPriorAnswer,
+} from '../utils/composerSequentialMultiRequest';
+import {
+    buildSequentialMultiRequestItemContext,
+    runComposerSequentialMultiRequestStream,
+} from '../utils/runComposerSequentialMultiRequestStream';
+import { runComposerSequentialMultiRequestNonStream } from '../utils/runComposerSequentialMultiRequestNonStream';
+import { runComposerMultiStepMultiRequest } from '../utils/runComposerMultiStepMultiRequest';
+import {
+    createComposerSequentialItemOutboundBuilder,
+    getComposerSequentialSendFlags,
+} from '../utils/composerSequentialSend';
+import { ComposerMultiRequestChecklist } from './ComposerMultiRequestChecklist';
 import { errorLogger } from '../utils/errorLogger';
 import {
     newConversationDeepseekDefaults,
@@ -21,21 +43,29 @@ import {
 import {
     AGENTS_PATH,
     AGENTS_QUERY_PARAM_ID,
-    AUTOMATION_PATH,
     BILLING_PATH,
     DOCS_PATH,
     INTEGRATIONS_PATH,
     MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY,
     MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY,
+    CONVERSATION_GRAPH_CHAT_AUTOSEND_STATE_KEY,
+    CONVERSATION_GRAPH_CHAT_CONTEXT_STATE_KEY,
+    CONVERSATION_GRAPH_CHAT_DRAFT_STATE_KEY,
+    CONVERSATION_GRAPH_PATH,
     navigationConfig,
     SETTINGS_PATH,
-    VOICE_GENERATION_PATH,
 } from '../config/routes';
 import { getStandaloneChatPath, isGensparkPrimaryExperience, isMarketingDraftEligiblePath, isStandaloneChatPath } from '../config/uiPreferences';
+import { mergeConversationGraphCreateIntentIntoChatContext } from '../views/conversationGraphChatContextEnhancer';
+import { GRAPH_ANSWER_CONTEXT_FLAG } from '../views/conversationGraphAnswerGeneration';
+import { isCreateGraphAnswerRequest } from '../views/conversationGraphAnswerIntent';
+import { buildConversationGraphPasteNavState } from '../views/conversationGraphNavigateHandoff';
 import { isStreamingSupported, streamChatMessage } from '../utils/streamingClient';
 import { analyzeGuidelines, getGuidelineQualityTrend, parseGuideline } from '../utils/guidelineQuality';
 import {
     buildFeatureContextFromMessage,
+    buildMergedFeatureContextFromInputAndAttachments,
+    buildKoreanProfileSourceStringForChat,
     extractResponseContent,
     extractPipelineFollowUpsFromChatResponse,
     extractPipelineMessageExtrasFromChatResponse,
@@ -56,7 +86,6 @@ import {
     CONCISE_CONVERSATION_TITLE_MAX_LEN,
     getConciseConversationTitleFromUserInput,
     conversationListTitleFromUserMessage,
-    isGenericConversationListTitle,
     resolveListTitleAfterAssistantReply,
     isAssistantGenerationPlaceholder,
     isAssistantGenerationStepUi,
@@ -79,6 +108,7 @@ import {
     runAssistantNonStreamPostResponsePhases,
     assistantGensparkStepUiFromUserMessage,
     userMessageHasAttachmentChatHint,
+    getComposerGenerationCaption,
     type AssistantGenerationPhase,
 } from '../utils/chatInputUtils';
 import {
@@ -109,7 +139,7 @@ import {
     containsHangul,
     extractPriorTurnsForKoContext,
 } from '../utils/koreanUnderstandingLayer';
-import { IconPlus, IconSend, IconStop, IconUpload, IconShare, IconEdit, IconFile } from './Icons/BrainwaveIcons';
+import { IconUpload, IconShare, IconEdit, IconFile, IconSettings, IconTrash } from './Icons/BrainwaveIcons';
 import advancedAPIService from '../services/advancedAPIService';
 import { AVAILABLE_CAPABILITIES_HINT, ADAPT_ANSWER_TO_REQUEST_INSTRUCTION } from '../services/generationPromptBuilder';
 import {
@@ -129,8 +159,9 @@ import { TEST_IDS } from '../constants/testIds';
 import {
   WORKSPACE_CHAT_EMPTY_THREAD_PLACEHOLDER,
   WORKSPACE_TAGLINE_QUERY_SNIPPET,
+  WORKSPACE_WELCOME_SUGGESTION_CHIPS,
 } from '../constants/workspaceHomeCopy';
-import { SAMPLE_COLUMN_USER_PROMPT, SAMPLE_COLUMN_ASSISTANT_CONTENT, COLUMN_QUALITY_INSTRUCTION } from '../constants/sampleColumnResult';
+import { COLUMN_QUALITY_INSTRUCTION } from '../constants/sampleColumnResult';
 import { showToast } from '../utils/toast';
 import {
     DEFAULT_CHAT_POST_AXIOS_OPTIONS,
@@ -144,10 +175,10 @@ import {
     CHATGPT_PROJECTS_STORAGE_KEY,
     CHATGPT_SHOW_TIMESTAMPS_STORAGE_KEY,
     CHATGPT_THEME_STORAGE_KEY,
+    SIDEBAR_CHATS_UPDATED_EVENT,
 } from '../services/chatGptUiStorageKeys';
+import { notifyLocalChatConversationsMutated } from '../services/chatgptConversationsLocalNotify';
 import './ChatGPTInterface.css';
-
-type ComposerResponseModeUi = 'auto' | 'concise' | 'detailed';
 
 function readInitialComposerResponseMode(): ComposerResponseModeUi {
     try {
@@ -587,6 +618,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const prevConversationIdRef = useRef<string | null>(null);
     /** 루트 워크스페이스에서 넘긴 질의 초안을 입력창에 한 번만 반영 */
     const appliedMarketingComposerDraftRef = useRef(false);
+    /** 대화 관계도 → 독립 대화 handoff 시 1회 병합할 분석 context */
+    const pendingConversationGraphContextRef = useRef<Record<string, unknown> | null>(null);
     /** 마케팅 홈 자동 전송 — `sendMessage`는 아래에 선언되므로 effect에서는 ref로 호출 */
     const sendMessageRef = useRef<(overrideText?: string) => Promise<void>>(async () => {});
     const threadContextFilesInputRef = useRef<HTMLInputElement>(null);
@@ -597,7 +630,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     // 대화 태그 관리
     const [convTagsOpen, setConvTagsOpen] = useState(false);
     const [convTagInput, setConvTagInput] = useState('');
-    const [convTagFilter, setConvTagFilter] = useState<string | null>(null);
+    const [_convTagFilter, _setConvTagFilter] = useState<string | null>(null);
     /** useEffect 의존성에 객체 대신 넣기 위한 원시값 (React 19 경고·replace 루프 방지) */
     const currentConversationId = currentConversation?.id;
     const currentConversationProjectId = currentConversation?.projectId;
@@ -610,6 +643,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const [showGoogleDriveImportModal, setShowGoogleDriveImportModal] = useState(false);
     /** NotebookLLM 출처 패널 외부 갱신(Drive 수동 가져오기 등) */
     const [notebookSourcesRefreshToken, setNotebookSourcesRefreshToken] = useState(0);
+    const [sourceFilesUploading, setSourceFilesUploading] = useState(false);
     const [projectContentTab, setProjectContentTab] = useState<'chat' | 'sources'>('chat');
     const [sourceSortOrder, setSourceSortOrder] = useState<'recent' | 'oldest'>('recent');
     const [sourceFilter] = useState<'all'>('all');
@@ -621,14 +655,16 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     /** [1] 상단 통합 검색 — 대화·프로젝트 동시 필터 (AI Workspace Minimal UI) */
     const [sidebarUnifiedSearch, _setSidebarUnifiedSearch] = useState('');
     const [viewMode, setViewMode] = useState<'chat' | 'notebook'>('chat');
-    const [llmStatusSummary, setLlmStatusSummary] = useState<string | null>(null);
+    const [_llmStatusSummary, setLlmStatusSummary] = useState<string | null>(null);
     const [showStructuredPreview, setShowStructuredPreview] = useState(false);
-    const [structuredPreviewPlacement, setStructuredPreviewPlacement] = useState<'above' | 'below'>('above');
+    const [_structuredPreviewPlacement, setStructuredPreviewPlacement] = useState<'above' | 'below'>('above');
     const [structuredInputAssistEnabled, setStructuredInputAssistEnabled] = useState(true);
     const [useStreaming] = useState<boolean>(true);
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
     /** 전송 직후 입력창이 비워져도 로딩·컴포저 단계 UI가 직전 질의 기준을 유지하도록 저장 */
     const [lastOutboundUserTextForStepUi, setLastOutboundUserTextForStepUi] = useState('');
+    /** `REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST` — 항목별 순차 API 진행 인덱스(체크리스트 동기화) */
+    const [composerMultiRequestLiveIndex, setComposerMultiRequestLiveIndex] = useState<number | null>(null);
     /** 스레드 전환 시 lastOutbound 초기화용 — 첫 id 부여(null→id)는 제외 */
     const lastComposerStepUiConversationIdRef = useRef<string | undefined>(undefined);
     /** 전송 직후 한 커밋에서 대화 id가 바뀌면(예: 포크) 단계 UI 초기화 effect가 lastOutbound를 지우지 않도록 */
@@ -872,10 +908,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     // 키보드 단축키 도움말
     const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
     // 인라인 메시지 검색
-    const [msgSearchOpen, setMsgSearchOpen] = useState(false);
-    const [msgSearchQuery, setMsgSearchQuery] = useState('');
-    const [msgSearchIdx, setMsgSearchIdx] = useState(0);
-    const msgSearchInputRef = useRef<HTMLInputElement>(null);
+    const [_msgSearchOpen, _setMsgSearchOpen] = useState(false);
+    const [_msgSearchQuery, _setMsgSearchQuery] = useState('');
+    const [_msgSearchIdx, _setMsgSearchIdx] = useState(0);
+    const _msgSearchInputRef = useRef<HTMLInputElement>(null);
     // 대화 정렬
     type SortOption = 'recent' | 'name' | 'messages';
     const [sortOption, _setSortOption] = useState<SortOption>('recent');
@@ -890,7 +926,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const [collapsedMessages, setCollapsedMessages] = useState<Set<string>>(new Set());
     // 응답 시간 측정
     const [responseStartTime, setResponseStartTime] = useState<number | null>(null);
-    const [lastResponseTime, setLastResponseTime] = useState<number | null>(null);
     const [streamingElapsedSec, setStreamingElapsedSec] = useState(0);
     // 네트워크 상태 (navigator.onLine + 백엔드 도달 여부)
     const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -899,6 +934,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const [_storageUsage, setStorageUsage] = useState<{ used: number; total: number } | null>(null);
     const speechSynthRef = useRef<SpeechSynthesisUtterance | null>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const composerAttachRef = useRef<WorkspaceQueryComposerHandle>(null);
+    const [composerPendingAttachCount, setComposerPendingAttachCount] = useState(0);
     const streamingRafRef = useRef<number | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const apiUnreachableBannerRef = useRef<HTMLDivElement>(null);
@@ -923,7 +960,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     /** 공동입력창 Auto 드롭다운: auto=enhanced, concise=basic, detailed=ultimate. localStorage 복원 */
     const [composerResponseMode, setComposerResponseMode] = useState<ComposerResponseModeUi>(readInitialComposerResponseMode);
     const [attachedImageAnalysis, setAttachedImageAnalysis] = useState<string | null>(null);
-    const [imageAnalysisLoading, setImageAnalysisLoading] = useState(false);
+    const [_imageAnalysisLoading, setImageAnalysisLoading] = useState(false);
     const [attachedConversationFile, setAttachedConversationFile] = useState<File | null>(null);
     /** Auto 드롭다운 → API quality: auto→enhanced, concise→basic, detailed→ultimate */
     const composerQuality = composerResponseMode === 'concise' ? 'basic' : composerResponseMode === 'detailed' ? 'ultimate' : 'enhanced';
@@ -954,49 +991,26 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         return null;
     }, [currentConversation?.messages, isStreaming, isLoading, streamingElapsedSec]);
 
-    /**
-     * 입력창 하단 5단계 진행 표시: `/agents?id=` 세션뿐 아니라
-     * `pipelineBenchmarkPacingFromChatContext`와 동일 조건(웹검색·자료 활용·프로젝트 대화 등)에서도 표시해
-     * 긴 생성 중에도 입력창 근처에서 단계가 보이게 함.
-     */
-    const composerAgentPipelinePhase = useMemo((): AssistantGenerationPhase | null => {
+    /** 입력창 하단 5단계 진행 — 메시지 버블과 동기화된 현재 단계 */
+    const composerInputPipelinePhase = useMemo((): AssistantGenerationPhase | null => {
         if (!isLoading && !isStreaming) return null;
         const msgs = currentConversation?.messages ?? [];
-        const lastUser = [...msgs].reverse().find((m) => m.role === 'user');
-        const userTrim =
-            lastUser && typeof lastUser.content === 'string'
-                ? coerceTrimmedString(lastUser.content, '')
-                : '';
-        const activeFeat = buildFeatureContextFromMessage(userTrim);
-        const composerBenchPacing = pipelineBenchmarkPacingFromChatContext({
-            gensparkRouteAgentId,
-            useInformedOrSearch: !!(activeFeat.enable_web_research || activeFeat.prefer_informed_answer),
-            projectId: currentProject?.id,
-        });
-        const agentRoute = Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', ''));
-        if (!agentRoute && !composerBenchPacing) return null;
-
         const last = msgs[msgs.length - 1];
         if (!last || last.role !== 'assistant') {
             return 'analyze';
         }
-        if (isAssistantGenerationStepUi(last.content)) {
-            const ph = getAssistantGenerationPhase(String(last.content));
+        if (typeof last.content === 'string' && isAssistantGenerationStepUi(last.content)) {
+            const ph = getAssistantGenerationPhase(last.content);
             if (ph && ph !== 'retry') return ph;
             return 'analyze';
         }
         if (isStreaming) {
-            const mapped = assistantPhaseFromPipelineExtrasSlug(last.pipelineExtras?.pipelineGenerationPhase);
-            return mapped ?? 'draft';
+            return (
+                assistantPhaseFromPipelineExtrasSlug(last.pipelineExtras?.pipelineGenerationPhase) ?? 'draft'
+            );
         }
         return 'analyze';
-    }, [
-        gensparkRouteAgentId,
-        isLoading,
-        isStreaming,
-        currentConversation?.messages,
-        currentProject?.id,
-    ]);
+    }, [isLoading, isStreaming, currentConversation?.messages]);
 
     /** `AssistantGensparkBody`와 동일 — 프로젝트에 파일·웹 소스가 있으면 단계 UI 헤드라인을 문서 맥락 톤으로 */
     const pipelineStepDocumentContext = useMemo(
@@ -1021,6 +1035,50 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         });
     }, [isLoading, inputTrimmed, lastOutboundUserTextForStepUi, pipelineStepDocumentContext]);
 
+    const composerGenerationCaption = useMemo(() => {
+        const source =
+            isLoading || isStreaming
+                ? lastOutboundUserTextForStepUi || inputTrimmed
+                : inputTrimmed;
+        return getComposerGenerationCaption(source);
+    }, [isLoading, isStreaming, inputTrimmed, lastOutboundUserTextForStepUi]);
+
+    const composerIdleInputHint =
+        !isLoading && !isStreaming && composerGenerationCaption ? composerGenerationCaption : null;
+
+    const composerMultiRequestProgress = useMemo(() => {
+        if (!isLoading && !isStreaming) return null;
+        const source = lastOutboundUserTextForStepUi || inputTrimmed;
+        const elapsedMs = responseStartTime
+            ? Math.max(0, Date.now() - responseStartTime)
+            : streamingElapsedSec * 1000;
+        const built = buildComposerMultiRequestProgressState(
+            source,
+            composerInputPipelinePhase,
+            elapsedMs,
+        );
+        if (!built) return null;
+        if (composerMultiRequestLiveIndex != null) {
+            return {
+                ...built,
+                activeIndex: Math.min(
+                    built.items.length - 1,
+                    Math.max(0, composerMultiRequestLiveIndex),
+                ),
+            };
+        }
+        return built;
+    }, [
+        isLoading,
+        isStreaming,
+        lastOutboundUserTextForStepUi,
+        inputTrimmed,
+        composerInputPipelinePhase,
+        responseStartTime,
+        streamingElapsedSec,
+        composerMultiRequestLiveIndex,
+    ]);
+
     // 선택한 응답 스타일 저장 (새로고침 후 복원)
     useEffect(() => {
         try {
@@ -1030,12 +1088,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
 
 
-    const handleImageFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !file.type.startsWith('image/')) return;
-        e.target.value = '';
-        setImageAnalysisLoading(true);
-        setAttachedImageAnalysis(null);
+    const analyzeComposerImageFile = useCallback(async (file: File): Promise<string | null> => {
         try {
             const result = await advancedAPIService.analyzeImageFile(file, 'comprehensive');
             if (result.status === 'success' && result.analysis) {
@@ -1054,22 +1107,34 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 if (a.emotion_analysis?.primary_emotion) {
                     parts.push(`감정: ${a.emotion_analysis.primary_emotion}`);
                 }
-                setAttachedImageAnalysis(parts.length ? parts.join('\n') : '이미지 분석 완료');
-            } else {
-                throw new Error(result.message || '이미지 분석 실패');
+                return parts.length ? parts.join('\n') : '이미지 분석 완료';
             }
+            throw new Error(result.message || '이미지 분석 실패');
         } catch (err) {
             errorLogger.error('이미지 분석 실패', err instanceof Error ? err : new Error(String(err)));
-            showToast('이미지 분석 중 오류가 발생했습니다.', 'error');
-        } finally {
-            setImageAnalysisLoading(false);
+            return null;
         }
     }, []);
 
-    const handleConversationFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+        if (!file || !file.type.startsWith('image/')) return;
         e.target.value = '';
+        setImageAnalysisLoading(true);
+        setAttachedImageAnalysis(null);
+        try {
+            const analysis = await analyzeComposerImageFile(file);
+            if (analysis) {
+                setAttachedImageAnalysis(analysis);
+            } else {
+                showToast('이미지 분석 중 오류가 발생했습니다.', 'error');
+            }
+        } finally {
+            setImageAnalysisLoading(false);
+        }
+    }, [analyzeComposerImageFile]);
+
+    const attachConversationTextFile = useCallback((file: File) => {
         const name = (file.name || '').toLowerCase();
         if (!name.endsWith('.txt') && !name.endsWith('.csv')) {
             showToast('대화 파일은 .txt 또는 .csv만 첨부할 수 있습니다.', 'info');
@@ -1082,6 +1147,79 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         setAttachedConversationFile(file);
     }, []);
 
+    const handleConversationFileSelect = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            e.target.value = '';
+            attachConversationTextFile(file);
+        },
+        [attachConversationTextFile],
+    );
+
+    const openConversationGraphHandoff = useCallback(async () => {
+        if (!attachedConversationFile) return;
+        try {
+            const text = await attachedConversationFile.text();
+            navigate(CONVERSATION_GRAPH_PATH, {
+                state: buildConversationGraphPasteNavState(text, true),
+            });
+        } catch {
+            showToast('대화 파일을 읽을 수 없습니다.', 'error');
+        }
+    }, [attachedConversationFile, navigate]);
+
+    const withGraphCreateIntentInChatContext = useCallback(
+        (trimmed: string, base: Record<string, unknown>, conversationFileContent?: string) =>
+            mergeConversationGraphCreateIntentIntoChatContext(trimmed, base, {
+                conversationFileContent,
+                hasGraphHandoffContext:
+                    pendingConversationGraphContextRef.current?.[GRAPH_ANSWER_CONTEXT_FLAG] === true,
+            }),
+        [],
+    );
+
+    const showConversationGraphHandoffBanner = useMemo(() => {
+        const trimmed = coerceTrimmedString(input, '');
+        return Boolean(attachedConversationFile && trimmed && isCreateGraphAnswerRequest(trimmed));
+    }, [attachedConversationFile, input]);
+
+    const conversationGraphAttachedFileEl = attachedConversationFile ? (
+        <div
+            className="conversation-graph-chat-attached-file"
+            data-testid={TEST_IDS.CONVERSATION_GRAPH_CHAT_ATTACHED_FILE}
+            role="status"
+        >
+            <span className="conversation-graph-chat-attached-file__name">{attachedConversationFile.name}</span>
+            <button
+                type="button"
+                className="conversation-graph-chat-attached-file__remove"
+                onClick={() => setAttachedConversationFile(null)}
+                aria-label="대화 파일 첨부 제거"
+            >
+                ×
+            </button>
+        </div>
+    ) : null;
+
+    const conversationGraphHandoffBannerEl = showConversationGraphHandoffBanner ? (
+        <div
+            className="conversation-graph-chat-handoff-banner"
+            data-testid={TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_BANNER}
+        >
+            <p className="conversation-graph-chat-handoff-banner__text bw-detail-meta-text">
+                첨부한 대화로 시각 관계도(족보형·매트릭스)를 만들 수 있습니다.
+            </p>
+            <button
+                type="button"
+                className="bw-btn-secondary conversation-graph-chat-handoff-banner__cta"
+                data-testid={TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_OPEN}
+                onClick={() => void openConversationGraphHandoff()}
+            >
+                관계도 화면에서 만들기
+            </button>
+        </div>
+    ) : null;
 
     const refreshProjects = useCallback(async () => {
         try {
@@ -1196,17 +1334,41 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             return;
         }
         const s = location.state as Record<string, unknown> | null | undefined;
-        const raw = s?.[MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY];
+        const graphCtxRaw = s?.[CONVERSATION_GRAPH_CHAT_CONTEXT_STATE_KEY];
+        if (graphCtxRaw && typeof graphCtxRaw === 'object' && !Array.isArray(graphCtxRaw)) {
+            pendingConversationGraphContextRef.current = graphCtxRaw as Record<string, unknown>;
+        }
+        const raw =
+            s?.[MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY] ?? s?.[CONVERSATION_GRAPH_CHAT_DRAFT_STATE_KEY];
         const draft = typeof raw === 'string' ? coerceTrimmedString(raw, '') : '';
-        if (!draft) return;
+        if (!draft) {
+            if (graphCtxRaw) {
+                const nextCtxOnly: Record<string, unknown> =
+                    s && typeof s === 'object' && !Array.isArray(s) ? { ...s } : {};
+                delete nextCtxOnly[CONVERSATION_GRAPH_CHAT_CONTEXT_STATE_KEY];
+                const restKeys = Object.keys(nextCtxOnly).filter(
+                    (k) => nextCtxOnly[k] !== undefined && nextCtxOnly[k] !== null,
+                );
+                navigate(`${pathname}${location.search || ''}`, {
+                    replace: true,
+                    state: restKeys.length ? nextCtxOnly : undefined,
+                });
+            }
+            return;
+        }
         if (appliedMarketingComposerDraftRef.current) return;
         appliedMarketingComposerDraftRef.current = true;
-        const shouldAutoSend = s?.[MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY] === true;
+        const shouldAutoSend =
+            s?.[MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY] === true ||
+            s?.[CONVERSATION_GRAPH_CHAT_AUTOSEND_STATE_KEY] === true;
         setInput(draft);
         const next: Record<string, unknown> =
             s && typeof s === 'object' && !Array.isArray(s) ? { ...s } : {};
         delete next[MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY];
         delete next[MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY];
+        delete next[CONVERSATION_GRAPH_CHAT_DRAFT_STATE_KEY];
+        delete next[CONVERSATION_GRAPH_CHAT_AUTOSEND_STATE_KEY];
+        delete next[CONVERSATION_GRAPH_CHAT_CONTEXT_STATE_KEY];
         const restKeys = Object.keys(next).filter((k) => next[k] !== undefined && next[k] !== null);
         navigate(`${pathname}${location.search || ''}`, {
             replace: true,
@@ -1367,7 +1529,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 return restored;
                             }),
                         };
-                        return normalizeConversationDeepseekFlagsFromStorage(withDates);
+                        const flags = normalizeConversationDeepseekFlagsFromStorage(conv);
+                        return { ...withDates, ...flags };
                     });
                 setConversations(conversationsWithDates);
             } catch (error) {
@@ -1554,7 +1717,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             })),
         }));
         localStorage.setItem(CHATGPT_CONVERSATIONS_STORAGE_KEY, JSON.stringify(toSave));
-        window.dispatchEvent(new CustomEvent('sidebar-chats-updated'));
+        window.dispatchEvent(new CustomEvent(SIDEBAR_CHATS_UPDATED_EVENT));
     }, [conversations]);
 
     // 메시지 스크롤 (사용자가 아래쪽을 보고 있을 때만 자동 스크롤)
@@ -1747,6 +1910,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
     // 새 대화 시작 (useCallback으로 메모이제이션) — 현재 선택된 프로젝트가 있으면 해당 프로젝트 소속, 없으면 일반 대화
     const startNewConversation = useCallback(() => {
+        pendingConversationGraphContextRef.current = null;
         const newConversation: Conversation = {
             id: `conv-${Date.now()}`,
             title: '새 대화',
@@ -1771,7 +1935,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     })),
                 }));
                 localStorage.setItem(CHATGPT_CONVERSATIONS_STORAGE_KEY, JSON.stringify(toSave));
-                window.dispatchEvent(new CustomEvent('sidebar-chats-updated'));
+                notifyLocalChatConversationsMutated();
             } catch (error) {
                 errorLogger.error('대화 저장 실패', error instanceof Error ? error : new Error(String(error)), {
                     component: 'ChatGPTInterface',
@@ -1874,64 +2038,167 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         }
     }, [projects]);
 
-    // 샘플 결과물(칼럼) 보기: 사용자 질문 + 어시스턴트 칼럼으로 새 대화 생성 후 표시
-    const showSampleColumnResult = useCallback(() => {
-        const now = new Date();
-        const convId = `conv-sample-${Date.now()}`;
-        const userMsg: Message = {
-            id: `msg-${Date.now()}-user`,
-            role: 'user',
-            content: SAMPLE_COLUMN_USER_PROMPT,
-            timestamp: now,
-        };
-        const assistantMsg: Message = {
-            id: `msg-${Date.now()}-assistant`,
-            role: 'assistant',
-            content: SAMPLE_COLUMN_ASSISTANT_CONTENT,
-            timestamp: now,
-        };
-        const sampleConversation: Conversation = {
-            id: convId,
-            title: '칼럼 샘플 결과 (유시민 스타일)',
-            messages: [userMsg, assistantMsg],
-            projectId: currentProject?.id,
-            ...newConversationDeepseekDefaults(),
-            createdAt: now,
-            updatedAt: now,
-        };
-        setConversations((prev) => [sampleConversation, ...prev]);
-        setCurrentConversation(sampleConversation);
-        showToast('샘플 칼럼 결과를 불러왔습니다.', 'success');
-    }, [currentProject?.id]);
+    const mapCurrentProjectFiles = useCallback((): ProjectFile[] => {
+        if (!currentProject) return [];
+        return (currentProject.files ?? []).map((f, idx) => ({
+            id: (f as ProjectFile).id ?? `file-${idx}-${f.name}`,
+            name: f.name,
+            type: ((f.type as ProjectFile['type']) || 'other'),
+            size: f.size ?? 0,
+            uploadedAt: (f as ProjectFile).uploadedAt ?? new Date(),
+        }));
+    }, [currentProject]);
+
+    const mapCurrentProjectWebSources = useCallback((): ProjectLearningSource[] => {
+        if (!currentProject) return [];
+        return (currentProject.webSources ?? []).map((s, idx) => ({
+            id: s.id ?? `web-${idx}-${s.url}`,
+            type: s.type === 'video' ? 'video' : 'document',
+            url: s.url,
+            title: s.title,
+            notebookSourceId: (s as ProjectLearningSource).notebookSourceId,
+            addedAt: s.addedAt instanceof Date ? s.addedAt : new Date(s.addedAt ?? Date.now()),
+        }));
+    }, [currentProject]);
+
+    const applyProjectSourceUpdate = useCallback(
+        (updated: Awaited<ReturnType<typeof projectService.getProject>>) => {
+            if (!updated) return;
+            const withDates = {
+                ...updated,
+                createdAt: safeDate(updated.createdAt),
+                updatedAt: safeDate(updated.updatedAt),
+                files: Array.isArray(updated.files) ? updated.files : [],
+                webSources: Array.isArray(updated.webSources) ? updated.webSources : [],
+            };
+            setProjects((prev) => prev.map((p) => (p.id === updated.id ? withDates : p)));
+            setCurrentProject(withDates);
+            setNotebookSourcesRefreshToken((n) => n + 1);
+            void refreshProjects();
+        },
+        [refreshProjects],
+    );
 
     // 소스 추가 모달: 드래그/업로드한 파일을 현재 프로젝트에 추가
     const handleAddSourceFiles = useCallback(async (files: File[]) => {
-        if (!currentProject?.id || !files.length) return;
+        if (!currentProject?.id || !files.length || sourceFilesUploading) return;
+        setSourceFilesUploading(true);
         try {
-            for (const f of files) {
-                await projectService.uploadProjectFile(currentProject.id, f);
-            }
-            showToast('소스가 추가되었습니다', 'success');
+            const { project: updated, uploadFailedCount } = await projectService.appendProjectSourceFiles(
+                currentProject.id,
+                mapCurrentProjectFiles(),
+                files,
+            );
+            applyProjectSourceUpdate(updated);
             setShowAddSourceModal(false);
-            const refreshed = await projectService.getProject(currentProject.id);
-            if (refreshed) {
-                const withDates = {
-                    ...refreshed,
-                    createdAt: safeDate(refreshed.createdAt),
-                    updatedAt: safeDate(refreshed.updatedAt),
-                    files: Array.isArray(refreshed.files) ? refreshed.files : [],
-                    webSources: Array.isArray(refreshed.webSources) ? refreshed.webSources : [],
-                };
-                setProjects((prev) => prev.map((p) => (p.id === refreshed.id ? withDates : p)));
-                if (currentProject.id === refreshed.id) {
-                    setCurrentProject(withDates);
-                }
+            if (uploadFailedCount > 0 && uploadFailedCount < files.length) {
+                showToast('일부 파일은 서버 업로드에 실패했지만 목록에 반영했습니다.', 'info');
+            } else {
+                showToast('소스가 추가되었습니다', 'success');
             }
         } catch (err) {
             errorLogger.error('소스 업로드 실패', err instanceof Error ? err : new Error(String(err)), { component: 'ChatGPTInterface', action: 'handleAddSourceFiles' });
             showToast('소스 추가에 실패했습니다.', 'error');
+        } finally {
+            setSourceFilesUploading(false);
         }
-    }, [currentProject]);
+    }, [currentProject, sourceFilesUploading, mapCurrentProjectFiles, applyProjectSourceUpdate]);
+
+    const handleRemoveSourceFile = useCallback(
+        async (fileId: string) => {
+            if (!currentProject?.id || sourceFilesUploading) return;
+            setSourceFilesUploading(true);
+            try {
+                const updated = await projectService.removeProjectSourceFile(
+                    currentProject.id,
+                    mapCurrentProjectFiles(),
+                    fileId,
+                );
+                if (updated) {
+                    applyProjectSourceUpdate(updated);
+                    showToast('소스를 목록에서 제거했습니다.', 'success');
+                }
+            } catch (err) {
+                errorLogger.error(
+                    '소스 제거 실패',
+                    err instanceof Error ? err : new Error(String(err)),
+                    { component: 'ChatGPTInterface', action: 'handleRemoveSourceFile' },
+                );
+                showToast('소스 제거에 실패했습니다.', 'error');
+            } finally {
+                setSourceFilesUploading(false);
+            }
+        },
+        [currentProject, sourceFilesUploading, mapCurrentProjectFiles, applyProjectSourceUpdate],
+    );
+
+    const handleAddWebSourceUrl = useCallback(
+        async (rawUrl: string) => {
+            if (!currentProject?.id || sourceFilesUploading) return;
+            const url = coerceTrimmedString(rawUrl, '');
+            if (!url) {
+                showToast('웹 문서 또는 영상 URL을 입력해 주세요.', 'info');
+                return;
+            }
+            setSourceFilesUploading(true);
+            try {
+                const { project: updated, duplicate } = await projectService.appendProjectWebSource(
+                    currentProject.id,
+                    mapCurrentProjectWebSources(),
+                    url,
+                );
+                if (duplicate) {
+                    showToast('이미 등록된 URL입니다.', 'info');
+                    return;
+                }
+            if (updated) {
+                applyProjectSourceUpdate(updated);
+                setShowAddSourceModal(false);
+                showToast('웹 소스가 추가되었습니다', 'success');
+            } else {
+                showToast('웹 소스 추가에 실패했습니다.', 'error');
+            }
+        } catch (err) {
+            errorLogger.error(
+                '웹 소스 추가 실패',
+                    err instanceof Error ? err : new Error(String(err)),
+                    { component: 'ChatGPTInterface', action: 'handleAddWebSourceUrl' },
+                );
+                showToast('웹 소스 추가에 실패했습니다.', 'error');
+            } finally {
+                setSourceFilesUploading(false);
+            }
+        },
+        [currentProject, sourceFilesUploading, mapCurrentProjectWebSources, applyProjectSourceUpdate],
+    );
+
+    const handleRemoveWebSource = useCallback(
+        async (sourceId: string) => {
+            if (!currentProject?.id || sourceFilesUploading) return;
+            setSourceFilesUploading(true);
+            try {
+                const updated = await projectService.removeProjectWebSource(
+                    currentProject.id,
+                    mapCurrentProjectWebSources(),
+                    sourceId,
+                );
+                if (updated) {
+                    applyProjectSourceUpdate(updated);
+                    showToast('웹 소스를 목록에서 제거했습니다.', 'success');
+                }
+            } catch (err) {
+                errorLogger.error(
+                    '웹 소스 제거 실패',
+                    err instanceof Error ? err : new Error(String(err)),
+                    { component: 'ChatGPTInterface', action: 'handleRemoveWebSource' },
+                );
+                showToast('웹 소스 제거에 실패했습니다.', 'error');
+            } finally {
+                setSourceFilesUploading(false);
+            }
+        },
+        [currentProject, sourceFilesUploading, mapCurrentProjectWebSources, applyProjectSourceUpdate],
+    );
 
     // 입력 검증: null=빈값, 그 외=trimmed 텍스트(전송용). 글자 수 제한 없음.
     const validateInput = useCallback((text: string): string | null => {
@@ -2071,7 +2338,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         setCurrentConversation(prev => prev ? { ...prev, tags: (prev.tags ?? []).filter(t => t !== tag) } : prev);
     }, [currentConversation, saveConversationsToStorage]);
 
-    const updateConversationDeepseek = useCallback(
+    const _updateConversationDeepseek = useCallback(
         (
             patch: Partial<
                 Pick<
@@ -2166,7 +2433,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         [currentConversation, updateConversationThread]
     );
 
-    const deepseekEffective = useMemo(
+    const _deepseekEffective = useMemo(
         () => resolveDeepseekFlagsForConversation(currentConversation ?? undefined),
         [currentConversation]
     );
@@ -2175,7 +2442,12 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     // 흐름: (질문/요구) → 검증 → 구조화 프롬프트 → 딥러닝 보강 → 백엔드(CHAT_POST_PATH·CHAT_STREAM_PATH 폴백) → 응답 표시·품질 분석
     // 스트리밍: getChatStreamUrlsForConfigBase 순 → onChunk/onComplete. 비스트리밍: postChatAxiosWithFallback(apiClient) → extractResponseContent
     // overrideText: 엔터/전송 시 전달된 입력값(없으면 input 상태 사용)
-    const canSend = !isLoading && (!!inputTrimmed || !!attachedImageAnalysis || !!attachedConversationFile);
+    const canSend =
+        !isLoading &&
+        (!!inputTrimmed ||
+            !!attachedImageAnalysis ||
+            !!attachedConversationFile ||
+            composerPendingAttachCount > 0);
     const sendMessage = useCallback(async (overrideText?: string) => {
         // 중복 호출 방지: 이미 전송 중이면 무시
         if (isLoading || isSendingRef.current) return;
@@ -2183,9 +2455,13 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         // 전송 시작 표시
         isSendingRef.current = true;
 
+        const pendingComposerFiles = composerAttachRef.current?.getAttachedFiles() ?? [];
+        const pendingAttachNames = pendingComposerFiles.map((f) => f.name);
+
         let textToSend = coerceTrimmedString(overrideText, input);
         const hasConversationFile = !!attachedConversationFile;
-        if (!textToSend && !hasConversationFile) {
+        const hasComposerFiles = pendingComposerFiles.length > 0;
+        if (!textToSend && !hasConversationFile && !hasComposerFiles) {
             isSendingRef.current = false;
             return;
         }
@@ -2199,15 +2475,42 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 return;
             }
             textToSend = validationResult;
-        } else if (hasConversationFile) {
-            textToSend = '첨부한 대화에 대해 요약·관계도 분석을 해 주세요.';
+        } else if (hasConversationFile || hasComposerFiles) {
+            textToSend =
+                '첨부한 파일을 읽고, 핵심 요약·쟁점·권장 조치를 정리해 주세요. (다음 전송에서 원하는 형식·톤을 적어 주시면 그에 맞춥니다.)';
         }
 
-        const trimmedInput: string = textToSend;
-        // 이미지 분석 결과가 있으면 프롬프트에 포함
+        let trimmedInput: string = textToSend;
         let effectiveInput = trimmedInput;
+        let composerFileContent: string | undefined;
+        let composerFileName: string | undefined;
+
+        if (hasComposerFiles) {
+            composerAttachRef.current?.clearAttachedFiles();
+            const read = await readComposerAttachmentsForSend(pendingComposerFiles);
+            if (read.unsupportedNames.length > 0) {
+                showToast(
+                    `다음 파일은 텍스트·이미지로만 보낼 수 있습니다: ${read.unsupportedNames.join(', ')}`,
+                    'info',
+                );
+            }
+            for (const img of read.imageFiles) {
+                setImageAnalysisLoading(true);
+                const analysis = await analyzeComposerImageFile(img);
+                setImageAnalysisLoading(false);
+                if (analysis) {
+                    effectiveInput = `[이미지 첨부: ${img.name}]\n${analysis}\n\n${effectiveInput}`;
+                }
+            }
+            if (read.contextBlocks.length > 0) {
+                effectiveInput = `${read.contextBlocks.join('\n\n')}\n\n${effectiveInput}`;
+            }
+            composerFileContent = read.conversationFileContent;
+            composerFileName = read.conversationFileName;
+        }
+
         if (attachedImageAnalysis) {
-            effectiveInput = `[이미지 분석 결과]\n${attachedImageAnalysis}\n\n[사용자 질문]\n${trimmedInput}`;
+            effectiveInput = `[이미지 분석 결과]\n${attachedImageAnalysis}\n\n[사용자 질문]\n${effectiveInput}`;
             setAttachedImageAnalysis(null);
         }
         // 같은 질문이라도 요청마다 변주 전략을 달리해 답변 다양성을 높임
@@ -2244,10 +2547,14 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
         // 사용자 메시지는 원본 질문만 표시 (프롬프트 지시사항 제외)
         // 백엔드로는 requestMessage(프롬프트 포함)가 전송되지만, 화면에는 원본 질문만 표시
+        const userDisplayContent =
+            pendingAttachNames.length > 0
+                ? `${trimmedInput}\n\n[첨부: ${pendingAttachNames.join(', ')}]`
+                : trimmedInput;
         const userMessage: Message = {
             id: `msg-${Date.now()}`,
             role: 'user',
-            content: trimmedInput, // 원본 질문만 (프롬프트 지시사항 없음)
+            content: userDisplayContent,
             timestamp: new Date(),
         };
 
@@ -2341,49 +2648,15 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             inputValueRef.current = '';
             setIsLoading(true);
             setResponseStartTime(Date.now());
-            setLastResponseTime(null);
         });
 
         if (nextConversationsForSidebarRefresh) {
             saveConversationsToStorage(nextConversationsForSidebarRefresh);
-            window.dispatchEvent(new CustomEvent('sidebar-chats-updated'));
+            notifyLocalChatConversationsMutated();
         }
         
         // conversation 변수를 업데이트된 것으로 교체
         conversation = updatedConversation;
-
-        // 기존 대화 이력을 백엔드에 전달 (최근 20턴)
-        // 메시지 의도에 따른 기능 플래그(웹검색·조사모드 등) 병합
-        const featureCtx = buildFeatureContextFromMessage(trimmedInput);
-        skipClearOutboundStepUiForConversationChangeRef.current = true;
-        setLastOutboundUserTextForStepUi(trimmedInput);
-        window.setTimeout(() => {
-            skipClearOutboundStepUiForConversationChangeRef.current = false;
-        }, 0);
-        {
-            const pipelineScrollBench = pipelineBenchmarkPacingFromChatContext({
-                gensparkRouteAgentId,
-                useInformedOrSearch: !!(featureCtx.enable_web_research || featureCtx.prefer_informed_answer),
-                projectId: currentProject?.id,
-            });
-            if (Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', '')) || pipelineScrollBench) {
-                requestAnimationFrame(() => {
-                    scrollToBottom('auto');
-                });
-            }
-        }
-        const parsedForPipelineTiming = parseQuestionRequirementSections(trimmedInput);
-        const phaseDurationMultiplier = computeAssistantPipelineDurationMultiplier(
-            trimmedInput,
-            {
-                enable_web_research: !!featureCtx.enable_web_research,
-                prefer_informed_answer: !!featureCtx.prefer_informed_answer,
-                multi_request_mode: !!(featureCtx as { multi_request_mode?: boolean }).multi_request_mode,
-            },
-            structuredInputAssistEnabled &&
-                shouldTreatAsStructuredQuestionRequirements(parsedForPipelineTiming),
-            Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', '')),
-        );
 
         // 대화방 재진입 시에도 저장된 대화 스토리 반영 — conversations(로컬 스토리지 동기화) 우선 사용
         const conversationForHistory = conversations.find((c) => c.id === conversation.id);
@@ -2401,8 +2674,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             conversationForHistory ?? conversation
         );
 
-        let conversationFileContent: string | undefined;
-        let conversationFileName: string | undefined;
+        let conversationFileContent: string | undefined = composerFileContent;
+        let conversationFileName: string | undefined = composerFileName;
         if (attachedConversationFile) {
             try {
                 conversationFileContent = await attachedConversationFile.text();
@@ -2415,6 +2688,50 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             }
             setAttachedConversationFile(null);
         }
+
+        /** 입력창 첨부·스레드 첨부까지 포함해 웹검색·자료 활용 등 플래그를 맞춤 (사용자 한 줄만 보면 오인 방지) */
+        const featureCtx = buildMergedFeatureContextFromInputAndAttachments({
+            trimmedUserInput: effectiveInput,
+            conversationFileContent,
+            threadAttachedFileContents: projectCtx?.thread_attached_file_contents as string | undefined,
+        }) as Record<string, unknown>;
+        const koreanSourceForProfile = buildKoreanProfileSourceStringForChat(
+            trimmedInput,
+            conversationFileContent,
+            typeof projectCtx?.thread_attached_file_contents === 'string'
+                ? projectCtx.thread_attached_file_contents
+                : undefined,
+        );
+
+        skipClearOutboundStepUiForConversationChangeRef.current = true;
+        setLastOutboundUserTextForStepUi(trimmedInput);
+        window.setTimeout(() => {
+            skipClearOutboundStepUiForConversationChangeRef.current = false;
+        }, 0);
+        {
+            const pipelineScrollBench = pipelineBenchmarkPacingFromChatContext({
+                gensparkRouteAgentId,
+                useInformedOrSearch: !!(featureCtx.enable_web_research || featureCtx.prefer_informed_answer),
+                projectId: currentProject?.id,
+            });
+            if (Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', '')) || pipelineScrollBench) {
+                requestAnimationFrame(() => {
+                    scrollToBottom('auto');
+                });
+            }
+        }
+        const parsedForPipelineTiming = parseQuestionRequirementSections(effectiveInput);
+        const phaseDurationMultiplier = computeAssistantPipelineDurationMultiplier(
+            trimmedInput,
+            {
+                enable_web_research: !!featureCtx.enable_web_research,
+                prefer_informed_answer: !!featureCtx.prefer_informed_answer,
+                multi_request_mode: !!(featureCtx as { multi_request_mode?: boolean }).multi_request_mode,
+            },
+            structuredInputAssistEnabled &&
+                shouldTreatAsStructuredQuestionRequirements(parsedForPipelineTiming),
+            Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', '')),
+        );
 
         const convForThread = conversationForHistory ?? conversation;
         const { parsedInput, pipelineMerge } = buildUnifiedQaGensparkPipelineContextMerge({
@@ -2460,6 +2777,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         const chatContextWithHistory = {
             ...(advancedMemoryExtension ?? {}),
             ...(projectCtx ?? {}),
+            ...(pendingConversationGraphContextRef.current ?? {}),
             ...pipelineMerge,
             ...featureCtx,
             ...(conversationFileContent !== undefined && {
@@ -2501,7 +2819,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             // 다양한 형식 자동 감지 및 적용 (강제)
             auto_format_detection: true,
             // 한국어 이해·장르·화행 프로필 (다단계 파이프라인 입력 계층, v3 문서)
-            ...(containsHangul(trimmedInput) && (() => {
+            ...(containsHangul(koreanSourceForProfile) && (() => {
                 const prior = extractPriorTurnsForKoContext(
                     updatedMessages.map((m) =>
                         toChatTurnWithPipelineExtras({
@@ -2511,7 +2829,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         })
                     )
                 );
-                const koreanProfile = buildKoreanUnderstandingProfile(trimmedInput, prior);
+                const koreanProfile = buildKoreanUnderstandingProfile(koreanSourceForProfile, prior);
                 const genreControl = buildGenreControlProfile(koreanProfile);
                 
                 // 2단계 검증용 (errorLogger.debug → 개발만, 콘솔은 Verbose에서만 강조 표시)
@@ -2547,9 +2865,15 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             ...(multilayerStyleHint ? { multilayer_style_hint: multilayerStyleHint } : {}),
         };
 
+        const chatContextWithGraphIntent = withGraphCreateIntentInChatContext(
+            trimmedInput,
+            chatContextWithHistory as Record<string, unknown>,
+            conversationFileContent,
+        );
+
         /** `/agents?id=` 세션: 라우트 에이전트 메타가 요청 context에 항상 포함되도록 보강 */
         const chatContextForRequest = mergeGensparkRouteContextIntoRecordIfMissing(
-            chatContextWithHistory as Record<string, unknown>,
+            chatContextWithGraphIntent,
             gensparkRouteAgentId ?? null,
         );
 
@@ -2593,8 +2917,38 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
         let clearAssistantStreamPhases: (() => void) | undefined;
         let clearNonStreamPhases: (() => void) | undefined;
+        const sequentialSendFlags = getComposerSequentialSendFlags(
+            trimmedInput,
+            featureCtx as Record<string, unknown>,
+            isStreamingSupported(),
+        );
+        const sequentialMultiRequestItems = sequentialSendFlags.items;
+        const multiRequestModeActive = sequentialSendFlags.multiRequestModeActive;
+        const buildSequentialItemOutbound = createComposerSequentialItemOutboundBuilder({
+            items: sequentialMultiRequestItems,
+            buildStructuredGenerationPrompt,
+            variationInstruction: enhancedVariationInstruction,
+            styleLearningInstruction,
+            buildMessageToSendForChat,
+            projectContext,
+            onBuildError: (index, dlErr) => {
+                errorLogger.error(
+                    '순차 다중 요청 프롬프트 보강 실패',
+                    dlErr instanceof Error ? dlErr : new Error(String(dlErr)),
+                    {
+                        component: 'ChatGPTInterface',
+                        action: 'sequentialMultiRequestBuildMessage',
+                        itemIndex: index,
+                    },
+                );
+            },
+        });
         try {
-            const shouldStream = useStreaming && isStreamingSupported();
+            const shouldStream =
+                useStreaming &&
+                isStreamingSupported() &&
+                !sequentialSendFlags.bypassStreamForSequentialMultiRequest &&
+                !sequentialSendFlags.bypassStreamForMultiStepMultiRequest;
 
             if (shouldStream) {
                 setIsStreaming(true);
@@ -2795,92 +3149,19 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     return extracted;
                 };
 
-                try {
-                await streamChatMessage(messageToSend, conversation.id, {
-                    signal: abortController.signal,
-                    messagesForScenarioInherit:
-                        scenarioInheritMergeOptionsFromPipelineLikeMessages(updatedMessages)
-                            ?.recentMessagesForScenarioInherit,
-                    mergeApiChatContextOptions: mergeScenarioAndConversationDeepseek(
-                        undefined,
-                        conversation
-                    ),
-                    requestBody: buildComposerStreamChatRequestBody({
-                        quality: effectiveQuality,
-                        conversationId: conversation.id,
-                        context: chatContextForRequest,
-                        requestId: requestId,
-                        responseStyle,
-                        perspective,
-                        diversityLevel: answerDiversityMode,
-                        temperature: answerTemperature,
-                        projectId: currentProject?.id,
-                    }),
-                    onChunk: (chunk: string) => {
-                        accumulatedText += chunk;
-                        if (streamPreRevealActiveRef.current) {
-                            return;
-                        }
-                        const trimmedAcc = coerceTrimmedString(cleanResponseText(accumulatedText), '');
-                        if (!trimmedAcc.length) {
-                            return;
-                        }
-                        if (streamingRafRef.current) {
-                            cancelAnimationFrame(streamingRafRef.current);
-                        }
-                        streamingRafRef.current = requestAnimationFrame(() => {
-                            const cleanedChunk = cleanResponseText(accumulatedText);
-                            setCurrentConversation((prev) => {
-                                if (!prev || prev.id !== conversation.id) return prev;
-                                const existingMsg = prev.messages.find(m => m.id === assistantId);
-                                if (!existingMsg) return prev;
-                                return {
-                                    ...prev,
-                                    updatedAt: new Date(),
-                                    messages: prev.messages.map((m) =>
-                                        m.id === assistantId ? { ...m, content: cleanedChunk } : m
-                                    ),
-                                };
-                            });
-                        });
-                    },
-                    onMetadata: (meta: Record<string, unknown>) => {
-                        const serverPhase = mapStreamMetadataToAssistantGenerationPhase(meta);
-                        if (serverPhase) {
-                            serverDrovePipelinePhaseRef.current = true;
-                            clearClientStreamingPhases?.();
-                            clearClientStreamingPhases = undefined;
-                        }
-                        setCurrentConversation((prev) => {
-                            if (!prev || prev.id !== conversation.id) return prev;
-                            const existingMsg = prev.messages.find((m) => m.id === assistantId);
-                            if (!existingMsg) return prev;
-                            const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
-                            if (!patched) return prev;
-                            return {
-                                ...prev,
-                                updatedAt: new Date(),
-                                messages: prev.messages.map((m) =>
-                                    m.id === assistantId ? patched : m,
-                                ),
-                            };
-                        });
-                        setConversations((prev) =>
-                            prev.map((c) => {
-                                if (c.id !== conversation.id) return c;
-                                const existingMsg = c.messages.find((m) => m.id === assistantId);
-                                if (!existingMsg) return c;
-                                const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
-                                if (!patched) return c;
-                                return {
-                                    ...c,
-                                    updatedAt: new Date(),
-                                    messages: c.messages.map((m) => (m.id === assistantId ? patched : m)),
-                                };
-                            }),
-                        );
-                    },
-                    onComplete: async (fullText: string, metadata?: Record<string, unknown>) => {
+                const streamScenarioInherit =
+                    scenarioInheritMergeOptionsFromPipelineLikeMessages(updatedMessages)
+                        ?.recentMessagesForScenarioInherit;
+                const streamMergeDeepseek = mergeScenarioAndConversationDeepseek(
+                    undefined,
+                    conversation,
+                );
+                const useSequentialStream = sequentialSendFlags.useSequentialStream;
+
+                const finalizeComposerStreamResponse = async (
+                    fullText: string,
+                    metadata?: Record<string, unknown>,
+                ) => {
                         clearClientStreamingPhases?.();
                         clearClientStreamingPhases = undefined;
                         clearAssistantStreamPhases?.();
@@ -3027,7 +3308,133 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 errorLogger.error('stream workspace_tool_result 프로젝트 갱신 실패', e instanceof Error ? e : new Error(String(e)), { component: 'ChatGPTInterface', action: 'streamWorkspaceToolResult' });
                             }
                         }
+                };
+
+                const patchStreamMetadata = (meta: Record<string, unknown>) => {
+                        const serverPhase = mapStreamMetadataToAssistantGenerationPhase(meta);
+                        if (serverPhase) {
+                            serverDrovePipelinePhaseRef.current = true;
+                            clearClientStreamingPhases?.();
+                            clearClientStreamingPhases = undefined;
+                        }
+                        setCurrentConversation((prev) => {
+                            if (!prev || prev.id !== conversation.id) return prev;
+                            const existingMsg = prev.messages.find((m) => m.id === assistantId);
+                            if (!existingMsg) return prev;
+                            const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
+                            if (!patched) return prev;
+                            return {
+                                ...prev,
+                                updatedAt: new Date(),
+                                messages: prev.messages.map((m) =>
+                                    m.id === assistantId ? patched : m,
+                                ),
+                            };
+                        });
+                        setConversations((prev) =>
+                            prev.map((c) => {
+                                if (c.id !== conversation.id) return c;
+                                const existingMsg = c.messages.find((m) => m.id === assistantId);
+                                if (!existingMsg) return c;
+                                const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
+                                if (!patched) return c;
+                                return {
+                                    ...c,
+                                    updatedAt: new Date(),
+                                    messages: c.messages.map((m) => (m.id === assistantId ? patched : m)),
+                                };
+                            }),
+                        );
+                };
+
+                try {
+                if (useSequentialStream) {
+                    streamPreRevealActiveRef.current = false;
+                    clearAssistantStreamPhases?.();
+                    clearAssistantStreamPhases = undefined;
+                    try {
+                        await runComposerSequentialMultiRequestStream({
+                            items: sequentialMultiRequestItems,
+                            conversationId: conversation.id,
+                            signal: abortController.signal,
+                            buildItemOutboundMessage: buildSequentialItemOutbound,
+                            buildItemStreamContext: (i) =>
+                                buildSequentialMultiRequestItemContext(
+                                    chatContextForRequest as Record<string, unknown>,
+                                    sequentialMultiRequestItems,
+                                    i,
+                                ),
+                            buildStreamRequestBody: (ctx) =>
+                                buildComposerStreamChatRequestBody({
+                                    quality: effectiveQuality,
+                                    conversationId: conversation.id,
+                                    context: ctx,
+                                    requestId: requestId,
+                                    responseStyle,
+                                    perspective,
+                                    diversityLevel: answerDiversityMode,
+                                    temperature: answerTemperature,
+                                    projectId: currentProject?.id,
+                                }),
+                            streamMessage: streamChatMessage,
+                            onLiveIndex: setComposerMultiRequestLiveIndex,
+                            onDisplayContent: flushAssistantStreamSlotContent,
+                            streamOptionsBase: {
+                                messagesForScenarioInherit: streamScenarioInherit,
+                                mergeApiChatContextOptions: streamMergeDeepseek,
+                            },
+                            onStreamMetadata: patchStreamMetadata,
+                            onStreamComplete: finalizeComposerStreamResponse,
+                        });
+                    } finally {
+                        setComposerMultiRequestLiveIndex(null);
+                    }
+                } else {
+                await streamChatMessage(messageToSend, conversation.id, {
+                    signal: abortController.signal,
+                    messagesForScenarioInherit: streamScenarioInherit,
+                    mergeApiChatContextOptions: streamMergeDeepseek,
+                    requestBody: buildComposerStreamChatRequestBody({
+                        quality: effectiveQuality,
+                        conversationId: conversation.id,
+                        context: chatContextForRequest,
+                        requestId: requestId,
+                        responseStyle,
+                        perspective,
+                        diversityLevel: answerDiversityMode,
+                        temperature: answerTemperature,
+                        projectId: currentProject?.id,
+                    }),
+                    onChunk: (chunk: string) => {
+                        accumulatedText += chunk;
+                        if (streamPreRevealActiveRef.current) {
+                            return;
+                        }
+                        const trimmedAcc = coerceTrimmedString(cleanResponseText(accumulatedText), '');
+                        if (!trimmedAcc.length) {
+                            return;
+                        }
+                        if (streamingRafRef.current) {
+                            cancelAnimationFrame(streamingRafRef.current);
+                        }
+                        streamingRafRef.current = requestAnimationFrame(() => {
+                            const cleanedChunk = cleanResponseText(accumulatedText);
+                            setCurrentConversation((prev) => {
+                                if (!prev || prev.id !== conversation.id) return prev;
+                                const existingMsg = prev.messages.find(m => m.id === assistantId);
+                                if (!existingMsg) return prev;
+                                return {
+                                    ...prev,
+                                    updatedAt: new Date(),
+                                    messages: prev.messages.map((m) =>
+                                        m.id === assistantId ? { ...m, content: cleanedChunk } : m
+                                    ),
+                                };
+                            });
+                        });
                     },
+                    onMetadata: patchStreamMetadata,
+                    onComplete: finalizeComposerStreamResponse,
                     onError: (error: Error) => {
                         clearClientStreamingPhases?.();
                         clearClientStreamingPhases = undefined;
@@ -3089,6 +3496,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         });
                     },
                 });
+                }
                     } catch (streamErr) {
                     // 사용자 취소(AbortError)가 아니면 스트리밍 실패로 간주하고 비스트리밍 폴백 시도
                     if (streamErr instanceof Error && streamErr.name === 'AbortError') {
@@ -3275,45 +3683,104 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 });
                 clearNonStreamPhases = nonStreamPhaseTimeline.cancel;
 
-                // 백엔드 API 호출 (엔드포인트 폴백: CHAT_POST_PATH → CHAT_POST_PATH_UNIFIED)
-                const payload = buildChatGptNonStreamPostPayload(
-                    messageToSend,
-                    effectiveQuality,
-                    chatContextForRequest,
-                    buildComposerNonStreamChatExtras({
-                        conversationId: conversation.id,
-                        requestId: requestId,
-                        responseStyle,
-                        perspective,
-                        diversityLevel: answerDiversityMode,
-                        temperature: answerTemperature,
-                        projectId: currentProject?.id,
-                    }),
-                    mergeScenarioAndConversationDeepseek(
-                        scenarioInheritMergeOptionsFromPipelineLikeMessages(updatedMessages),
-                        conversation
-                    )
-                );
-                let response: Awaited<ReturnType<typeof postChatAxiosWithFallback>>;
-                try {
-                    response = await postChatAxiosWithFallback(
+                const runSequentialMultiRequest = sequentialSendFlags.runSequentialMultiRequest;
+                const runMultiStepMultiRequest = sequentialSendFlags.runMultiStepMultiRequest;
+
+                const postNonStreamPayload = async (
+                    outboundMessage: string,
+                    contextForBody: Record<string, unknown>,
+                ) => {
+                    const payload = buildChatGptNonStreamPostPayload(
+                        outboundMessage,
+                        effectiveQuality,
+                        contextForBody,
+                        buildComposerNonStreamChatExtras({
+                            conversationId: conversation.id,
+                            requestId: requestId,
+                            responseStyle,
+                            perspective,
+                            diversityLevel: answerDiversityMode,
+                            temperature: answerTemperature,
+                            projectId: currentProject?.id,
+                        }),
+                        mergeScenarioAndConversationDeepseek(
+                            scenarioInheritMergeOptionsFromPipelineLikeMessages(updatedMessages),
+                            conversation,
+                        ),
+                    );
+                    return postChatAxiosWithFallback(
                         API_BASE_URL,
                         payload,
                         DEFAULT_CHAT_POST_AXIOS_OPTIONS,
-                        DEFAULT_CHAT_POST_FALLBACK_OPTIONS
+                        DEFAULT_CHAT_POST_FALLBACK_OPTIONS,
                     );
+                };
+
+                const assertValidChatResponse = (
+                    response: Awaited<ReturnType<typeof postChatAxiosWithFallback>>,
+                ): string => {
+                    const content = extractResponseContent(response);
+                    if (
+                        !content ||
+                        !coerceTrimmedString(content, '') ||
+                        content === '응답을 생성할 수 없습니다. 다시 시도해 주세요.'
+                    ) {
+                        const responseData = (response as { data?: unknown })?.data;
+                        const dataType = responseData ? typeof responseData : 'unknown';
+                        throw new Error(
+                            `백엔드에서 유효한 응답을 받지 못했습니다. 응답 데이터 타입: ${dataType}`,
+                        );
+                    }
+                    return content;
+                };
+
+                let responseContent: string;
+                let lastNonStreamResponse: Awaited<ReturnType<typeof postChatAxiosWithFallback>> | undefined;
+
+                try {
+                    if (runSequentialMultiRequest) {
+                        const sequentialResult = await runComposerSequentialMultiRequestNonStream({
+                            items: sequentialMultiRequestItems,
+                            buildItemOutboundMessage: buildSequentialItemOutbound,
+                            buildItemContext: (i) =>
+                                buildSequentialMultiRequestItemContext(
+                                    chatContextForRequest as Record<string, unknown>,
+                                    sequentialMultiRequestItems,
+                                    i,
+                                ),
+                            postChat: postNonStreamPayload,
+                            extractValidContent: assertValidChatResponse,
+                            onLiveIndex: setComposerMultiRequestLiveIndex,
+                            onPartialProgress: updateGenerationStep,
+                        });
+                        lastNonStreamResponse = sequentialResult.lastResponse;
+                        responseContent = sequentialResult.merged;
+                    } else if (runMultiStepMultiRequest) {
+                        const multiStepResult = await runComposerMultiStepMultiRequest({
+                            items: sequentialMultiRequestItems,
+                            buildItemContext: (i) =>
+                                buildSequentialMultiRequestItemContext(
+                                    chatContextForRequest as Record<string, unknown>,
+                                    sequentialMultiRequestItems,
+                                    i,
+                                ),
+                            onLiveIndex: setComposerMultiRequestLiveIndex,
+                            onPartialProgress: updateGenerationStep,
+                        });
+                        responseContent = multiStepResult.merged;
+                    } else {
+                        const response = await postNonStreamPayload(
+                            messageToSend,
+                            chatContextForRequest as Record<string, unknown>,
+                        );
+                        lastNonStreamResponse = response;
+                        responseContent = assertValidChatResponse(response);
+                    }
                 } catch (e) {
                     nonStreamPhaseTimeline.cancel();
                     throw e;
-                }
-
-                const responseContent = extractResponseContent(response);
-                if (!responseContent || !coerceTrimmedString(responseContent, '') ||
-                    responseContent === '응답을 생성할 수 없습니다. 다시 시도해 주세요.') {
-                    nonStreamPhaseTimeline.cancel();
-                    const responseData = (response as { data?: unknown })?.data;
-                    const dataType = responseData ? typeof responseData : 'unknown';
-                    throw new Error(`백엔드에서 유효한 응답을 받지 못했습니다. 응답 데이터 타입: ${dataType}`);
+                } finally {
+                    setComposerMultiRequestLiveIndex(null);
                 }
 
                 await nonStreamPhaseTimeline.promise;
@@ -3328,11 +3795,16 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 
                 const displayContent = coerceTrimmedString(responseContent, '');
                 const thinkingDurationMs = responseStartTime ? Date.now() - responseStartTime : undefined;
-                const suggestedFollowUpsNs = extractPipelineFollowUpsFromChatResponse(response);
-                const pipelineExtrasNsRaw = extractPipelineMessageExtrasFromChatResponse(response);
-                const pipelineExtrasNs = hasPipelineExtras(pipelineExtrasNsRaw)
-                    ? pipelineExtrasNsRaw
+                const suggestedFollowUpsNs = lastNonStreamResponse
+                    ? extractPipelineFollowUpsFromChatResponse(lastNonStreamResponse)
                     : undefined;
+                const pipelineExtrasNsRaw = lastNonStreamResponse
+                    ? extractPipelineMessageExtrasFromChatResponse(lastNonStreamResponse)
+                    : undefined;
+                const pipelineExtrasNs =
+                    pipelineExtrasNsRaw && hasPipelineExtras(pipelineExtrasNsRaw)
+                        ? pipelineExtrasNsRaw
+                        : undefined;
                 const finalMessages = placeholderMessages.map((m) =>
                     m.id === placeholderAssistantId
                         ? {
@@ -3400,7 +3872,24 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 });
 
                 // AI Workspace 도구 결과 반영: 프로젝트 생성 시 목록 갱신 및 선택 (마무리 개발)
-                const responseData = response && typeof response === 'object' && response !== null && 'data' in response ? (response as { data: { workspace_tool_result?: { tool?: string; success?: boolean; data?: { project_id?: string }; message?: string } } }).data : undefined;
+                const responseData =
+                    lastNonStreamResponse &&
+                    typeof lastNonStreamResponse === 'object' &&
+                    lastNonStreamResponse !== null &&
+                    'data' in lastNonStreamResponse
+                        ? (
+                              lastNonStreamResponse as {
+                                  data: {
+                                      workspace_tool_result?: {
+                                          tool?: string;
+                                          success?: boolean;
+                                          data?: { project_id?: string };
+                                          message?: string;
+                                      };
+                                  };
+                              }
+                          ).data
+                        : undefined;
                 const wtr = responseData?.workspace_tool_result;
                 if (wtr?.tool === 'project_create' && wtr?.success && wtr?.data?.project_id) {
                     (async () => {
@@ -3506,7 +3995,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     return next;
                 });
             });
-            window.dispatchEvent(new CustomEvent('sidebar-chats-updated'));
+            notifyLocalChatConversationsMutated();
         } finally {
             clearAssistantStreamPhases?.();
             clearNonStreamPhases?.();
@@ -3516,14 +4005,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             setIsLoading(false);
             // 전송 완료 표시
             isSendingRef.current = false;
-            // 응답 시간 계산
-            setLastResponseTime(prev => {
-                const startTime = responseStartTime;
-                if (startTime) {
-                    return Date.now() - startTime;
-                }
-                return prev;
-            });
             setResponseStartTime(null);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3572,7 +4053,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     );
 
     // 입력창 엔터: 질문·요구 수신 → sendMessage → 딥러닝 보강·백엔드 답변 생성 로직으로 답변 생성 (Enter 전송, Shift+Enter 줄바꿈)
-    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const _handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             // IME 조합 중 Enter는 확정용이므로 전송하지 않음(한글 등 입력 직후 오전송 방지)
             if (e.nativeEvent.isComposing) return;
@@ -3622,7 +4103,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     }, [sendMessage, isStreaming, cancelStreaming, getCurrentInputValue, attachedConversationFile, isLoading]);
 
     // form submit 시 전송 — 입력창 엔터/전송 버튼 클릭 시 질문을 받아 답변 생성. DOM → ref → state 순으로 읽어 입력이 빠지지 않도록 함.
-    const handleComposerSubmit = useCallback(
+    const _handleComposerSubmit = useCallback(
         (e: React.FormEvent) => {
             e.preventDefault();
             e.stopPropagation();
@@ -3661,7 +4142,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         setDeleteConfirmConversation(null);
         showToast('대화가 삭제되었습니다', 'success');
         try {
-            window.dispatchEvent(new CustomEvent('sidebar-chats-updated'));
+            notifyLocalChatConversationsMutated();
         } catch {
             /* ignore */
         }
@@ -3681,6 +4162,19 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         if (!deleteConfirmConversation) return;
         const rafId = window.requestAnimationFrame(() => chatDeleteConversationCancelRef.current?.focus());
         return () => window.cancelAnimationFrame(rafId);
+    }, [deleteConfirmConversation]);
+
+    /** 헤더 대화 삭제 확인 모달: Escape가 window 전역 단축키와 경합하지 않도록 캡처에서 닫기 */
+    useEffect(() => {
+        if (!deleteConfirmConversation) return;
+        const onKeyDownCapture = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape') return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            setDeleteConfirmConversation(null);
+        };
+        document.addEventListener('keydown', onKeyDownCapture, true);
+        return () => document.removeEventListener('keydown', onKeyDownCapture, true);
     }, [deleteConfirmConversation]);
 
     useEffect(() => {
@@ -4155,9 +4649,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     }, [currentConversation]);
 
     const [showPinnedPanel, setShowPinnedPanel] = React.useState(false);
-    const [conversationCopyMenuOpen, setConversationCopyMenuOpen] = useState(false);
-    const [conversationCopyDone, setConversationCopyDone] = useState<'md' | 'txt' | null>(null);
-    const conversationCopyDoneTimerRef = useRef<number | null>(null);
 
     const togglePinMessage = useCallback((msgId: string) => {
         if (!currentConversation) return;
@@ -4191,26 +4682,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 coerceTrimmedString(message.content ?? '', '').toLowerCase().includes(query)
             );
     }, [currentConversation, messageSearchTrimmed]);
-
-    // 대화 통계
-    const conversationStats = useMemo(() => {
-        if (!currentConversation) return null;
-        const messages = currentConversation.messages;
-        const userMessages = messages.filter(m => m.role === 'user');
-        const assistantMessages = messages.filter(m => m.role === 'assistant');
-        const totalChars = messages.reduce(
-            (sum, m) => sum + coerceTrimmedString(m.content ?? '', '').length,
-            0
-        );
-        const estimatedTokens = Math.ceil(totalChars / 4);
-        return {
-            total: messages.length,
-            user: userMessages.length,
-            assistant: assistantMessages.length,
-            chars: totalChars,
-            tokens: estimatedTokens,
-        };
-    }, [currentConversation]);
 
     const currentProjectContext = useMemo(() => {
         if (!currentProject) return null;
@@ -4331,23 +4802,23 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         structuredInputAssistEnabled && shouldTreatAsStructuredQuestionRequirements(parsedInputSections);
     const hasQuestionOnly = structuredInputAssistEnabled && parsedInputSections.question.length > 0 && parsedInputSections.requirements.length === 0;
     const hasRequirementsOnly = structuredInputAssistEnabled && parsedInputSections.requirements.length > 0 && parsedInputSections.question.length === 0;
-    const structuredInputGuardMessage = !structuredInputAssistEnabled
+    const _structuredInputGuardMessage = !structuredInputAssistEnabled
         ? ''
         : hasQuestionOnly
         ? '요구사항이 비어 있습니다. 결과물 형식/필수 항목을 추가하면 더 정확하게 생성됩니다.'
         : hasRequirementsOnly
             ? '질문이 비어 있습니다. 해결하고 싶은 핵심 질문을 함께 입력해 주세요.'
             : '';
-    const structuredQuestionPreview = useMemo(
+    const _structuredQuestionPreview = useMemo(
         () => truncateStructuredInputPreviewLine(parsedInputSections.question),
         [parsedInputSections.question]
     );
-    const structuredRequirementPreview = useMemo(
+    const _structuredRequirementPreview = useMemo(
         () => truncateStructuredInputPreviewLine(parsedInputSections.requirements),
         [parsedInputSections.requirements]
     );
 
-    const applyStructuredInputQuickFix = useCallback(() => {
+    const _applyStructuredInputQuickFix = useCallback(() => {
         if (!hasQuestionOnly && !hasRequirementsOnly) return;
         if (hasQuestionOnly) {
             setInput((prev) => {
@@ -4368,7 +4839,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         }, 0);
     }, [hasQuestionOnly, hasRequirementsOnly]);
 
-    const copyStructuredInputPreview = useCallback(async () => {
+    const _copyStructuredInputPreview = useCallback(async () => {
         const payload = [
             '질문:',
             parsedInputSections.question || '-',
@@ -5582,13 +6053,15 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentConversation?.messages, isLoading, isStreaming, generateQuickSuggestions]);
 
-    // 소스 기반 추천 질문 로드 (프로젝트 대화 빈 세션 시)
+    // 소스 기반 추천 질문 로드 (프로젝트 웰컴·빈 대화 스레드 — 입력 도크 위 칩용)
     useEffect(() => {
+        if (!currentProject) {
+            setSuggestedQuestionsFromSource([]);
+            return;
+        }
         if (
-            !currentProject ||
-            !currentConversation ||
-            currentConversation.projectId !== currentProject.id ||
-            currentConversation.messages.length > 0
+            currentConversation &&
+            (currentConversation.projectId !== currentProject.id || currentConversation.messages.length > 0)
         ) {
             setSuggestedQuestionsFromSource([]);
             return;
@@ -5598,7 +6071,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             .then((questions) => {
                 if (!cancelled && questions && questions.length > 0) {
                     setSuggestedQuestionsFromSource(questions);
-                } else {
+                } else if (!cancelled) {
                     setSuggestedQuestionsFromSource([]);
                 }
             })
@@ -5727,26 +6200,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
         showToast('다운로드되었습니다', 'success');
     }, [currentConversation]);
-
-    useEffect(() => {
-        return () => {
-            if (conversationCopyDoneTimerRef.current !== null) {
-                window.clearTimeout(conversationCopyDoneTimerRef.current);
-            }
-        };
-    }, []);
-
-    const handleConversationQuickCopy = useCallback((format: 'markdown' | 'txt') => {
-        setConversationCopyMenuOpen(false);
-        void exportConversation(format === 'markdown' ? 'clipboard' : 'txt');
-        setConversationCopyDone(format === 'markdown' ? 'md' : 'txt');
-        if (conversationCopyDoneTimerRef.current !== null) {
-            window.clearTimeout(conversationCopyDoneTimerRef.current);
-        }
-        conversationCopyDoneTimerRef.current = window.setTimeout(() => {
-            setConversationCopyDone(null);
-        }, 2000);
-    }, [exportConversation]);
 
     // 즐겨찾기 메시지 TXT 내보내기
     const exportBookmarkedMessages = useCallback(() => {
@@ -5901,10 +6354,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             const lastAi = assistantMsgs[assistantMsgs.length - 1];
             const lastAiSnippet = lastAi ? lastAi.content.trim().slice(0, 200) : '';
             const summary = [
-                `📋 **대화 요약** — ${currentConversation.title}`,
+                `**대화 요약** — ${currentConversation.title}`,
                 ``,
-                `🗓 생성일: ${new Date().toLocaleString('ko-KR')}`,
-                `💬 총 메시지: ${msgs.length}개 (사용자 ${userMsgs.length}, AI ${assistantMsgs.length})`,
+                `생성일: ${new Date().toLocaleString('ko-KR')}`,
+                `총 메시지: ${msgs.length}개 (사용자 ${userMsgs.length}, AI ${assistantMsgs.length})`,
                 ``,
                 `**주요 질문 주제:**`,
                 topics.length > 0 ? topics.join('\n') : '(주제 없음)',
@@ -6109,7 +6562,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 setConversations((prev) => {
                     const next = [newConversation, ...prev];
                     saveConversationsToStorage(next);
-                    window.dispatchEvent(new CustomEvent('sidebar-chats-updated'));
+                    notifyLocalChatConversationsMutated();
                     return next;
                 });
                 setCurrentConversation(newConversation);
@@ -6173,6 +6626,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
             setInput('');
             setIsLoading(true);
+            setLastOutboundUserTextForStepUi(trimmedInput);
 
             const shouldStream = useStreaming && isStreamingSupported();
             const conversation = updatedConversation;
@@ -6188,7 +6642,29 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     pipelineExtras: m.pipelineExtras,
                 })
             );
-            const regenFeatureCtx = buildFeatureContextFromMessage(trimmedInput) as Record<string, unknown>;
+            const regenDeepseekConv = convFromListForRegen ?? conversation;
+            const regenProjectCtx =
+                mergeProjectAndThreadChatContext(buildChatContext(currentProject ?? null), regenDeepseekConv) ?? {};
+
+            let regenConversationFileContent: string | undefined;
+            let regenConversationFileName: string | undefined;
+            if (attachedConversationFile) {
+                try {
+                    regenConversationFileContent = await attachedConversationFile.text();
+                    regenConversationFileName = attachedConversationFile.name || '대화.txt';
+                } catch {
+                    showToast('대화 파일을 읽을 수 없습니다.', 'error');
+                    setIsLoading(false);
+                    return;
+                }
+                setAttachedConversationFile(null);
+            }
+
+            const regenFeatureCtx = buildMergedFeatureContextFromInputAndAttachments({
+                trimmedUserInput: trimmedInput,
+                conversationFileContent: regenConversationFileContent,
+                threadAttachedFileContents: regenProjectCtx.thread_attached_file_contents as string | undefined,
+            }) as Record<string, unknown>;
             const regenParsedForPipeline = parseQuestionRequirementSections(trimmedInput);
             const regenPhaseDurationMultiplier = computeAssistantPipelineDurationMultiplier(
                 trimmedInput,
@@ -6201,7 +6677,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     shouldTreatAsStructuredQuestionRequirements(regenParsedForPipeline),
                 Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', '')),
             );
-            const regenDeepseekConv = convFromListForRegen ?? conversation;
             const { pipelineMerge: regenPipelineMerge } = buildUnifiedQaGensparkPipelineContextMerge({
                 trimmedInput,
                 featureCtx: regenFeatureCtx,
@@ -6209,15 +6684,19 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 gensparkRouteAgentId,
                 composerResponseMode,
                 responseStyle,
+                conversationFileContent: regenConversationFileContent,
                 conversationDeepseek: regenDeepseekConv,
                 hasConversationThreadContext:
                     conversationHasThreadInstructionsOrFiles(regenDeepseekConv),
             });
             const regenContextWithHistory = {
-                ...(mergeProjectAndThreadChatContext(buildChatContext(currentProject ?? null), regenDeepseekConv) ??
-                    {}),
+                ...regenProjectCtx,
                 ...regenFeatureCtx,
                 ...regenPipelineMerge,
+                ...(regenConversationFileContent !== undefined && {
+                    conversation_file_content: regenConversationFileContent,
+                    conversation_file_name: regenConversationFileName,
+                }),
                 conversation_history: regenHistoryForCtx,
                 ...(regenHistoryForCtx.length > 0 && {
                     consistency_instruction: '이전 대화에서 논의된 용어·가정·결정사항을 유지하여 일관되게 답변하세요. 최근 대화 맥락을 반드시 참고하세요.',
@@ -6226,7 +6705,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 adapt_answer_to_request: ADAPT_ANSWER_TO_REQUEST_INSTRUCTION,
             };
             const regenContextForRequest = mergeGensparkRouteContextIntoRecordIfMissing(
-                regenContextWithHistory as Record<string, unknown>,
+                withGraphCreateIntentInChatContext(
+                    trimmedInput,
+                    regenContextWithHistory as Record<string, unknown>,
+                    regenConversationFileContent,
+                ),
                 gensparkRouteAgentId ?? null,
             );
             const regenUseInformed = !!((regenContextWithHistory as Record<string, unknown>).enable_web_research || (regenContextWithHistory as Record<string, unknown>).prefer_informed_answer);
@@ -6255,7 +6738,37 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             const regenRaw = await buildMessageToSendForChat(regenRequestMessage, trimmedInput, regenProjectContext);
             const regenMessageToSend = typeof regenRaw === 'string' ? regenRaw : regenRaw.messageToSend;
 
-            if (shouldStream) {
+            const regenSequentialFlags = getComposerSequentialSendFlags(
+                trimmedInput,
+                regenFeatureCtx,
+                isStreamingSupported(),
+            );
+            const regenBuildSequentialItemOutbound = createComposerSequentialItemOutboundBuilder({
+                items: regenSequentialFlags.items,
+                buildStructuredGenerationPrompt,
+                variationInstruction: regenVariationInstruction,
+                styleLearningInstruction: regenStyleInstruction,
+                buildMessageToSendForChat,
+                projectContext: regenProjectContext,
+                onBuildError: (index, dlErr) => {
+                    errorLogger.error(
+                        '순차 다중 요청 프롬프트 보강 실패(재생성)',
+                        dlErr instanceof Error ? dlErr : new Error(String(dlErr)),
+                        {
+                            component: 'ChatGPTInterface',
+                            action: 'regenSequentialMultiRequestBuildMessage',
+                            itemIndex: index,
+                        },
+                    );
+                },
+            });
+            const regenUseSequentialStream = regenSequentialFlags.useSequentialStream;
+
+            if (
+                shouldStream &&
+                !regenSequentialFlags.bypassStreamForSequentialMultiRequest &&
+                !regenSequentialFlags.bypassStreamForMultiStepMultiRequest
+            ) {
                 setIsStreaming(true);
                 const abortController = new AbortController();
                 abortControllerRef.current = abortController;
@@ -6390,20 +6903,188 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 onPhase: (ph) => patchRegenAssistantPipelinePhaseSlug(ph),
                             });
                         }
-                        flushRegenStreamSlotContent(accumulatedText);
-                    },
-                });
+                    flushRegenStreamSlotContent(accumulatedText);
+                },
+            });
+
+                const regenStreamScenarioInherit =
+                    scenarioInheritMergeOptionsFromPipelineLikeMessages(regenHistoryMessages)
+                        ?.recentMessagesForScenarioInherit;
+                const regenStreamMergeDeepseek = mergeScenarioAndConversationDeepseek(
+                    undefined,
+                    regenDeepseekConv,
+                );
+
+                const patchRegenStreamMetadata = (meta: Record<string, unknown>) => {
+                    const serverPhase = mapStreamMetadataToAssistantGenerationPhase(meta);
+                    if (serverPhase) {
+                        regenServerDrovePipelinePhaseRef.current = true;
+                        clearRegenClientStreamingPhases?.();
+                        clearRegenClientStreamingPhases = undefined;
+                    }
+                    setCurrentConversation((prev) => {
+                        if (!prev || prev.id !== conversation.id) return prev;
+                        const existingMsg = prev.messages.find((m) => m.id === assistantId);
+                        if (!existingMsg) return prev;
+                        const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
+                        if (!patched) return prev;
+                        return {
+                            ...prev,
+                            updatedAt: new Date(),
+                            messages: prev.messages.map((m) => (m.id === assistantId ? patched : m)),
+                        };
+                    });
+                    setConversations((prev) =>
+                        prev.map((c) => {
+                            if (c.id !== conversation.id) return c;
+                            const existingMsg = c.messages.find((m) => m.id === assistantId);
+                            if (!existingMsg) return c;
+                            const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
+                            if (!patched) return c;
+                            return {
+                                ...c,
+                                updatedAt: new Date(),
+                                messages: c.messages.map((m) => (m.id === assistantId ? patched : m)),
+                            };
+                        }),
+                    );
+                };
+
+                const finalizeRegenStreamResponse = async (
+                    fullText: string,
+                    metadata?: Record<string, unknown>,
+                ) => {
+                    clearRegenClientStreamingPhases?.();
+                    clearRegenClientStreamingPhases = undefined;
+                    clearRegenStreamPhases?.();
+                    clearRegenStreamPhases = undefined;
+                    regenStreamPreRevealActiveRef.current = false;
+                    setIsStreaming(false);
+                    setIsLoading(false);
+                    abortControllerRef.current = null;
+                    if (streamingRafRef.current) {
+                        cancelAnimationFrame(streamingRafRef.current);
+                        streamingRafRef.current = null;
+                    }
+                    const cleanedText = cleanResponseText(fullText);
+                    const displayText = coerceTrimmedString(cleanedText, '');
+                    const suggestedFollowUps = parsePipelineFollowUpHints(metadata);
+                    const pipelineExtrasMeta = parsePipelineMessageExtras(metadata);
+                    const pipelineExtras = hasPipelineExtras(pipelineExtrasMeta)
+                        ? pipelineExtrasMeta
+                        : undefined;
+                    const finalMessages = initialMessages.map((m) =>
+                        m.id === assistantId
+                            ? {
+                                  ...m,
+                                  content: displayText,
+                                  ...(suggestedFollowUps?.length ? { suggestedFollowUps } : {}),
+                                  ...(pipelineExtras ? { pipelineExtras } : {}),
+                              }
+                            : m
+                    );
+                    const newTitle = await resolveListTitleAfterAssistantReply({
+                        conversationTitle: initialConversation.title,
+                        shouldUpdateTitle: userMessageIndex === 0 && finalMessages.length >= 2,
+                        explicitTitleConcise: explicitTitleConciseFromRegenInput,
+                        trimmedUserMessage: trimmedInput,
+                        assistantDisplayText: displayText,
+                        generateTitle: generateConversationTitle,
+                    });
+                    const finalConversation = {
+                        ...initialConversation,
+                        messages: finalMessages,
+                        updatedAt: new Date(),
+                        title: newTitle,
+                    };
+                    setCurrentConversation(finalConversation);
+                    setConversations((prev) => {
+                        const next = prev.map((c) => (c.id === conversation.id ? finalConversation : c));
+                        saveConversationsToStorage(next);
+                        return next;
+                    });
+                    notebookLLMDeepLearningIntegration.analyzeResponseWithDL(trimmedInput, displayText).catch(() => {});
+                };
+
+                const handleRegenStreamError = (error: Error) => {
+                    clearRegenClientStreamingPhases?.();
+                    clearRegenClientStreamingPhases = undefined;
+                    clearRegenStreamPhases?.();
+                    clearRegenStreamPhases = undefined;
+                    regenStreamPreRevealActiveRef.current = false;
+                    setIsStreaming(false);
+                    setIsLoading(false);
+                    abortControllerRef.current = null;
+                    if (streamingRafRef.current) {
+                        cancelAnimationFrame(streamingRafRef.current);
+                        streamingRafRef.current = null;
+                    }
+                    const errorContent = getErrorMessage(error);
+                    const finalMessages = initialMessages.map((m) =>
+                        m.id === assistantId
+                            ? { ...m, content: `❌ **재생성 오류**\n\n${errorContent}` }
+                            : m
+                    );
+                    const finalConversation = {
+                        ...initialConversation,
+                        messages: finalMessages,
+                        updatedAt: new Date(),
+                    };
+                    setCurrentConversation(finalConversation);
+                    setConversations(prev => prev.map(c => c.id === conversation.id ? finalConversation : c));
+                };
 
                 try {
+                if (regenUseSequentialStream) {
+                    regenStreamPreRevealActiveRef.current = false;
+                    clearRegenStreamPhases?.();
+                    clearRegenStreamPhases = undefined;
+                    try {
+                        await runComposerSequentialMultiRequestStream({
+                            items: regenSequentialFlags.items,
+                            conversationId: conversation.id,
+                            signal: abortController.signal,
+                            buildItemOutboundMessage: regenBuildSequentialItemOutbound,
+                            buildItemStreamContext: (i) =>
+                                buildSequentialMultiRequestItemContext(
+                                    regenContextForRequest as Record<string, unknown>,
+                                    regenSequentialFlags.items,
+                                    i,
+                                ),
+                            buildStreamRequestBody: (ctx) =>
+                                buildComposerStreamChatRequestBody({
+                                    quality: regenEffectiveQuality,
+                                    conversationId: conversation.id,
+                                    context: ctx,
+                                    requestId: regenRequestId,
+                                    responseStyle,
+                                    perspective,
+                                    diversityLevel: answerDiversityMode,
+                                    temperature: regenTemperature,
+                                    projectId: currentProject?.id,
+                                }),
+                            streamMessage: streamChatMessage,
+                            onLiveIndex: setComposerMultiRequestLiveIndex,
+                            onDisplayContent: flushRegenStreamSlotContent,
+                            streamOptionsBase: {
+                                messagesForScenarioInherit: regenStreamScenarioInherit,
+                                mergeApiChatContextOptions: regenStreamMergeDeepseek,
+                            },
+                            onStreamMetadata: patchRegenStreamMetadata,
+                            onStreamComplete: finalizeRegenStreamResponse,
+                        });
+                    } catch (seqErr) {
+                        handleRegenStreamError(
+                            seqErr instanceof Error ? seqErr : new Error(String(seqErr)),
+                        );
+                    } finally {
+                        setComposerMultiRequestLiveIndex(null);
+                    }
+                } else {
                 await streamChatMessage(regenMessageToSend, conversation.id, {
                     signal: abortController.signal,
-                    messagesForScenarioInherit:
-                        scenarioInheritMergeOptionsFromPipelineLikeMessages(regenHistoryMessages)
-                            ?.recentMessagesForScenarioInherit,
-                    mergeApiChatContextOptions: mergeScenarioAndConversationDeepseek(
-                        undefined,
-                        regenDeepseekConv
-                    ),
+                    messagesForScenarioInherit: regenStreamScenarioInherit,
+                    mergeApiChatContextOptions: regenStreamMergeDeepseek,
                     requestBody: buildComposerStreamChatRequestBody({
                         quality: regenEffectiveQuality,
                         conversationId: conversation.id,
@@ -6443,121 +7124,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             });
                         });
                     },
-                    onMetadata: (meta: Record<string, unknown>) => {
-                        const serverPhase = mapStreamMetadataToAssistantGenerationPhase(meta);
-                        if (serverPhase) {
-                            regenServerDrovePipelinePhaseRef.current = true;
-                            clearRegenClientStreamingPhases?.();
-                            clearRegenClientStreamingPhases = undefined;
-                        }
-                        setCurrentConversation((prev) => {
-                            if (!prev || prev.id !== conversation.id) return prev;
-                            const existingMsg = prev.messages.find((m) => m.id === assistantId);
-                            if (!existingMsg) return prev;
-                            const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
-                            if (!patched) return prev;
-                            return {
-                                ...prev,
-                                updatedAt: new Date(),
-                                messages: prev.messages.map((m) => (m.id === assistantId ? patched : m)),
-                            };
-                        });
-                        setConversations((prev) =>
-                            prev.map((c) => {
-                                if (c.id !== conversation.id) return c;
-                                const existingMsg = c.messages.find((m) => m.id === assistantId);
-                                if (!existingMsg) return c;
-                                const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
-                                if (!patched) return c;
-                                return {
-                                    ...c,
-                                    updatedAt: new Date(),
-                                    messages: c.messages.map((m) => (m.id === assistantId ? patched : m)),
-                                };
-                            }),
-                        );
-                    },
-                    onComplete: async (fullText: string, metadata?: Record<string, unknown>) => {
-                        clearRegenClientStreamingPhases?.();
-                        clearRegenClientStreamingPhases = undefined;
-                        clearRegenStreamPhases?.();
-                        clearRegenStreamPhases = undefined;
-                        regenStreamPreRevealActiveRef.current = false;
-                        setIsStreaming(false);
-                        setIsLoading(false);
-                        abortControllerRef.current = null;
-                        if (streamingRafRef.current) {
-                            cancelAnimationFrame(streamingRafRef.current);
-                            streamingRafRef.current = null;
-                        }
-                        // 프롬프트 지시사항 제거
-                        const cleanedText = cleanResponseText(fullText);
-                        const displayText = coerceTrimmedString(cleanedText, '');
-                        const suggestedFollowUps = parsePipelineFollowUpHints(metadata);
-                        const pipelineExtrasMeta = parsePipelineMessageExtras(metadata);
-                        const pipelineExtras = hasPipelineExtras(pipelineExtrasMeta)
-                            ? pipelineExtrasMeta
-                            : undefined;
-                        const finalMessages = initialMessages.map((m) =>
-                            m.id === assistantId
-                                ? {
-                                      ...m,
-                                      content: displayText,
-                                      ...(suggestedFollowUps?.length ? { suggestedFollowUps } : {}),
-                                      ...(pipelineExtras ? { pipelineExtras } : {}),
-                                  }
-                                : m
-                        );
-                        const newTitle = await resolveListTitleAfterAssistantReply({
-                            conversationTitle: initialConversation.title,
-                            shouldUpdateTitle: userMessageIndex === 0 && finalMessages.length >= 2,
-                            explicitTitleConcise: explicitTitleConciseFromRegenInput,
-                            trimmedUserMessage: trimmedInput,
-                            assistantDisplayText: displayText,
-                            generateTitle: generateConversationTitle,
-                        });
-                        const finalConversation = {
-                            ...initialConversation,
-                            messages: finalMessages,
-                            updatedAt: new Date(),
-                            title: newTitle,
-                        };
-                        setCurrentConversation(finalConversation);
-                        setConversations((prev) => {
-                            const next = prev.map((c) => (c.id === conversation.id ? finalConversation : c));
-                            saveConversationsToStorage(next);
-                            return next;
-                        });
-                        notebookLLMDeepLearningIntegration.analyzeResponseWithDL(trimmedInput, displayText).catch(() => {});
-                    },
-                    onError: (error: Error) => {
-                        clearRegenClientStreamingPhases?.();
-                        clearRegenClientStreamingPhases = undefined;
-                        clearRegenStreamPhases?.();
-                        clearRegenStreamPhases = undefined;
-                        regenStreamPreRevealActiveRef.current = false;
-                        setIsStreaming(false);
-                        setIsLoading(false);
-                        abortControllerRef.current = null;
-                        if (streamingRafRef.current) {
-                            cancelAnimationFrame(streamingRafRef.current);
-                            streamingRafRef.current = null;
-                        }
-                        const errorContent = getErrorMessage(error);
-                        const finalMessages = initialMessages.map((m) =>
-                            m.id === assistantId
-                                ? { ...m, content: `❌ **재생성 오류**\n\n${errorContent}` }
-                                : m
-                        );
-                        const finalConversation = {
-                            ...initialConversation,
-                            messages: finalMessages,
-                            updatedAt: new Date(),
-                        };
-                        setCurrentConversation(finalConversation);
-                        setConversations(prev => prev.map(c => c.id === conversation.id ? finalConversation : c));
-                    },
+                    onMetadata: patchRegenStreamMetadata,
+                    onComplete: finalizeRegenStreamResponse,
+                    onError: handleRegenStreamError,
                 });
+                }
                 } catch {
                     // streamChatMessage는 실패 시 onError 호출 후 reject — 재생성 UI·로딩은 onError에서 처리
                 }
@@ -6608,30 +7179,94 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 );
                 let clearRegenNonStreamPhases = regenNonStreamTimeline.cancel;
 
-                void postChatAxiosWithFallback(
-                    API_BASE_URL,
-                    buildChatGptNonStreamPostPayload(
-                        regenMessageToSend,
-                        regenEffectiveQuality,
-                        regenContextForRequest,
-                        buildComposerNonStreamChatExtras({
-                            conversationId: conversation.id,
-                            requestId: regenRequestId,
-                            responseStyle,
-                            perspective,
-                            diversityLevel: answerDiversityMode,
-                            temperature: regenTemperature,
-                            projectId: currentProject?.id,
-                        }),
-                        mergeScenarioAndConversationDeepseek(
-                            scenarioInheritMergeOptionsFromPipelineLikeMessages(regenHistoryMessages),
-                            regenDeepseekConv
-                        )
-                    ),
-                    DEFAULT_CHAT_POST_AXIOS_OPTIONS,
-                    DEFAULT_CHAT_POST_FALLBACK_OPTIONS
-                ).then(async (response) => {
-                    const responseContent = extractResponseContent(response);
+                const postRegenNonStreamPayload = (
+                    outboundMessage: string,
+                    contextForBody: Record<string, unknown>,
+                ) =>
+                    postChatAxiosWithFallback(
+                        API_BASE_URL,
+                        buildChatGptNonStreamPostPayload(
+                            outboundMessage,
+                            regenEffectiveQuality,
+                            contextForBody,
+                            buildComposerNonStreamChatExtras({
+                                conversationId: conversation.id,
+                                requestId: regenRequestId,
+                                responseStyle,
+                                perspective,
+                                diversityLevel: answerDiversityMode,
+                                temperature: regenTemperature,
+                                projectId: currentProject?.id,
+                            }),
+                            mergeScenarioAndConversationDeepseek(
+                                scenarioInheritMergeOptionsFromPipelineLikeMessages(regenHistoryMessages),
+                                regenDeepseekConv,
+                            ),
+                        ),
+                        DEFAULT_CHAT_POST_AXIOS_OPTIONS,
+                        DEFAULT_CHAT_POST_FALLBACK_OPTIONS,
+                    );
+
+                const assertRegenValidChatResponse = (
+                    response: Awaited<ReturnType<typeof postChatAxiosWithFallback>>,
+                ): string => {
+                    const content = extractResponseContent(response);
+                    if (
+                        !content ||
+                        !coerceTrimmedString(content, '') ||
+                        content === '응답을 생성할 수 없습니다. 다시 시도해 주세요.'
+                    ) {
+                        throw new Error('백엔드에서 유효한 응답을 받지 못했습니다.');
+                    }
+                    return content;
+                };
+
+                void (async () => {
+                    let responseContent: string;
+                    try {
+                        if (regenSequentialFlags.runSequentialMultiRequest) {
+                            const seq = await runComposerSequentialMultiRequestNonStream({
+                                items: regenSequentialFlags.items,
+                                buildItemOutboundMessage: regenBuildSequentialItemOutbound,
+                                buildItemContext: (i) =>
+                                    buildSequentialMultiRequestItemContext(
+                                        regenContextForRequest as Record<string, unknown>,
+                                        regenSequentialFlags.items,
+                                        i,
+                                    ),
+                                postChat: postRegenNonStreamPayload,
+                                extractValidContent: assertRegenValidChatResponse,
+                                onLiveIndex: setComposerMultiRequestLiveIndex,
+                                onPartialProgress: updateRegenGenerationStep,
+                            });
+                            responseContent = seq.merged;
+                        } else if (regenSequentialFlags.runMultiStepMultiRequest) {
+                            const multiStep = await runComposerMultiStepMultiRequest({
+                                items: regenSequentialFlags.items,
+                                buildItemContext: (i) =>
+                                    buildSequentialMultiRequestItemContext(
+                                        regenContextForRequest as Record<string, unknown>,
+                                        regenSequentialFlags.items,
+                                        i,
+                                    ),
+                                onLiveIndex: setComposerMultiRequestLiveIndex,
+                                onPartialProgress: updateRegenGenerationStep,
+                            });
+                            responseContent = multiStep.merged;
+                        } else {
+                            const response = await postRegenNonStreamPayload(
+                                regenMessageToSend,
+                                regenContextForRequest as Record<string, unknown>,
+                            );
+                            responseContent = assertRegenValidChatResponse(response);
+                        }
+                    } catch (err) {
+                        regenNonStreamTimeline.cancel();
+                        clearRegenNonStreamPhases = () => {};
+                        throw err;
+                    } finally {
+                        setComposerMultiRequestLiveIndex(null);
+                    }
                     if (
                         !responseContent ||
                         !coerceTrimmedString(responseContent, '') ||
@@ -6676,7 +7311,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         saveConversationsToStorage(next);
                         return next;
                     });
-                }).catch(error => {
+                })().catch(error => {
                     clearRegenNonStreamPhases();
                     clearRegenNonStreamPhases = () => {};
                     const errorContent = getErrorMessage(error);
@@ -6721,6 +7356,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         writingStyleProfile,
         generateConversationTitle,
         structuredInputAssistEnabled,
+        attachedConversationFile,
     ]);
 
     // 메시지 편집 시작
@@ -6781,9 +7417,31 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
         // 새 응답 생성
         setIsLoading(true);
+        setLastOutboundUserTextForStepUi(trimmedContent);
         const conversation = updatedConversation;
         const editThreadForDeepseek = conversations.find((c) => c.id === conversation.id) ?? conversation;
-        const editFeatureCtx = buildFeatureContextFromMessage(trimmedContent) as Record<string, unknown>;
+        const editCtxMerged =
+            mergeProjectAndThreadChatContext(buildChatContext(currentProject ?? null), updatedConversation) ?? {};
+
+        let editConversationFileContent: string | undefined;
+        let editConversationFileName: string | undefined;
+        if (attachedConversationFile) {
+            try {
+                editConversationFileContent = await attachedConversationFile.text();
+                editConversationFileName = attachedConversationFile.name || '대화.txt';
+            } catch {
+                showToast('대화 파일을 읽을 수 없습니다.', 'error');
+                setIsLoading(false);
+                return;
+            }
+            setAttachedConversationFile(null);
+        }
+
+        const editFeatureCtx = buildMergedFeatureContextFromInputAndAttachments({
+            trimmedUserInput: trimmedContent,
+            conversationFileContent: editConversationFileContent,
+            threadAttachedFileContents: editCtxMerged.thread_attached_file_contents as string | undefined,
+        }) as Record<string, unknown>;
         const editParsedForPipeline = parseQuestionRequirementSections(trimmedContent);
         const editPhaseDurationMultiplier = computeAssistantPipelineDurationMultiplier(
             trimmedContent,
@@ -6803,7 +7461,17 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         });
         const editAgentRouteSession = Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', ''));
 
-        const shouldStream = useStreaming && isStreamingSupported();
+        const editSequentialFlags = getComposerSequentialSendFlags(
+            trimmedContent,
+            editFeatureCtx,
+            isStreamingSupported(),
+        );
+        const editUseSequentialStream = editSequentialFlags.useSequentialStream;
+        const shouldStream =
+            useStreaming &&
+            isStreamingSupported() &&
+            !editSequentialFlags.bypassStreamForSequentialMultiRequest &&
+            !editSequentialFlags.bypassStreamForMultiStepMultiRequest;
 
         if (shouldStream) {
             setIsStreaming(true);
@@ -6823,6 +7491,26 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 : undefined;
             const editRaw = await buildMessageToSendForChat(editRequestMessage, trimmedContent, editProjectContext);
             const editMessageToSend = typeof editRaw === 'string' ? editRaw : editRaw.messageToSend;
+
+            const editBuildSequentialItemOutbound = createComposerSequentialItemOutboundBuilder({
+                items: editSequentialFlags.items,
+                buildStructuredGenerationPrompt,
+                variationInstruction: editVariationInstruction,
+                styleLearningInstruction: editStyleInstruction,
+                buildMessageToSendForChat,
+                projectContext: editProjectContext,
+                onBuildError: (index, dlErr) => {
+                    errorLogger.error(
+                        '순차 다중 요청 프롬프트 보강 실패(편집)',
+                        dlErr instanceof Error ? dlErr : new Error(String(dlErr)),
+                        {
+                            component: 'ChatGPTInterface',
+                            action: 'editSequentialMultiRequestBuildMessage',
+                            itemIndex: index,
+                        },
+                    );
+                },
+            });
 
             const assistantId = `msg-${Date.now() + 1}`;
             const assistantMessage: Message = {
@@ -6979,37 +7667,217 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 gensparkRouteAgentId,
                 composerResponseMode,
                 responseStyle,
+                conversationFileContent: editConversationFileContent,
                 conversationDeepseek: editThreadForDeepseek,
                 hasConversationThreadContext:
                     conversationHasThreadInstructionsOrFiles(updatedConversation),
             });
             const editStreamContext = mergeGensparkRouteContextIntoRecordIfMissing(
-                {
-                    ...mergeProjectAndThreadChatContext(
-                        buildChatContext(currentProject ?? null, { conversation_history: conversationHistory }),
-                        updatedConversation
-                    ),
-                    ...editFeatureCtx,
-                    ...editStreamPipelineMerge,
-                    ...(conversationHistory.length > 0 && {
-                        consistency_instruction:
-                            '이전 대화에서 논의된 용어·가정·결정사항을 유지하여 일관되게 답변하세요. 최근 대화 맥락을 반드시 참고하세요.',
-                    }),
-                    adapt_answer_to_request: ADAPT_ANSWER_TO_REQUEST_INSTRUCTION,
-                },
+                withGraphCreateIntentInChatContext(
+                    trimmedContent,
+                    {
+                        ...mergeProjectAndThreadChatContext(
+                            buildChatContext(currentProject ?? null, { conversation_history: conversationHistory }),
+                            updatedConversation
+                        ),
+                        ...editFeatureCtx,
+                        ...editStreamPipelineMerge,
+                        ...(editConversationFileContent !== undefined && {
+                            conversation_file_content: editConversationFileContent,
+                            conversation_file_name: editConversationFileName,
+                        }),
+                        ...(conversationHistory.length > 0 && {
+                            consistency_instruction:
+                                '이전 대화에서 논의된 용어·가정·결정사항을 유지하여 일관되게 답변하세요. 최근 대화 맥락을 반드시 참고하세요.',
+                        }),
+                        adapt_answer_to_request: ADAPT_ANSWER_TO_REQUEST_INSTRUCTION,
+                    },
+                    editConversationFileContent,
+                ),
                 gensparkRouteAgentId ?? null,
             );
+            const editStreamScenarioInherit =
+                scenarioInheritMergeOptionsFromPipelineLikeMessages(updatedConversation.messages)
+                    ?.recentMessagesForScenarioInherit;
+            const editStreamMergeDeepseek = mergeScenarioAndConversationDeepseek(
+                undefined,
+                editThreadForDeepseek,
+            );
+
+            const patchEditStreamMetadata = (meta: Record<string, unknown>) => {
+                const serverPhase = mapStreamMetadataToAssistantGenerationPhase(meta);
+                if (serverPhase) {
+                    editServerDrovePipelinePhaseRef.current = true;
+                    clearEditClientStreamingPhases?.();
+                    clearEditClientStreamingPhases = undefined;
+                }
+                setCurrentConversation((prev) => {
+                    if (!prev || prev.id !== conversation.id) return prev;
+                    const existingMsg = prev.messages.find((m) => m.id === assistantId);
+                    if (!existingMsg) return prev;
+                    const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
+                    if (!patched) return prev;
+                    return {
+                        ...prev,
+                        updatedAt: new Date(),
+                        messages: prev.messages.map((m) => (m.id === assistantId ? patched : m)),
+                    };
+                });
+                setConversations((prev) =>
+                    prev.map((c) => {
+                        if (c.id !== conversation.id) return c;
+                        const existingMsg = c.messages.find((m) => m.id === assistantId);
+                        if (!existingMsg) return c;
+                        const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
+                        if (!patched) return c;
+                        return {
+                            ...c,
+                            updatedAt: new Date(),
+                            messages: c.messages.map((m) => (m.id === assistantId ? patched : m)),
+                        };
+                    }),
+                );
+            };
+
+            const finalizeEditStreamResponse = async (
+                fullText: string,
+                metadata?: Record<string, unknown>,
+            ) => {
+                clearEditClientStreamingPhases?.();
+                clearEditClientStreamingPhases = undefined;
+                clearEditStreamPhases?.();
+                clearEditStreamPhases = undefined;
+                editStreamPreRevealActiveRef.current = false;
+                setIsStreaming(false);
+                setIsLoading(false);
+                abortControllerRef.current = null;
+                if (streamingRafRef.current) {
+                    cancelAnimationFrame(streamingRafRef.current);
+                    streamingRafRef.current = null;
+                }
+                const cleanedText = cleanResponseText(fullText);
+                const displayText = coerceTrimmedString(cleanedText, '');
+                const suggestedFollowUps = parsePipelineFollowUpHints(metadata);
+                const pipelineExtrasMeta = parsePipelineMessageExtras(metadata);
+                const pipelineExtras = hasPipelineExtras(pipelineExtrasMeta)
+                    ? pipelineExtrasMeta
+                    : undefined;
+                notebookLLMDeepLearningIntegration.analyzeResponseWithDL(trimmedContent, displayText).catch(() => {});
+                recordAdvancedMemoryTurn(conversation.id, trimmedContent, displayText);
+                const finalMessages = initialMessages.map((m) =>
+                    m.id === assistantId
+                        ? {
+                              ...m,
+                              content: displayText,
+                              ...(suggestedFollowUps?.length ? { suggestedFollowUps } : {}),
+                              ...(pipelineExtras ? { pipelineExtras } : {}),
+                          }
+                        : m
+                );
+                const newTitle = await resolveListTitleAfterAssistantReply({
+                    conversationTitle: initialConversation.title,
+                    shouldUpdateTitle: messageIndex === 0 && finalMessages.length >= 2,
+                    explicitTitleConcise: explicitTitleConciseFromEditedInput,
+                    trimmedUserMessage: trimmedContent,
+                    assistantDisplayText: displayText,
+                    generateTitle: generateConversationTitle,
+                });
+                const finalConversation = {
+                    ...initialConversation,
+                    messages: finalMessages,
+                    updatedAt: new Date(),
+                    title: newTitle,
+                };
+                setCurrentConversation(finalConversation);
+                setConversations((prev) => {
+                    const next = prev.map((c) => (c.id === conversation.id ? finalConversation : c));
+                    saveConversationsToStorage(next);
+                    return next;
+                });
+            };
+
+            const handleEditStreamError = (error: Error) => {
+                clearEditClientStreamingPhases?.();
+                clearEditClientStreamingPhases = undefined;
+                clearEditStreamPhases?.();
+                clearEditStreamPhases = undefined;
+                editStreamPreRevealActiveRef.current = false;
+                setIsStreaming(false);
+                setIsLoading(false);
+                abortControllerRef.current = null;
+                if (streamingRafRef.current) {
+                    cancelAnimationFrame(streamingRafRef.current);
+                    streamingRafRef.current = null;
+                }
+                const errorContent = getErrorMessage(error);
+                const finalMessages = initialMessages.map((m) =>
+                    m.id === assistantId
+                        ? { ...m, content: `❌ **오류 발생**\n\n${errorContent}` }
+                        : m
+                );
+                const finalConversation = {
+                    ...initialConversation,
+                    messages: finalMessages,
+                    updatedAt: new Date(),
+                };
+                setCurrentConversation(finalConversation);
+                setConversations((prev) =>
+                    prev.map((c) => (c.id === conversation.id ? finalConversation : c)),
+                );
+            };
+
             try {
+            if (editUseSequentialStream) {
+                editStreamPreRevealActiveRef.current = false;
+                clearEditStreamPhases?.();
+                clearEditStreamPhases = undefined;
+                try {
+                    await runComposerSequentialMultiRequestStream({
+                        items: editSequentialFlags.items,
+                        conversationId: conversation.id,
+                        signal: abortController.signal,
+                        buildItemOutboundMessage: editBuildSequentialItemOutbound,
+                        buildItemStreamContext: (i) =>
+                            buildSequentialMultiRequestItemContext(
+                                editStreamContext as Record<string, unknown>,
+                                editSequentialFlags.items,
+                                i,
+                            ),
+                        buildStreamRequestBody: (ctx) =>
+                            buildComposerStreamChatRequestBody({
+                                quality: editStreamEffectiveQuality,
+                                conversationId: conversation.id,
+                                context: ctx,
+                                requestId: editRequestId,
+                                responseStyle,
+                                perspective,
+                                diversityLevel: answerDiversityMode,
+                                temperature: editTemperature,
+                                projectId: currentProject?.id,
+                                handleMultipleQuestions: true,
+                            }),
+                        streamMessage: streamChatMessage,
+                        onLiveIndex: setComposerMultiRequestLiveIndex,
+                        onDisplayContent: flushEditStreamSlotContent,
+                        streamOptionsBase: {
+                            messagesForScenarioInherit: editStreamScenarioInherit,
+                            mergeApiChatContextOptions: editStreamMergeDeepseek,
+                        },
+                        onStreamMetadata: patchEditStreamMetadata,
+                        onStreamComplete: finalizeEditStreamResponse,
+                    });
+                } catch (seqErr) {
+                    handleEditStreamError(
+                        seqErr instanceof Error ? seqErr : new Error(String(seqErr)),
+                    );
+                } finally {
+                    setComposerMultiRequestLiveIndex(null);
+                }
+            } else {
             await streamChatMessage(editMessageToSend, conversation.id, {
                 signal: abortController.signal,
-                messagesForScenarioInherit:
-                    scenarioInheritMergeOptionsFromPipelineLikeMessages(
-                        updatedConversation.messages
-                    )?.recentMessagesForScenarioInherit,
-                mergeApiChatContextOptions: mergeScenarioAndConversationDeepseek(
-                    undefined,
-                    editThreadForDeepseek
-                ),
+                messagesForScenarioInherit: editStreamScenarioInherit,
+                mergeApiChatContextOptions: editStreamMergeDeepseek,
                 requestBody: buildComposerStreamChatRequestBody({
                     quality: editStreamEffectiveQuality,
                     conversationId: conversation.id,
@@ -7050,124 +7918,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         });
                     });
                 },
-                onMetadata: (meta: Record<string, unknown>) => {
-                    const serverPhase = mapStreamMetadataToAssistantGenerationPhase(meta);
-                    if (serverPhase) {
-                        editServerDrovePipelinePhaseRef.current = true;
-                        clearEditClientStreamingPhases?.();
-                        clearEditClientStreamingPhases = undefined;
-                    }
-                    setCurrentConversation((prev) => {
-                        if (!prev || prev.id !== conversation.id) return prev;
-                        const existingMsg = prev.messages.find((m) => m.id === assistantId);
-                        if (!existingMsg) return prev;
-                        const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
-                        if (!patched) return prev;
-                        return {
-                            ...prev,
-                            updatedAt: new Date(),
-                            messages: prev.messages.map((m) => (m.id === assistantId ? patched : m)),
-                        };
-                    });
-                    setConversations((prev) =>
-                        prev.map((c) => {
-                            if (c.id !== conversation.id) return c;
-                            const existingMsg = c.messages.find((m) => m.id === assistantId);
-                            if (!existingMsg) return c;
-                            const patched = patchAssistantMessageWithStreamMetadata(existingMsg, meta);
-                            if (!patched) return c;
-                            return {
-                                ...c,
-                                updatedAt: new Date(),
-                                messages: c.messages.map((m) => (m.id === assistantId ? patched : m)),
-                            };
-                        }),
-                    );
-                },
-                onComplete: async (fullText: string, metadata?: Record<string, unknown>) => {
-                    clearEditClientStreamingPhases?.();
-                    clearEditClientStreamingPhases = undefined;
-                    clearEditStreamPhases?.();
-                    clearEditStreamPhases = undefined;
-                    editStreamPreRevealActiveRef.current = false;
-                    setIsStreaming(false);
-                    setIsLoading(false);
-                    abortControllerRef.current = null;
-                    if (streamingRafRef.current) {
-                        cancelAnimationFrame(streamingRafRef.current);
-                        streamingRafRef.current = null;
-                    }
-                    // 프롬프트 지시사항 제거 (최종 정리)
-                    const cleanedText = cleanResponseText(fullText);
-                    const displayText = coerceTrimmedString(cleanedText, '');
-                    const suggestedFollowUps = parsePipelineFollowUpHints(metadata);
-                    const pipelineExtrasMeta = parsePipelineMessageExtras(metadata);
-                    const pipelineExtras = hasPipelineExtras(pipelineExtrasMeta)
-                        ? pipelineExtrasMeta
-                        : undefined;
-                    notebookLLMDeepLearningIntegration.analyzeResponseWithDL(trimmedContent, displayText).catch(() => {});
-                    recordAdvancedMemoryTurn(conversation.id, trimmedContent, displayText);
-                    const finalMessages = initialMessages.map((m) =>
-                        m.id === assistantId
-                            ? {
-                                  ...m,
-                                  content: displayText,
-                                  ...(suggestedFollowUps?.length ? { suggestedFollowUps } : {}),
-                                  ...(pipelineExtras ? { pipelineExtras } : {}),
-                              }
-                            : m
-                    );
-                    const newTitle = await resolveListTitleAfterAssistantReply({
-                        conversationTitle: initialConversation.title,
-                        shouldUpdateTitle: messageIndex === 0 && finalMessages.length >= 2,
-                        explicitTitleConcise: explicitTitleConciseFromEditedInput,
-                        trimmedUserMessage: trimmedContent,
-                        assistantDisplayText: displayText,
-                        generateTitle: generateConversationTitle,
-                    });
-                    const finalConversation = {
-                        ...initialConversation,
-                        messages: finalMessages,
-                        updatedAt: new Date(),
-                        title: newTitle,
-                    };
-                    setCurrentConversation(finalConversation);
-                    setConversations((prev) => {
-                        const next = prev.map((c) => (c.id === conversation.id ? finalConversation : c));
-                        saveConversationsToStorage(next);
-                        return next;
-                    });
-                },
-                onError: (error: Error) => {
-                    clearEditClientStreamingPhases?.();
-                    clearEditClientStreamingPhases = undefined;
-                    clearEditStreamPhases?.();
-                    clearEditStreamPhases = undefined;
-                    editStreamPreRevealActiveRef.current = false;
-                    setIsStreaming(false);
-                    setIsLoading(false);
-                    abortControllerRef.current = null;
-                    if (streamingRafRef.current) {
-                        cancelAnimationFrame(streamingRafRef.current);
-                        streamingRafRef.current = null;
-                    }
-                    const errorContent = getErrorMessage(error);
-                    const finalMessages = initialMessages.map((m) =>
-                        m.id === assistantId
-                            ? { ...m, content: `❌ **오류 발생**\n\n${errorContent}` }
-                            : m
-                    );
-                    const finalConversation = {
-                        ...initialConversation,
-                        messages: finalMessages,
-                        updatedAt: new Date(),
-                    };
-                    setCurrentConversation(finalConversation);
-                    setConversations((prev) =>
-                        prev.map((c) => (c.id === conversation.id ? finalConversation : c))
-                    );
-                },
+                onMetadata: patchEditStreamMetadata,
+                onComplete: finalizeEditStreamResponse,
+                onError: handleEditStreamError,
             });
+            }
             } catch {
                 // streamChatMessage는 실패 시 onError 호출 후 reject — 편집 UI·로딩은 onError에서 처리
             }
@@ -7180,25 +7935,26 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     pipelineExtras: m.pipelineExtras,
                 })
             );
-            const editNsFeatureCtx = buildFeatureContextFromMessage(trimmedContent) as Record<string, unknown>;
             const { pipelineMerge: editNsPipelineMerge } = buildUnifiedQaGensparkPipelineContextMerge({
                 trimmedInput: trimmedContent,
-                featureCtx: editNsFeatureCtx,
+                featureCtx: editFeatureCtx,
                 currentProjectId: currentProject?.id,
                 gensparkRouteAgentId,
                 composerResponseMode,
                 responseStyle,
+                conversationFileContent: editConversationFileContent,
                 conversationDeepseek: editThreadForDeepseek,
                 hasConversationThreadContext:
                     conversationHasThreadInstructionsOrFiles(updatedConversation),
             });
             const editContextWithHistory = {
-                ...(mergeProjectAndThreadChatContext(
-                    buildChatContext(currentProject ?? null),
-                    updatedConversation
-                ) ?? {}),
-                ...editNsFeatureCtx,
+                ...editCtxMerged,
+                ...editFeatureCtx,
                 ...editNsPipelineMerge,
+                ...(editConversationFileContent !== undefined && {
+                    conversation_file_content: editConversationFileContent,
+                    conversation_file_name: editConversationFileName,
+                }),
                 conversation_history: editHistoryForCtx,
                 ...(editHistoryForCtx.length > 0 && {
                     consistency_instruction: '이전 대화에서 논의된 용어·가정·결정사항을 유지하여 일관되게 답변하세요. 최근 대화 맥락을 반드시 참고하세요.',
@@ -7207,7 +7963,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 adapt_answer_to_request: ADAPT_ANSWER_TO_REQUEST_INSTRUCTION,
             };
             const editContextForRequest = mergeGensparkRouteContextIntoRecordIfMissing(
-                editContextWithHistory as Record<string, unknown>,
+                withGraphCreateIntentInChatContext(
+                    trimmedContent,
+                    editContextWithHistory as Record<string, unknown>,
+                    editConversationFileContent,
+                ),
                 gensparkRouteAgentId ?? null,
             );
             const editUseInformed = !!((editContextWithHistory as Record<string, unknown>).enable_web_research || (editContextWithHistory as Record<string, unknown>).prefer_informed_answer);
@@ -7267,40 +8027,115 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             });
             let clearEditNonStreamPhases = editNonStreamTimeline.cancel;
 
-            void postChatAxiosWithFallback(
-                API_BASE_URL,
-                buildChatGptNonStreamPostPayload(
-                    editMessageToSend,
-                    editEffectiveQuality,
-                    editContextForRequest,
-                    buildComposerNonStreamChatExtras({
-                        conversationId: conversation.id,
-                        requestId: editRequestId,
-                        responseStyle,
-                        perspective,
-                        diversityLevel: answerDiversityMode,
-                        temperature: editTemperature,
-                        projectId: currentProject?.id,
-                    }),
-                    mergeScenarioAndConversationDeepseek(
-                        scenarioInheritMergeOptionsFromPipelineLikeMessages(
-                            updatedConversation.messages
+            const editBuildSequentialItemOutbound = createComposerSequentialItemOutboundBuilder({
+                items: editSequentialFlags.items,
+                buildStructuredGenerationPrompt,
+                variationInstruction: editVariationInstruction,
+                styleLearningInstruction: editStyleInstruction,
+                buildMessageToSendForChat,
+                projectContext: editProjectCtx,
+                onBuildError: (index, dlErr) => {
+                    errorLogger.error(
+                        '순차 다중 요청 프롬프트 보강 실패(편집)',
+                        dlErr instanceof Error ? dlErr : new Error(String(dlErr)),
+                        {
+                            component: 'ChatGPTInterface',
+                            action: 'editSequentialMultiRequestBuildMessage',
+                            itemIndex: index,
+                        },
+                    );
+                },
+            });
+
+            const postEditNonStreamPayload = (
+                outboundMessage: string,
+                contextForBody: Record<string, unknown>,
+            ) =>
+                postChatAxiosWithFallback(
+                    API_BASE_URL,
+                    buildChatGptNonStreamPostPayload(
+                        outboundMessage,
+                        editEffectiveQuality,
+                        contextForBody,
+                        buildComposerNonStreamChatExtras({
+                            conversationId: conversation.id,
+                            requestId: editRequestId,
+                            responseStyle,
+                            perspective,
+                            diversityLevel: answerDiversityMode,
+                            temperature: editTemperature,
+                            projectId: currentProject?.id,
+                        }),
+                        mergeScenarioAndConversationDeepseek(
+                            scenarioInheritMergeOptionsFromPipelineLikeMessages(
+                                updatedConversation.messages,
+                            ),
+                            editThreadForDeepseek,
                         ),
-                        editThreadForDeepseek
-                    )
-                ),
-                DEFAULT_CHAT_POST_AXIOS_OPTIONS,
-                DEFAULT_CHAT_POST_FALLBACK_OPTIONS
-            ).then(async (response) => {
-                const responseContent = extractResponseContent(response);
+                    ),
+                    DEFAULT_CHAT_POST_AXIOS_OPTIONS,
+                    DEFAULT_CHAT_POST_FALLBACK_OPTIONS,
+                );
+
+            const assertEditValidChatResponse = (
+                response: Awaited<ReturnType<typeof postChatAxiosWithFallback>>,
+            ): string => {
+                const content = extractResponseContent(response);
                 if (
-                    !responseContent ||
-                    !coerceTrimmedString(responseContent, '') ||
-                    responseContent === '응답을 생성할 수 없습니다. 다시 시도해 주세요.'
+                    !content ||
+                    !coerceTrimmedString(content, '') ||
+                    content === '응답을 생성할 수 없습니다. 다시 시도해 주세요.'
                 ) {
+                    throw new Error('백엔드에서 유효한 응답을 받지 못했습니다.');
+                }
+                return content;
+            };
+
+            void (async () => {
+                let responseContent: string;
+                try {
+                    if (editSequentialFlags.runSequentialMultiRequest) {
+                        const seq = await runComposerSequentialMultiRequestNonStream({
+                            items: editSequentialFlags.items,
+                            buildItemOutboundMessage: editBuildSequentialItemOutbound,
+                            buildItemContext: (i) =>
+                                buildSequentialMultiRequestItemContext(
+                                    editContextForRequest as Record<string, unknown>,
+                                    editSequentialFlags.items,
+                                    i,
+                                ),
+                            postChat: postEditNonStreamPayload,
+                            extractValidContent: assertEditValidChatResponse,
+                            onLiveIndex: setComposerMultiRequestLiveIndex,
+                            onPartialProgress: updateEditNonStreamStep,
+                        });
+                        responseContent = seq.merged;
+                    } else if (editSequentialFlags.runMultiStepMultiRequest) {
+                        const multiStep = await runComposerMultiStepMultiRequest({
+                            items: editSequentialFlags.items,
+                            buildItemContext: (i) =>
+                                buildSequentialMultiRequestItemContext(
+                                    editContextForRequest as Record<string, unknown>,
+                                    editSequentialFlags.items,
+                                    i,
+                                ),
+                            onLiveIndex: setComposerMultiRequestLiveIndex,
+                            onPartialProgress: updateEditNonStreamStep,
+                        });
+                        responseContent = multiStep.merged;
+                    } else {
+                        const response = await postEditNonStreamPayload(
+                            editMessageToSend,
+                            editContextForRequest as Record<string, unknown>,
+                        );
+                        responseContent = assertEditValidChatResponse(response);
+                    }
+                } catch (err) {
                     editNonStreamTimeline.cancel();
                     clearEditNonStreamPhases = () => {};
-                    throw new Error('백엔드에서 유효한 응답을 받지 못했습니다.');
+                    throw err;
+                } finally {
+                    setComposerMultiRequestLiveIndex(null);
                 }
                 await editNonStreamTimeline.promise;
                 clearEditNonStreamPhases();
@@ -7335,7 +8170,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     saveConversationsToStorage(next);
                     return next;
                 });
-            }).catch(error => {
+            })().catch(error => {
                 clearEditNonStreamPhases();
                 clearEditNonStreamPhases = () => {};
                 const errorContent = getErrorMessage(error);
@@ -7381,6 +8216,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         writingStyleProfile,
         generateConversationTitle,
         structuredInputAssistEnabled,
+        attachedConversationFile,
     ]);
 
     // 대화 검색 필터링 — 일반 대화·프로젝트 소속 대화 통합 리스트
@@ -7654,14 +8490,25 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     onClick={() => setShowAddSourceModal(true)}
                     className="bw-btn-primary project-sources-add-btn"
                     aria-label="소스 추가"
+                    data-testid={TEST_IDS.PROJECT_SOURCES_ADD_BTN}
+                    disabled={sourceFilesUploading}
                 >
                     + 소스 추가
                 </button>
             </div>
+            {sourceFilesUploading && (
+                <p
+                    className="project-sources-uploading"
+                    role="status"
+                    data-testid={TEST_IDS.PROJECT_SOURCES_UPLOADING}
+                >
+                    소스를 처리하는 중…
+                </p>
+            )}
             <p className="project-sources-hint">
                 CORBU.AI에 더 많은 컨텍스트 정보를 주기 — 소스를 업로드하고, 드라이브를 링크하고, Slack 등의 앱을 연결해서 프로젝트에 대한 더 많은 컨텍스트 정보를 CORBU.AI에 제공해 주세요.
             </p>
-            <ul className="project-sources-list">
+            <ul className="project-sources-list" data-testid={TEST_IDS.PROJECT_SOURCES_LIST}>
                 {(() => {
                     const files = (currentProject.files ?? []).slice();
                     const webSources = (currentProject.webSources ?? []).slice();
@@ -7671,23 +8518,68 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     }
                     return (
                         <>
-                            {files.map((f, fileIdx) => (
-                                <li key={`file-${fileIdx}-${f.name}`} className="project-sources-item">
-                                    <span className="project-sources-item-icon" aria-hidden>📄</span>
+                            {files.map((f, fileIdx) => {
+                                const fileId = (f as ProjectFile).id ?? `file-${fileIdx}-${f.name}`;
+                                return (
+                                <li
+                                    key={`file-${fileIdx}-${f.name}`}
+                                    className="project-sources-item"
+                                    data-testid={TEST_IDS.PROJECT_SOURCES_FILE_ITEM}
+                                    data-source-name={f.name}
+                                >
+                                    <span className="project-sources-item-icon" aria-hidden>
+                                        <IconFile size={14} />
+                                    </span>
                                     <span className="project-sources-item-name" title={f.name}>
                                         {f.name}
                                     </span>
                                     <span className="project-sources-item-meta">문서</span>
+                                    <button
+                                        type="button"
+                                        className="project-sources-item-remove"
+                                        aria-label={`${f.name} 제거`}
+                                        data-testid={TEST_IDS.PROJECT_SOURCES_FILE_REMOVE}
+                                        data-file-id={fileId}
+                                        disabled={sourceFilesUploading}
+                                        onClick={() => void handleRemoveSourceFile(fileId)}
+                                    >
+                                        <IconTrash size={14} aria-hidden />
+                                    </button>
                                 </li>
-                            ))}
-                            {webSources.map((s, srcIdx) => (
-                                <li key={s.id ?? `web-${srcIdx}`} className="project-sources-item">
-                                    <span className="project-sources-item-icon" aria-hidden>🔗</span>
+                                );
+                            })}
+                            {webSources.map((s, srcIdx) => {
+                                const sourceId = s.id ?? `web-${srcIdx}-${s.url}`;
+                                return (
+                                <li
+                                    key={sourceId}
+                                    className="project-sources-item"
+                                    data-testid={TEST_IDS.PROJECT_SOURCES_WEB_ITEM}
+                                    data-source-url={s.url}
+                                >
+                                    <span className="project-sources-item-icon" aria-hidden>
+                                        <IconShare size={14} />
+                                    </span>
                                     <span className="project-sources-item-name" title={s.title || s.url || undefined}>
                                         {s.title || s.url}
                                     </span>
+                                    <span className="project-sources-item-meta">
+                                        {s.type === 'video' ? '영상' : '웹'}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="project-sources-item-remove"
+                                        aria-label={`${s.title || s.url} 제거`}
+                                        data-testid={TEST_IDS.PROJECT_SOURCES_WEB_REMOVE}
+                                        data-source-id={sourceId}
+                                        disabled={sourceFilesUploading}
+                                        onClick={() => void handleRemoveWebSource(sourceId)}
+                                    >
+                                        <IconTrash size={14} aria-hidden />
+                                    </button>
                                 </li>
-                            ))}
+                                );
+                            })}
                         </>
                     );
                 })()}
@@ -7700,6 +8592,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         onClick={() => setShowAddSourceModal(true)}
                         className="bw-btn-primary project-sources-empty-cta"
                         aria-label="소스 추가하기"
+                        data-testid={TEST_IDS.PROJECT_SOURCES_EMPTY_CTA}
+                        disabled={sourceFilesUploading}
                     >
                         추가하기
                     </button>
@@ -7715,13 +8609,137 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
               ? '메시지를 입력하세요…'
               : WORKSPACE_CHAT_EMPTY_THREAD_PLACEHOLDER;
 
+    const chatSendPrimaryAction =
+        isStreaming ? (
+            <button
+                type="button"
+                className="wq-composer__chat-cta"
+                style={{ background: '#ef4444', borderColor: '#dc2626' }}
+                onClick={cancelStreaming}
+                aria-label="스트리밍 중지"
+                title="생성 중지 (Esc)"
+            >
+                중지
+            </button>
+        ) : (
+            <button
+                type="submit"
+                className="wq-composer__chat-cta"
+                disabled={!canSend}
+                aria-label={input.trim() ? '메시지 전송' : '전송'}
+                aria-disabled={!canSend}
+                title={!isOnline ? '오프라인 상태입니다' : '메시지 전송 (Enter)'}
+                data-testid={TEST_IDS.SEND_BUTTON}
+            >
+                {isLoading ? (
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" className="loading-spinner" aria-hidden="true"><circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="12.566" strokeDashoffset="12.566"><animate attributeName="stroke-dashoffset" values="12.566;0" dur="1s" repeatCount="indefinite" /></circle></svg>
+                ) : (
+                    <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><rect x="2" y="8" width="3" height="8" rx="1"/><rect x="8" y="4" width="3" height="16" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/><rect x="20" y="9" width="3" height="6" rx="1"/></svg>
+                        대화
+                    </>
+                )}
+            </button>
+        );
+
+    const chatWorkspaceComposer = (
+        <WorkspaceQueryComposer
+            ref={composerAttachRef}
+            value={input}
+            onChange={setInput}
+            onCommit={handleWqCommit}
+            formAriaLabel="메시지 전송"
+            textareaRef={inputRef as React.RefObject<HTMLTextAreaElement>}
+            textareaTestId={TEST_IDS.CHAT_INPUT}
+            placeholder={composerFieldPlaceholder}
+            onConversationTextFileAttach={attachConversationTextFile}
+            responseMode={composerResponseMode}
+            onResponseModeChange={setComposerResponseMode}
+            showStructureChips
+            onPendingAttachmentsChange={setComposerPendingAttachCount}
+            statusFooter={
+                composerInputPipelinePhase ? (
+                    <div data-testid={TEST_IDS.COMPOSER_GENSPARK_GENERATION_STATUS}>
+                        <GensparkGenerationStatus
+                            variant="step"
+                            phase={composerInputPipelinePhase}
+                            webSearch={composerGensparkStepUi.webSearch}
+                            documentContext={composerGensparkStepUi.documentContext}
+                            stepCaption={composerGenerationCaption ?? undefined}
+                            embedded
+                        />
+                        {composerMultiRequestProgress ? (
+                            <ComposerMultiRequestChecklist progress={composerMultiRequestProgress} />
+                        ) : null}
+                        {inputFooterGenerationHint ? (
+                            <p className="wq-composer__pipeline-hint" role="status" aria-live="polite">
+                                {inputFooterGenerationHint}
+                            </p>
+                        ) : null}
+                    </div>
+                ) : composerIdleInputHint ? (
+                    <p
+                        className="wq-composer__pipeline-hint"
+                        role="status"
+                        data-testid={TEST_IDS.CHAT_COMPOSER_INPUT_HINT}
+                    >
+                        {composerIdleInputHint}
+                    </p>
+                ) : inputFooterGenerationHint ? (
+                    <p role="status" aria-live="polite">
+                        {inputFooterGenerationHint}
+                    </p>
+                ) : undefined
+            }
+            primaryAction={chatSendPrimaryAction}
+        />
+    );
+
+    const inputDockSuggestionItems: string[] = !inputTrimmed
+        ? quickSuggestions.length > 0
+            ? quickSuggestions
+            : suggestedQuestionsFromSource.length > 0
+              ? suggestedQuestionsFromSource
+              : !currentConversation
+                ? [...WORKSPACE_WELCOME_SUGGESTION_CHIPS]
+                : []
+        : [];
+
+    const inputDockSuggestionsEl =
+        inputDockSuggestionItems.length > 0 ? (
+            <div
+                className="brainwave-quick-suggestions"
+                role="region"
+                aria-label={quickSuggestions.length > 0 ? '빠른 질문' : '추천 질문'}
+                data-testid={TEST_IDS.CHAT_INPUT_DOCK_SUGGESTIONS}
+            >
+                <span className="brainwave-quick-suggestions-label">
+                    {quickSuggestions.length > 0 ? '빠른 질문:' : '추천 질문:'}
+                </span>
+                {inputDockSuggestionItems.map((suggestion, idx) => (
+                    <button
+                        key={`${suggestion}-${idx}`}
+                        type="button"
+                        onClick={() => sendMessage(suggestion)}
+                        aria-label={`${quickSuggestions.length > 0 ? '빠른' : '추천'} 질문 전송: ${suggestion}`}
+                        className="brainwave-quick-suggestion-btn"
+                    >
+                        {suggestion}
+                    </button>
+                ))}
+            </div>
+        ) : null;
+
+    const hideEmptyStateSuggestedQuestions =
+        inputDockSuggestionItems.length > 0 &&
+        suggestedQuestionsFromSource.length > 0 &&
+        currentConversation != null &&
+        currentConversation.messages.length === 0;
+
     const projectSourcesTabInputHint =
         currentProject &&
         projectContentTab === 'sources' && (
             <div className="project-sources-input-hint" role="status" data-testid={TEST_IDS.PROJECT_SOURCES_INPUT_HINT}>
-                <span className="project-sources-input-hint__lead" aria-hidden>
-                    💬
-                </span>
                 <span className="project-sources-input-hint__text">
                     <strong>대화</strong> 탭에서 공유·보내기·대화 검색을 사용할 수 있습니다. 메시지는 아래에서 그대로 보낼 수 있습니다.
                 </span>
@@ -7769,6 +8787,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     accept=".txt,.csv"
                     className="sr-only"
                     aria-hidden
+                    aria-label="대화 파일 첨부 (TXT/CSV)"
                     onChange={handleConversationFileSelect}
                 />
                 {/* 상단 바: 좌(문서/편집) · 우(업로드·공유) — 타이틀 텍스트 제거 */}
@@ -7839,8 +8858,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 </header>
                 {!isOnline && (
                     <div role="alert" className="chat-offline-banner">
-                        <span aria-hidden>⚠️</span>
-                        <span>오프라인 상태입니다. 연결이 복구되면 메시지 전송이 가능합니다.</span>
+                        오프라인 상태입니다. 연결이 복구되면 메시지 전송이 가능합니다.
                     </div>
                 )}
                 {gensparkAgentSessionMeta && gensparkRouteAgentId && (
@@ -7930,9 +8948,9 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 {viewMode === 'notebook' && currentProject ? (
                     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ padding: '16px', borderBottom: `1px solid ${themeStyles.borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                            <h2 style={{ margin: 0, color: themeStyles.textPrimary }}>📓 노트북 (구글 노트북 LM) - {currentProject.name}</h2>
+                            <h2 style={{ margin: 0, color: themeStyles.textPrimary }}>노트북 (구글 노트북 LM) — {currentProject.name}</h2>
                             <span style={{ fontSize: '12px', color: themeStyles.textSecondary }}>
-                                소스는 ⚙️ 설정에서 가이드라인으로 추가할 수 있습니다
+                                소스는 프로젝트 설정에서 가이드라인으로 추가할 수 있습니다
                             </span>
                             <button
                                 type="button"
@@ -7948,7 +8966,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     fontSize: '14px'
                                 }}
                             >
-                                💬 대화로 돌아가기
+                                대화로 돌아가기
                             </button>
                         </div>
                         <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
@@ -7999,38 +9017,29 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     >
                         {currentProject && (
                             <header className="bw-detail-header project-detail-header" aria-label={`${currentProject.name} 프로젝트 정보`}>
-                                <div className="bw-detail-header-inner">
-                                    <div className="bw-detail-header-left">
-                                        <div className="bw-detail-header-icon" aria-hidden>📁</div>
+                                <div className="bw-detail-header-inner project-detail-header-inner">
+                                    <div className="bw-detail-header-left project-detail-header-left">
                                         <div className="project-detail-header-text">
                                             <h1 className="bw-detail-title">{currentProject.name}</h1>
-                                            <p className="bw-detail-desc">
-                                                {coerceTrimmedString(currentProject.description, '') || `${currentProject.name}에 대해 무엇이든 물어보세요`}
-                                            </p>
+                                            {coerceTrimmedString(currentProject.description, '') ? (
+                                                <p className="bw-detail-desc">{coerceTrimmedString(currentProject.description, '')}</p>
+                                            ) : null}
                                         </div>
                                     </div>
                                     <div className="bw-detail-header-actions">
                                         <button
                                             type="button"
-                                            className="bw-btn-secondary"
+                                            className="bw-btn-secondary project-detail-settings-btn"
                                             onClick={() => setShowProjectEditModal(true)}
                                             aria-label="프로젝트 설정"
                                             title="프로젝트 설정 열기"
                                             data-testid={TEST_IDS.PROJECT_DETAIL_SETTINGS_BTN}
                                         >
-                                            프로젝트 설정
+                                            <IconSettings size={18} aria-hidden />
+                                            <span className="project-detail-settings-btn__label">설정</span>
                                         </button>
                                     </div>
                                 </div>
-                                {currentProjectContext && (
-                                    <div className="bw-detail-meta-row" role="list" aria-label="프로젝트 상태">
-                                        <span className="bw-detail-meta-text">지침 {currentProjectContext.hasInstructions ? '적용됨' : '없음'}</span>
-                                        <span className="bw-detail-meta-text">가이드라인 {currentProjectContext.guidelineCount}개</span>
-                                        <span className="bw-detail-meta-text">파일 {currentProjectContext.fileCount}개</span>
-                                        <span className="bw-detail-meta-text">태그 {currentProjectContext.tagCount}개</span>
-                                        <span className="bw-detail-meta-text">소스 {currentProjectContext.sourceCount}개</span>
-                                    </div>
-                                )}
                             </header>
                         )}
                         {/* 대화 / 소스 탭 — 샘플 구성: 프로젝트명 바로 아래 */}
@@ -8081,11 +9090,18 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 </p>
                             </div>
                         )}
-                        {currentConversation ? (
                             <div
-                                className={`project-detail-body${currentProject && projectContentTab === 'sources' ? ' project-detail-body--sources-tab' : ''}`}
+                                className={[
+                                    'project-detail-body',
+                                    'chat-main-stage',
+                                    !currentConversation ? 'chat-main-stage--welcome' : '',
+                                    currentProject && projectContentTab === 'sources' ? 'project-detail-body--sources-tab' : '',
+                                ]
+                                    .filter(Boolean)
+                                    .join(' ')}
                                 style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
                             >
+                    {currentConversation ? (
                     <>
                         {(!currentProject || projectContentTab === 'chat') && threadContextPanelOpen && (
                             <div
@@ -8097,7 +9113,9 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             >
                                 <div className="bw-thread-context-panel__toolbar">
                                     <span className="bw-thread-context-panel__title">
-                                        이 대화 · 지침·파일·딥시크 (프로젝트 없이 대화만 쓸 때 여기서 설정)
+                                        {currentProject
+                                            ? '이 스레드만의 지침·파일 (프로젝트 지침에 추가로 적용)'
+                                            : '이 대화 · 지침·파일·딥시크'}
                                     </span>
                                     <button
                                         type="button"
@@ -8110,10 +9128,19 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 </div>
                                 <div className="bw-thread-context-panel__body">
                                     <p className="bw-thread-context-panel__hint">
-                                        프로젝트 없이 쓸 때 <strong>이 대화</strong>에 지침·참고 파일을 두면, 요청마다{' '}
-                                        <strong>parsed_input</strong>·Q→A 파이프라인·딥시크 플래그가 함께 실리고, 첨부 본문은 서버에서
-                                        답변 맥락(<code>projectKnowledge</code>)에 합쳐집니다. 입력창 아래{' '}
-                                        <strong>딥시크 검수·리파인·Reasoner</strong> 토글로 대화별로 덮어쓸 수 있습니다.
+                                        {currentProject ? (
+                                            <>
+                                                이 스레드에만 적용되는 지침·텍스트 파일입니다. 프로젝트 지침·소스와 함께 맥락에 포함됩니다.
+                                                입력창 아래 <strong>딥시크</strong> 관련 토글로 이 스레드만 덮어쓸 수 있습니다.
+                                            </>
+                                        ) : (
+                                            <>
+                                                프로젝트 없이 쓸 때 <strong>이 대화</strong>에 지침·참고 파일을 두면, 요청마다{' '}
+                                                <strong>parsed_input</strong>·Q→A 파이프라인·딥시크 플래그가 함께 실리고, 첨부 본문은 서버에서
+                                                답변 맥락(<code>projectKnowledge</code>)에 합쳐집니다. 입력창 아래{' '}
+                                                <strong>딥시크 검수·리파인·Reasoner</strong> 토글로 대화별로 덮어쓸 수 있습니다.
+                                            </>
+                                        )}
                                     </p>
                                     <label className="bw-thread-context-panel__label" htmlFor="bw-thread-instructions">
                                         지침
@@ -8187,132 +9214,27 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 </div>
                             </div>
                         )}
-                        {/* 대화 헤더 — 다단계 UI형: 공유 + 보내기·관리 메뉴 */}
-                        <div className="brainwave-chat-header brainwave-chat-header--genspark">
-                            <h3
-                                className="brainwave-chat-header-title"
-                                title={inProjectDetailContext && currentProject ? currentProject.name : currentConversation.title}
-                            >
-                                {inProjectDetailContext && currentProject ? (
-                                    <>
-                                        <span className="brainwave-chat-header-title-kicker">프로젝트</span>
-                                        <span>{currentProject.name}</span>
-                                    </>
+                        {/* 대화 헤더 — 제목 행 + 보조(태그·핀) 분리 */}
+                        <div
+                            className={[
+                                'brainwave-chat-header brainwave-chat-header--genspark',
+                                currentProject ? 'brainwave-chat-header--in-project' : '',
+                            ]
+                                .filter(Boolean)
+                                .join(' ')}
+                        >
+                            <div className="brainwave-chat-header__primary">
+                                {currentProject ? (
+                                    <p className="brainwave-chat-header-thread-line" title={currentConversation.title}>
+                                        {currentConversation.title}
+                                    </p>
                                 ) : (
-                                    <>
+                                    <h3 className="brainwave-chat-header-title" title={currentConversation.title}>
                                         <span className="brainwave-chat-header-title-kicker">대화</span>
                                         <span>{currentConversation.title}</span>
-                                    </>
+                                    </h3>
                                 )}
-                            </h3>
-                            {/* 대화 태그 행 */}
-                            <div className="conv-tags-row">
-                                {(currentConversation.tags ?? []).map(tag => (
-                                    <span key={tag} className="conv-tag-chip">
-                                        #{tag}
-                                        <button
-                                            type="button"
-                                            className="conv-tag-chip-del"
-                                            onClick={() => removeTagFromCurrentConv(tag)}
-                                            aria-label={`태그 #${tag} 삭제`}
-                                            title="삭제"
-                                        >✕</button>
-                                    </span>
-                                ))}
-                                {convTagsOpen ? (
-                                    <span className="conv-tag-add-wrap">
-                                        <input
-                                            type="text"
-                                            className="conv-tag-input"
-                                            placeholder="태그 입력…"
-                                            value={convTagInput}
-                                            onChange={e => setConvTagInput(e.target.value)}
-                                            onKeyDown={e => {
-                                                if (e.key === 'Enter') { addTagToCurrentConv(convTagInput); }
-                                                if (e.key === 'Escape') { setConvTagsOpen(false); setConvTagInput(''); }
-                                            }}
-                                            maxLength={20}
-                                            autoFocus
-                                            aria-label="태그 입력"
-                                        />
-                                        <button type="button" className="conv-tag-add-confirm" onClick={() => addTagToCurrentConv(convTagInput)} aria-label="태그 추가 확인">✓</button>
-                                        <button type="button" className="conv-tag-add-cancel" onClick={() => { setConvTagsOpen(false); setConvTagInput(''); }} aria-label="취소">✕</button>
-                                    </span>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        className="conv-tag-add-btn"
-                                        onClick={() => setConvTagsOpen(true)}
-                                        aria-label="태그 추가"
-                                        title="태그 추가 (최대 8개)"
-                                    >
-                                        🏷 +태그
-                                    </button>
-                                )}
-                            </div>
-                            {/* 핀된 메시지 배너 */}
-                            {pinnedMessages.length > 0 && (
-                                <div className="msg-pinned-banner">
-                                    <button
-                                        type="button"
-                                        className="msg-pinned-banner-toggle"
-                                        onClick={() => setShowPinnedPanel(p => !p)}
-                                        aria-expanded={showPinnedPanel}
-                                    >
-                                        📌 핀 고정 메시지 {pinnedMessages.length}개 {showPinnedPanel ? '▾' : '▸'}
-                                    </button>
-                                    {showPinnedPanel && (
-                                        <ul className="msg-pinned-list">
-                                            {pinnedMessages.map(pm => (
-                                                <li key={pm.id} className="msg-pinned-item">
-                                                    <span className="msg-pinned-role">{pm.role === 'user' ? '나' : 'AI'}</span>
-                                                    <span className="msg-pinned-preview">{pm.content.slice(0, 80)}{pm.content.length > 80 ? '…' : ''}</span>
-                                                    <button
-                                                        type="button"
-                                                        className="msg-pinned-unpin"
-                                                        onClick={() => togglePinMessage(pm.id)}
-                                                        aria-label="핀 해제"
-                                                        title="핀 해제"
-                                                    >✕</button>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </div>
-                            )}
-                            <div className="brainwave-chat-header-actions">
-                                {/* 대화 전체 복사 드롭다운 */}
-                                {currentConversation && currentConversation.messages.length > 0 && (
-                                    <div className="chat-copy-wrap" style={{ position: 'relative' }}>
-                                        <button
-                                            type="button"
-                                            className="bw-btn-secondary chat-copy-btn"
-                                            onClick={() => setConversationCopyMenuOpen((prev) => !prev)}
-                                            aria-label="대화 복사"
-                                            title="대화 전체를 클립보드에 복사"
-                                        >
-                                            {conversationCopyDone ? '✓ 복사됨' : '📋 복사'}
-                                        </button>
-                                        {conversationCopyMenuOpen && (
-                                            <div className="chat-copy-menu">
-                                                <button
-                                                    type="button"
-                                                    className="chat-copy-menu-item"
-                                                    onClick={() => handleConversationQuickCopy('markdown')}
-                                                >
-                                                    Markdown으로 복사
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className="chat-copy-menu-item"
-                                                    onClick={() => handleConversationQuickCopy('txt')}
-                                                >
-                                                    텍스트로 복사
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                <div className="brainwave-chat-header-actions">
                                 <button
                                     type="button"
                                     className="bw-btn-primary"
@@ -8350,7 +9272,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                             }}
                                             disabled={currentConversation.messages.length === 0}
                                         >
-                                            ⚙️ 내보내기 옵션…
+                                            내보내기 옵션…
                                         </button>
                                         <button
                                             type="button"
@@ -8538,7 +9460,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                             borderRadius: '4px',
                                             color: 'var(--accent-warning)',
                                         }}>
-                                            ⭐ 북마크 {bookmarkedMessages.length}
+                                            북마크 {bookmarkedMessages.length}
                                         </span>
                                         <button
                                             type="button"
@@ -8555,7 +9477,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                 color: 'var(--accent-warning)',
                                             }}
                                         >
-                                            📥 내보내기
+                                            내보내기
                                         </button>
                                     </span>
                                 )}
@@ -8579,50 +9501,113 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                             gap: '3px',
                                         }}
                                     >
-                                        📝 요약
+                                        요약
                                     </button>
                                 )}
-                                {/* 대화 통계 */}
-                                {conversationStats && conversationStats.total > 0 && (
-                                    <span style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        background: 'var(--accent-info-muted)',
-                                        borderRadius: '4px',
-                                        color: 'var(--accent-info)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                    }}>
-                                        <span title={`사용자: ${conversationStats.user}, AI: ${conversationStats.assistant}`}>
-                                            💬 {conversationStats.total}
+                            </div>
+                            </div>
+                            <div className="brainwave-chat-header__secondary">
+                                <div className="conv-tags-row">
+                                    {(currentConversation.tags ?? []).map(tag => (
+                                        <span key={tag} className="conv-tag-chip">
+                                            #{tag}
+                                            <button
+                                                type="button"
+                                                className="conv-tag-chip-del"
+                                                onClick={() => removeTagFromCurrentConv(tag)}
+                                                aria-label={`태그 #${tag} 삭제`}
+                                                title="삭제"
+                                            >
+                                                ✕
+                                            </button>
                                         </span>
-                                        <span style={{ opacity: 0.5 }}>|</span>
-                                        <span title={`총 ${conversationStats.chars.toLocaleString()}자`}>
-                                            ~{conversationStats.tokens.toLocaleString()} 토큰
+                                    ))}
+                                    {convTagsOpen ? (
+                                        <span className="conv-tag-add-wrap">
+                                            <input
+                                                type="text"
+                                                className="conv-tag-input"
+                                                placeholder="태그 입력…"
+                                                value={convTagInput}
+                                                onChange={e => setConvTagInput(e.target.value)}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') {
+                                                        addTagToCurrentConv(convTagInput);
+                                                    }
+                                                    if (e.key === 'Escape') {
+                                                        setConvTagsOpen(false);
+                                                        setConvTagInput('');
+                                                    }
+                                                }}
+                                                maxLength={20}
+                                                autoFocus
+                                                aria-label="태그 입력"
+                                            />
+                                            <button
+                                                type="button"
+                                                className="conv-tag-add-confirm"
+                                                onClick={() => addTagToCurrentConv(convTagInput)}
+                                                aria-label="태그 추가 확인"
+                                            >
+                                                ✓
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="conv-tag-add-cancel"
+                                                onClick={() => {
+                                                    setConvTagsOpen(false);
+                                                    setConvTagInput('');
+                                                }}
+                                                aria-label="취소"
+                                            >
+                                                ✕
+                                            </button>
                                         </span>
-                                    </span>
-                                )}
-                                {/* 마지막 응답 시간 */}
-                                {lastResponseTime && !isLoading && (
-                                    <span style={{
-                                        padding: '4px 8px',
-                                        fontSize: '11px',
-                                        background: 'var(--accent-success-muted)',
-                                        borderRadius: '4px',
-                                        color: 'var(--accent-primary)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '4px',
-                                    }}>
-                                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                                            <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z" />
-                                            <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z" />
-                                        </svg>
-                                        {lastResponseTime < 1000
-                                            ? `${lastResponseTime}ms`
-                                            : `${(lastResponseTime / 1000).toFixed(1)}초`}
-                                    </span>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className="conv-tag-add-btn"
+                                            onClick={() => setConvTagsOpen(true)}
+                                            aria-label="태그 추가"
+                                            title="태그 추가 (최대 8개)"
+                                        >
+                                            + 태그
+                                        </button>
+                                    )}
+                                </div>
+                                {pinnedMessages.length > 0 && (
+                                    <div className="msg-pinned-banner">
+                                        <button
+                                            type="button"
+                                            className="msg-pinned-banner-toggle"
+                                            onClick={() => setShowPinnedPanel(p => !p)}
+                                            aria-expanded={showPinnedPanel}
+                                        >
+                                            핀 고정 {pinnedMessages.length}개 {showPinnedPanel ? '▾' : '▸'}
+                                        </button>
+                                        {showPinnedPanel && (
+                                            <ul className="msg-pinned-list">
+                                                {pinnedMessages.map(pm => (
+                                                    <li key={pm.id} className="msg-pinned-item">
+                                                        <span className="msg-pinned-role">{pm.role === 'user' ? '나' : 'AI'}</span>
+                                                        <span className="msg-pinned-preview">
+                                                            {pm.content.slice(0, 80)}
+                                                            {pm.content.length > 80 ? '…' : ''}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            className="msg-pinned-unpin"
+                                                            onClick={() => togglePinMessage(pm.id)}
+                                                            aria-label="핀 해제"
+                                                            title="핀 해제"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -8784,8 +9769,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                             <output>
                                                 <h2>아직 대화 없음</h2>
                                                 <p>{currentProjectContext.name}에 대해 무엇이든 물어보세요</p>
-                                        {suggestedQuestionsFromSource.length > 0 && (
-                                            <div className="empty-state-suggested-questions" role="region" aria-label="추천 질문" data-testid="suggested-questions-from-source">
+                                        {!hideEmptyStateSuggestedQuestions && suggestedQuestionsFromSource.length > 0 && (
+                                            <div className="empty-state-suggested-questions" role="region" aria-label="추천 질문" data-testid={TEST_IDS.SUGGESTED_QUESTIONS_FROM_SOURCE}>
                                                 <p className="suggested-questions-label">💡 소스 기반 추천 질문</p>
                                                 <div className="suggested-questions-grid">
                                                     {suggestedQuestionsFromSource.map((q, idx) => (
@@ -8824,12 +9809,12 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                             <p className="genspark-agent-empty__hint">
                                                 상단에서 공개 URL·앱 링크를 복사하거나 원본 페이지를 열 수 있습니다.
                                             </p>
-                                            {suggestedQuestionsFromSource.length > 0 && (
+                                            {!hideEmptyStateSuggestedQuestions && suggestedQuestionsFromSource.length > 0 && (
                                                 <div
                                                     className="empty-state-suggested-questions"
                                                     role="region"
                                                     aria-label="추천 질문"
-                                                    data-testid="suggested-questions-from-source"
+                                                    data-testid={TEST_IDS.SUGGESTED_QUESTIONS_FROM_SOURCE}
                                                 >
                                                     <p className="suggested-questions-label">💡 추천 질문</p>
                                                     <div className="suggested-questions-grid">
@@ -8853,12 +9838,14 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                         <output>
                                             <h2>새 대화를 시작하세요</h2>
                                             <p>
-                                                {suggestedQuestionsFromSource.length > 0
+                                                {suggestedQuestionsFromSource.length > 0 && !hideEmptyStateSuggestedQuestions
                                                     ? '아래 추천 질문을 클릭하거나 직접 입력하세요. Enter로 전송, Shift+Enter로 줄바꿈.'
-                                                    : '입력창에 메시지를 입력하여 대화를 시작하세요. Enter로 전송, Shift+Enter로 줄바꿈.'}
+                                                    : suggestedQuestionsFromSource.length > 0
+                                                      ? '입력창 위 추천 질문을 클릭하거나 직접 입력하세요. Enter로 전송, Shift+Enter로 줄바꿈.'
+                                                      : '입력창에 메시지를 입력하여 대화를 시작하세요. Enter로 전송, Shift+Enter로 줄바꿈.'}
                                             </p>
-                                            {suggestedQuestionsFromSource.length > 0 && (
-                                                <div className="empty-state-suggested-questions" role="region" aria-label="추천 질문" data-testid="suggested-questions-from-source">
+                                            {!hideEmptyStateSuggestedQuestions && suggestedQuestionsFromSource.length > 0 && (
+                                                <div className="empty-state-suggested-questions" role="region" aria-label="추천 질문" data-testid={TEST_IDS.SUGGESTED_QUESTIONS_FROM_SOURCE}>
                                                     <p className="suggested-questions-label">💡 소스 기반 추천 질문</p>
                                                     <div className="suggested-questions-grid">
                                                         {suggestedQuestionsFromSource.map((q, idx) => (
@@ -9336,7 +10323,20 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                             justifyContent: 'center',
                                                         }}
                                                     >
-                                                        📌
+                                                        <svg
+                                                            width="14"
+                                                            height="14"
+                                                            viewBox="0 0 24 24"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            strokeWidth="2"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            aria-hidden="true"
+                                                        >
+                                                            <path d="M12 17s7-4.5 7-10a7 7 0 10-14 0c0 5.5 7 10 7 10z" />
+                                                            <circle cx="12" cy="7" r="1.5" fill="currentColor" stroke="none" />
+                                                        </svg>
                                                     </button>
                                                     {/* TTS 버튼 */}
                                                     <button
@@ -9570,7 +10570,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <div className="bw-std-popup-panel-header">
-                                        <h2 id="summary-modal-title">📝 대화 요약</h2>
+                                        <h2 id="summary-modal-title">대화 요약</h2>
                                         <button
                                             type="button"
                                             className="bw-std-popup-close"
@@ -9583,7 +10583,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     <div className="bw-std-popup-panel-body">
                                         {summaryLoading ? (
                                             <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
-                                                ⏳ 요약 생성 중...
+                                                요약 생성 중…
                                             </div>
                                         ) : (
                                             <pre style={{
@@ -9609,7 +10609,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                 onClick={copySummary}
                                                 style={{ fontSize: '12px' }}
                                             >
-                                                📋 복사
+                                                복사
                                             </button>
                                             <button
                                                 type="button"
@@ -9640,7 +10640,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <div className="bw-std-popup-panel-header">
-                                        <h2 id="export-opts-title">⚙️ 내보내기 옵션</h2>
+                                        <h2 id="export-opts-title">내보내기 옵션</h2>
                                         <button type="button" className="bw-std-popup-close" onClick={() => setShowExportModal(false)} aria-label="닫기">×</button>
                                     </div>
                                     <div className="bw-std-popup-panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '14px 16px' }}>
@@ -9687,7 +10687,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                     style={{ fontSize: 12, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border-color, #e2e8f0)', background: 'var(--card-bg, #fff)', color: 'var(--text-primary)' }} />
                                                 {(exportDateFrom || exportDateTo) && (
                                                     <button type="button" onClick={() => { setExportDateFrom(''); setExportDateTo(''); }}
-                                                        style={{ fontSize: 11, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>✕ 초기화</button>
+                                                        style={{ fontSize: 11, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>초기화</button>
                                                 )}
                                             </div>
                                         </div>
@@ -9702,7 +10702,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     </div>
                                     <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'flex-end', gap: 8, borderTop: '1px solid var(--border-color)' }}>
                                         <button type="button" className="bw-btn-secondary" onClick={() => setShowExportModal(false)} style={{ fontSize: 12 }}>취소</button>
-                                        <button type="button" className="bw-btn-primary" onClick={runExportWithOptions} style={{ fontSize: 12 }}>⬇️ 내보내기</button>
+                                        <button type="button" className="bw-btn-primary" onClick={runExportWithOptions} style={{ fontSize: 12 }}>내보내기</button>
                                     </div>
                                 </div>
                             </div>
@@ -9723,7 +10723,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <div className="bw-std-popup-panel-header">
-                                        <h2 id="shortcuts-modal-title">⌨️ 키보드 단축키</h2>
+                                        <h2 id="shortcuts-modal-title">키보드 단축키</h2>
                                         <button
                                             ref={shortcutsCloseRef}
                                             type="button"
@@ -9775,16 +10775,63 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 </div>
                             </div>
                         )}
-
-{/* 프로젝트 지침 적용 안내 */}
+                    </>
+                    ) : (
+                    <>
+                            {currentProject ? (
+                                <div
+                                    id="project-content-panel"
+                                    role="tabpanel"
+                                    aria-labelledby={projectContentTab === 'sources' ? 'tab-sources-top' : 'tab-chat-top'}
+                                    aria-live={projectContentTab === 'sources' ? 'off' : 'polite'}
+                                    aria-atomic="false"
+                                    className={`messages-container project-welcome-tabpanel chat-main-stage__scroll chat-welcome-scroll${projectContentTab === 'sources' ? '' : ' genspark-chat-messages-wrap'}`}
+                                    style={{
+                                        flex: 1,
+                                        minHeight: 0,
+                                        overflowY: 'auto',
+                                        WebkitOverflowScrolling: 'touch',
+                                    }}
+                                    tabIndex={-1}
+                                    ref={messagesContainerRef}
+                                    data-testid={TEST_IDS.MESSAGES_CONTAINER}
+                                >
+                                    {projectContentTab === 'sources' ? (
+                                        projectSourcesPanelSection
+                                    ) : (
+                                        <WelcomeWorkspacePanel showHero={!compactWorkspaceWelcome} />
+                                    )}
+                                </div>
+                            ) : (
+                                <div
+                                    className="messages-container genspark-chat-messages-wrap chat-main-stage__scroll chat-welcome-scroll"
+                                    style={{
+                                        flex: 1,
+                                        minHeight: 0,
+                                        overflowY: 'auto',
+                                        WebkitOverflowScrolling: 'touch',
+                                    }}
+                                    tabIndex={-1}
+                                    ref={messagesContainerRef}
+                                    data-testid={TEST_IDS.MESSAGES_CONTAINER}
+                                >
+                                    <WelcomeWorkspacePanel showHero={!compactWorkspaceWelcome} />
+                                </div>
+                            )}
+                    </>
+                    )}
                         {currentProject && hasProjectGuidance && (
                             <p className="bw-project-guidance-hint" role="status">
                                 이 프로젝트의 지침·규칙이 답변에 적용됩니다. (논리·형식은 설정한 대로 반영됩니다)
                             </p>
                         )}
                         {projectSourcesTabInputHint}
-                        {/* 입력 영역 */}
-                        <section className="input-container bw-page-input-dock genspark-chat-input-wrap" aria-label="메시지 입력 영역">
+                        <ChatInputDock
+                            composer={chatWorkspaceComposer}
+                            variant={currentConversation ? 'conversation' : 'welcome'}
+                        >
+                            {currentConversation ? (
+                            <>
                             <details className="generation-advanced-options">
                                 <summary className="generation-advanced-summary">
                                     고급 생성 옵션 · 모드 {outputPresetLabel} · 다양성 {answerDiversityLabel}
@@ -9857,26 +10904,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     </div>
                                 </div>
                                 )}
-
-                            {/* 빠른 후속 질문 제안 */}
-                            {quickSuggestions.length > 0 && !inputTrimmed && (
-                                <div className="brainwave-quick-suggestions">
-                                    <span className="brainwave-quick-suggestions-label">
-                                        빠른 질문:
-                                    </span>
-                                    {quickSuggestions.map((suggestion, idx) => (
-                                        <button
-                                            key={idx}
-                                            type="button"
-                                            onClick={() => sendMessage(suggestion)}
-                                            aria-label={`빠른 질문 전송: ${suggestion}`}
-                                            className="brainwave-quick-suggestion-btn"
-                                        >
-                                            {suggestion}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
 
                                 <div className="generation-preset-bar" role="group" aria-label="생성 형식 프리셋">
                                 <span className="generation-preset-label">생성 모드</span>
@@ -10055,156 +11082,13 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 )}
                                 </div>
                             </details>
-
-                            <WorkspaceQueryComposer
-                                value={input}
-                                onChange={setInput}
-                                onCommit={handleWqCommit}
-                                formAriaLabel="메시지 전송"
-                                textareaRef={inputRef as React.RefObject<HTMLTextAreaElement>}
-                                textareaTestId={TEST_IDS.CHAT_INPUT}
-                                onVoiceClick={() => navigate(VOICE_GENERATION_PATH)}
-                                primaryAction={
-                                    isStreaming ? (
-                                        <button
-                                            type="button"
-                                            className="wq-composer__chat-cta"
-                                            style={{ background: '#ef4444', borderColor: '#dc2626' }}
-                                            onClick={cancelStreaming}
-                                            aria-label="스트리밍 중지"
-                                            title="생성 중지 (Esc)"
-                                        >
-                                            중지
-                                        </button>
-                                    ) : (
-                                        <button
-                                            type="submit"
-                                            className="wq-composer__chat-cta"
-                                            disabled={!canSend}
-                                            aria-label={input.trim() ? '메시지 전송' : '전송'}
-                                            aria-disabled={!canSend}
-                                            title={!isOnline ? '오프라인 상태입니다' : '메시지 전송 (Enter)'}
-                                            data-testid={TEST_IDS.SEND_BUTTON}
-                                        >
-                                            {isLoading ? (
-                                                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" className="loading-spinner" aria-hidden="true"><circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="12.566" strokeDashoffset="12.566"><animate attributeName="stroke-dashoffset" values="12.566;0" dur="1s" repeatCount="indefinite" /></circle></svg>
-                                            ) : (
-                                                <>
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><rect x="2" y="8" width="3" height="8" rx="1"/><rect x="8" y="4" width="3" height="16" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/><rect x="20" y="9" width="3" height="6" rx="1"/></svg>
-                                                    대화
-                                                </>
-                                            )}
-                                        </button>
-                                    )
-                                }
-                            />
-                            <p className="bw-input-dock-disclaimer" role="contentinfo">
-                                CORBU.AI는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요. 쿠키 기본 설정을 참고하세요.
-                            </p>
-                        </section>
-                    </>
+                            </>
+                            ) : null}
+                            {inputDockSuggestionsEl}
+                            {conversationGraphAttachedFileEl}
+                            {conversationGraphHandoffBannerEl}
+                        </ChatInputDock>
                             </div>
-                        ) : (
-                    <div
-                        className={`welcome-screen brainwave-welcome brainwave-welcome--minimal${currentProject ? ' project-detail-body' : ''}${currentProject && projectContentTab === 'sources' ? ' project-detail-body--sources-tab' : ''}`}
-                        style={currentProject ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } : undefined}
-                    >
-                        {currentProject ? (
-                            <div
-                                id="project-content-panel"
-                                role="tabpanel"
-                                aria-labelledby={projectContentTab === 'sources' ? 'tab-sources-top' : 'tab-chat-top'}
-                                aria-live={projectContentTab === 'sources' ? 'off' : 'polite'}
-                                aria-atomic="false"
-                                className={`messages-container project-welcome-tabpanel${projectContentTab === 'sources' ? '' : ' genspark-chat-messages-wrap'}`}
-                                style={{
-                                    flex: 1,
-                                    minHeight: 0,
-                                    overflowY: 'auto',
-                                    WebkitOverflowScrolling: 'touch',
-                                }}
-                                tabIndex={-1}
-                                ref={messagesContainerRef}
-                                data-testid={TEST_IDS.MESSAGES_CONTAINER}
-                            >
-                                {projectContentTab === 'sources' ? (
-                                    projectSourcesPanelSection
-                                ) : (
-                                    <WelcomeWorkspacePanel
-                                        navigate={navigate}
-                                        showHero={!compactWorkspaceWelcome}
-                                        onWelcomeQuickPrompt={(text) => {
-                                            void sendMessage(text);
-                                        }}
-                                        onWelcomeSampleColumn={showSampleColumnResult}
-                                    />
-                                )}
-                            </div>
-                        ) : (
-                            <WelcomeWorkspacePanel
-                                navigate={navigate}
-                                showHero={!compactWorkspaceWelcome}
-                                onWelcomeQuickPrompt={(text) => {
-                                    void sendMessage(text);
-                                }}
-                                onWelcomeSampleColumn={showSampleColumnResult}
-                            />
-                        )}
-                        {currentProject && hasProjectGuidance && (
-                            <p className="bw-project-guidance-hint" role="status">
-                                이 프로젝트의 지침·규칙이 답변에 적용됩니다. (논리·형식은 설정한 대로 반영됩니다)
-                            </p>
-                        )}
-                        {projectSourcesTabInputHint}
-                        <section className="input-container bw-page-input-dock genspark-chat-input-wrap" aria-label="메시지 입력 영역" data-testid="input-container">
-                            <WorkspaceQueryComposer
-                                value={input}
-                                onChange={setInput}
-                                onCommit={handleWqCommit}
-                                formAriaLabel="메시지 전송"
-                                textareaRef={inputRef as React.RefObject<HTMLTextAreaElement>}
-                                textareaTestId={TEST_IDS.CHAT_INPUT}
-                                onVoiceClick={() => navigate(VOICE_GENERATION_PATH)}
-                                primaryAction={
-                                    isStreaming ? (
-                                        <button
-                                            type="button"
-                                            className="wq-composer__chat-cta"
-                                            style={{ background: '#ef4444', borderColor: '#dc2626' }}
-                                            onClick={cancelStreaming}
-                                            aria-label="스트리밍 중지"
-                                            title="생성 중지 (Esc)"
-                                        >
-                                            중지
-                                        </button>
-                                    ) : (
-                                        <button
-                                            type="submit"
-                                            className="wq-composer__chat-cta"
-                                            disabled={!canSend}
-                                            aria-label={input.trim() ? '메시지 전송' : '전송'}
-                                            aria-disabled={!canSend}
-                                            title={!isOnline ? '오프라인 상태입니다' : '메시지 전송 (Enter)'}
-                                            data-testid={TEST_IDS.SEND_BUTTON}
-                                        >
-                                            {isLoading ? (
-                                                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" className="loading-spinner" aria-hidden="true"><circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="12.566" strokeDashoffset="12.566"><animate attributeName="stroke-dashoffset" values="12.566;0" dur="1s" repeatCount="indefinite" /></circle></svg>
-                                            ) : (
-                                                <>
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><rect x="2" y="8" width="3" height="8" rx="1"/><rect x="8" y="4" width="3" height="16" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/><rect x="20" y="9" width="3" height="6" rx="1"/></svg>
-                                                    대화
-                                                </>
-                                            )}
-                                        </button>
-                                    )
-                                }
-                            />
-                            <p className="bw-input-dock-disclaimer" role="contentinfo">
-                                CORBU.AI는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요. 쿠키 기본 설정을 참고하세요.
-                            </p>
-                        </section>
-                    </div>
-                ) }
                         </div>
                 )}
             </main>
@@ -10313,6 +11197,14 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             setShowAddSourceModal(false);
                             setShowProjectEditModal(true);
                         }}
+                        onWebUrlSubmit={
+                            currentProject?.id
+                                ? (url) => {
+                                      void handleAddWebSourceUrl(url);
+                                  }
+                                : undefined
+                        }
+                        busy={sourceFilesUploading}
                         onGoogleDriveClick={() => {
                             if (!currentProject?.id) {
                                 showToast('프로젝트를 선택한 뒤 Google Drive에서 소스를 추가할 수 있습니다.', 'info');
@@ -10367,7 +11259,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         aria-labelledby="pro-modal-title"
                     >
                         <div className="bw-std-popup-panel-header">
-                            <h2 id="pro-modal-title">⭐ PRO 구독</h2>
+                            <h2 id="pro-modal-title">PRO 구독</h2>
                         </div>
                         <div className="bw-std-popup-panel-body">
                             <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>

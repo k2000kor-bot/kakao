@@ -100,14 +100,23 @@ git am /Users/a0/kakao-frontend/0001-test-harden-sidebar-context-filter-sync-con
 
 ### 로컬 회귀 검증
 
-사이드바 컨텍스트 관련 변경 검증은 아래 중 하나로 반복 실행:
+사이드바·컴포저 관련 변경 검증:
 
 ```bash
 npm run test:sidebar-context
+npm run verify:composer-pipeline
+npm run verify:conversation-graph
 # 또는
 make test-sidebar-context
-# 또는
 bash scripts/test-sidebar-context.sh
+bash scripts/test-composer-pipeline.sh
+# E2E 컴포저 — 서버 선기동: npm run test:e2e:composer-pipeline:all · 자동 기동: npm run test:e2e:composer-pipeline:ci:all
+```
+
+한 번에(아티팩트 검증 + 위 Jest):
+
+```bash
+bash scripts/run-push-block-local-workflow.sh
 ```
 
 ### push 재시도 조건

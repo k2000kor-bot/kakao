@@ -53,6 +53,60 @@ jobs:
     - name: 테스트 실행
       run: npm test -- --coverage --watchAll=false --passWithNoTests || true
 
+  composer-pipeline:
+    runs-on: ubuntu-latest
+    name: 컴포저 파이프라인 (Jest)
+
+    steps:
+    - name: 체크아웃
+      uses: actions/checkout@v4
+
+    - name: Node.js 설정
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 의존성 설치
+      run: npm ci
+
+    - name: 컴포저 파이프라인 Jest
+      run: npm run verify:composer-pipeline
+
+  conversation-graph:
+    runs-on: ubuntu-latest
+    name: 대화 관계도 (Jest·백엔드)
+
+    steps:
+    - name: 체크아웃
+      uses: actions/checkout@v4
+
+    - name: Node.js 설정
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: 의존성 설치
+      run: npm ci
+
+    - name: 관계도 Jest·타입 (프론트)
+      run: npm run typecheck:views-tests && npm run test:conversation-graph
+
+    - name: Python 설정
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Python 의존성 설치
+      run: |
+        cd backend
+        pip install -r requirements.txt || pip install flask fastapi uvicorn httpx
+        pip install pytest pytest-asyncio || true
+
+    - name: 관계도 백엔드 pytest
+      run: npm run test:backend:conversation-graph
+
   # 2. 프론트엔드 빌드
   frontend-build:
     runs-on: ubuntu-latest

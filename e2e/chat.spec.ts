@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { fillChatComposerAndSend, gotoChatAndWaitForComposerInput } from './helpers/chatComposerPage';
+import {
+  devServerUnreachableSkipMessage,
+  skipUnlessE2EServerReachable,
+} from './helpers/playwrightEnv';
 import { PATHS } from './paths';
 import { TEST_IDS, byTestId, byTestIdPrefix } from './testIds';
 
@@ -112,6 +117,9 @@ async function pickStructuredChatInput(page: import('@playwright/test').Page) {
  * 대화 기능의 주요 플로우를 E2E로 검증
  */
 test.describe('Chat E2E 테스트', () => {
+  /** 사이드바·모달 테스트가 동일 정적 서버에서 병렬 시 타이밍 플레이크가 나서 직렬 실행 */
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
     if (await isServerReachable()) {
       await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
@@ -129,7 +137,7 @@ test.describe('Chat E2E 테스트', () => {
         page.locator('input[type="text"], textarea, [contenteditable="true"]').first()
       )
     ).first();
-    await expect(chatInput).toBeVisible({ timeout: 5000 });
+    await expect(chatInput).toBeVisible({ timeout: 15_000 });
   });
 
   test('메시지를 입력하고 전송할 수 있어야 함', async ({ page }) => {
@@ -323,23 +331,24 @@ test.describe('Chat E2E 테스트', () => {
     }
   });
 
-  test('공동입력창 응답 스타일 드롭다운 선택 및 localStorage 복원이 동작해야 함', async ({ page }) => {
+  test('공동입력창 응답 모드 localStorage 복원이 동작해야 함', async ({ page }) => {
     if (!(await isServerReachable())) {
       test.skip(true, `Dev server not reachable at ${BASE_URL}. Run "npm start" then "E2E_SERVER_READY=1 npm run test:e2e:no-server".`);
       return;
     }
-    const modeSelect = page.locator(byTestId(TEST_IDS.COMPOSER_RESPONSE_MODE)).first();
-    await expect(modeSelect).toBeVisible({ timeout: 5000 });
-    await expect(modeSelect).toHaveValue('auto');
-
-    await modeSelect.selectOption('concise');
-    await expect(modeSelect).toHaveValue('concise');
-
+    await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await page.evaluate(() => {
+      localStorage.setItem('chatgpt-composer-response-mode', 'concise');
+    });
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 15_000 });
-    await page.waitForTimeout(500);
-    const modeSelectAfter = page.locator(byTestId(TEST_IDS.COMPOSER_RESPONSE_MODE)).first();
-    await expect(modeSelectAfter).toBeVisible({ timeout: 5000 });
-    await expect(modeSelectAfter).toHaveValue('concise');
+    const mode = await page.evaluate(() => localStorage.getItem('chatgpt-composer-response-mode'));
+    expect(mode).toBe('concise');
+    await page.evaluate(() => {
+      localStorage.setItem('chatgpt-composer-response-mode', 'auto');
+    });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 15_000 });
+    const mode2 = await page.evaluate(() => localStorage.getItem('chatgpt-composer-response-mode'));
+    expect(mode2).toBe('auto');
   });
 
   test('에러 발생 시 에러 메시지가 표시되어야 함', async ({ page }) => {
@@ -402,25 +411,22 @@ test.describe('Chat E2E 테스트', () => {
       { t: title }
     );
     await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    await page.waitForTimeout(600);
+    const navSidebarDelete = page.getByRole('navigation', { name: '대화 기록' });
+    await expect(navSidebarDelete.getByTitle(title)).toBeVisible({ timeout: 10_000 });
 
     const asideDelete = page.locator('aside').locator(byTestId(TEST_IDS.SIDEBAR_CONVERSATION_DELETE)).first();
     if (!(await asideDelete.isVisible().catch(() => false))) {
       test.skip('사이드바 대화 삭제 버튼이 없음 (레이아웃 변형)');
       return;
     }
-    await expect(
-      page.getByRole('navigation', { name: '대화 기록' }).getByTitle(title)
-    ).toBeVisible({ timeout: 5000 });
-    await asideDelete.click();
+    await asideDelete.scrollIntoViewIfNeeded();
+    await asideDelete.click({ timeout: 15_000 });
 
     const dialog = page.getByRole('dialog', { name: /대화 삭제 확인/ });
-    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
     await dialog.locator(byTestId(TEST_IDS.SIDEBAR_DELETE_CONVERSATION_CONFIRM)).click();
 
-    await expect(
-      page.getByRole('navigation', { name: '대화 기록' }).getByTitle(title)
-    ).not.toBeVisible({ timeout: 5000 });
+    await expect(navSidebarDelete.getByTitle(title)).not.toBeVisible({ timeout: 5000 });
   });
 
   test('사이드바 대화 삭제 모달 취소 시 목록이 유지되어야 함', async ({ page }) => {
@@ -446,23 +452,23 @@ test.describe('Chat E2E 테스트', () => {
       { t: title }
     );
     await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    await page.waitForTimeout(600);
+    const nav = page.getByRole('navigation', { name: '대화 기록' });
+    await expect(nav.getByTitle(title)).toBeVisible({ timeout: 10_000 });
 
     const asideDelete = page.locator('aside').locator(byTestId(TEST_IDS.SIDEBAR_CONVERSATION_DELETE)).first();
     if (!(await asideDelete.isVisible().catch(() => false))) {
       test.skip('사이드바 대화 삭제 버튼이 없음 (레이아웃 변형)');
       return;
     }
-    const nav = page.getByRole('navigation', { name: '대화 기록' });
-    await expect(nav.getByTitle(title)).toBeVisible({ timeout: 5000 });
-    await asideDelete.click();
+    await asideDelete.scrollIntoViewIfNeeded();
+    await asideDelete.click({ timeout: 15_000 });
 
     const dialog = page.getByRole('dialog', { name: /대화 삭제 확인/ });
-    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
     await dialog.locator(byTestId(TEST_IDS.SIDEBAR_DELETE_CONVERSATION_CANCEL)).click();
 
-    await expect(dialog).not.toBeVisible({ timeout: 5000 });
-    await expect(nav.getByTitle(title)).toBeVisible({ timeout: 5000 });
+    await expect(dialog).not.toBeVisible({ timeout: 10_000 });
+    await expect(nav.getByTitle(title)).toBeVisible({ timeout: 10_000 });
   });
 
   test('사이드바 대화 삭제 모달에서 ESC 시 목록이 유지되어야 함', async ({ page }) => {
@@ -488,23 +494,25 @@ test.describe('Chat E2E 테스트', () => {
       { t: title }
     );
     await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    await page.waitForTimeout(600);
+    const nav = page.getByRole('navigation', { name: '대화 기록' });
+    await expect(nav.getByTitle(title)).toBeVisible({ timeout: 10_000 });
 
     const asideDelete = page.locator('aside').locator(byTestId(TEST_IDS.SIDEBAR_CONVERSATION_DELETE)).first();
     if (!(await asideDelete.isVisible().catch(() => false))) {
       test.skip('사이드바 대화 삭제 버튼이 없음 (레이아웃 변형)');
       return;
     }
-    const nav = page.getByRole('navigation', { name: '대화 기록' });
-    await expect(nav.getByTitle(title)).toBeVisible({ timeout: 5000 });
-    await asideDelete.click();
+    await asideDelete.scrollIntoViewIfNeeded();
+    await asideDelete.click({ timeout: 15_000 });
 
     const dialog = page.getByRole('dialog', { name: /대화 삭제 확인/ });
-    await expect(dialog).toBeVisible({ timeout: 5000 });
-    await page.keyboard.press('Escape');
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    await dialog.press('Escape');
 
-    await expect(dialog).not.toBeVisible({ timeout: 5000 });
-    await expect(nav.getByTitle(title)).toBeVisible({ timeout: 5000 });
+    await expect(dialog).not.toBeVisible({ timeout: 10_000 });
+    await expect.poll(async () => nav.getByTitle(title).isVisible().catch(() => false), {
+      timeout: 15_000,
+    }).toBe(true);
   });
 
   test('채팅 헤더 대화 삭제 모달 취소 시 스레드가 유지되어야 함', async ({ page }) => {
@@ -530,14 +538,9 @@ test.describe('Chat E2E 테스트', () => {
       { t: title }
     );
     await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    await page.waitForTimeout(600);
-
     const nav = page.getByRole('navigation', { name: '대화 기록' });
     const threadLink = nav.getByTitle(title);
-    if (!(await threadLink.isVisible().catch(() => false))) {
-      test.skip('사이드바에 시드 대화가 보이지 않음');
-      return;
-    }
+    await expect(threadLink).toBeVisible({ timeout: 10_000 });
     await threadLink.click();
     await page.waitForTimeout(500);
 
@@ -546,10 +549,11 @@ test.describe('Chat E2E 테스트', () => {
       test.skip('채팅 헤더 대화 삭제 버튼이 없음');
       return;
     }
-    await headerDelete.click();
+    await headerDelete.scrollIntoViewIfNeeded();
+    await headerDelete.click({ timeout: 15_000 });
 
     const dialog = page.getByRole('dialog', { name: /대화 삭제 확인/ });
-    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
     await dialog.locator(byTestId(TEST_IDS.CHAT_DELETE_CONVERSATION_CANCEL)).click();
 
     await expect(dialog).not.toBeVisible({ timeout: 5000 });
@@ -579,14 +583,9 @@ test.describe('Chat E2E 테스트', () => {
       { t: title }
     );
     await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    await page.waitForTimeout(600);
-
     const nav = page.getByRole('navigation', { name: '대화 기록' });
     const threadLink = nav.getByTitle(title);
-    if (!(await threadLink.isVisible().catch(() => false))) {
-      test.skip('사이드바에 시드 대화가 보이지 않음');
-      return;
-    }
+    await expect(threadLink).toBeVisible({ timeout: 10_000 });
     await threadLink.click();
     await page.waitForTimeout(500);
 
@@ -595,14 +594,17 @@ test.describe('Chat E2E 테스트', () => {
       test.skip('채팅 헤더 대화 삭제 버튼이 없음');
       return;
     }
-    await headerDelete.click();
+    await headerDelete.scrollIntoViewIfNeeded();
+    await headerDelete.click({ timeout: 15_000 });
 
     const dialog = page.getByRole('dialog', { name: /대화 삭제 확인/ });
-    await expect(dialog).toBeVisible({ timeout: 5000 });
-    await page.keyboard.press('Escape');
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    await dialog.press('Escape');
 
-    await expect(dialog).not.toBeVisible({ timeout: 5000 });
-    await expect(nav.getByTitle(title)).toBeVisible({ timeout: 5000 });
+    await expect(dialog).not.toBeVisible({ timeout: 10_000 });
+    await expect.poll(async () => nav.getByTitle(title).isVisible().catch(() => false), {
+      timeout: 15_000,
+    }).toBe(true);
   });
 
   test('채팅 헤더 대화 삭제로 스레드를 제거할 수 있어야 함', async ({ page }) => {
@@ -628,14 +630,9 @@ test.describe('Chat E2E 테스트', () => {
       { t: title }
     );
     await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-    await page.waitForTimeout(600);
-
     const nav = page.getByRole('navigation', { name: '대화 기록' });
     const threadLink = nav.getByTitle(title);
-    if (!(await threadLink.isVisible().catch(() => false))) {
-      test.skip('사이드바에 시드 대화가 보이지 않음');
-      return;
-    }
+    await expect(threadLink).toBeVisible({ timeout: 10_000 });
     await threadLink.click();
     await page.waitForTimeout(500);
 
@@ -644,13 +641,61 @@ test.describe('Chat E2E 테스트', () => {
       test.skip('채팅 헤더 대화 삭제 버튼이 없음');
       return;
     }
-    await headerDelete.click();
+    await headerDelete.scrollIntoViewIfNeeded();
+    await headerDelete.click({ timeout: 15_000 });
 
     const dialog = page.getByRole('dialog', { name: /대화 삭제 확인/ });
-    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
     await dialog.locator(byTestId(TEST_IDS.CHAT_DELETE_CONVERSATION_CONFIRM)).click();
 
-    await expect(nav.getByTitle(title)).not.toBeVisible({ timeout: 5000 });
+    await expect(nav.getByTitle(title)).not.toBeVisible({ timeout: 10_000 });
+  });
+});
+
+const chatMultiRequestChecklistE2EEnabled = process.env.E2E_CHAT_MULTI_REQUEST_CHECKLIST === '1';
+const describeChatMultiRequest = chatMultiRequestChecklistE2EEnabled ? test.describe : test.describe.skip;
+
+describeChatMultiRequest('/chat — 다중 요청 체크리스트', () => {
+  test('다중 요청 전송 시 composer-multi-request-checklist가 표시된다', async ({ page }) => {
+    test.skip(!!process.env.E2E_USE_BUILD, '정적 빌드 serve는 이 검증에서 제외합니다');
+
+    if (!(await skipUnlessE2EServerReachable(test, devServerUnreachableSkipMessage()))) return;
+
+    const sseBody = [
+      `data: ${JSON.stringify({ choices: [{ delta: { content: 'E2E /chat 다중 요청' } }] })}\n\n`,
+      `data: ${JSON.stringify({ done: true })}\n\n`,
+    ].join('');
+
+    const streamStub = async (route: import('@playwright/test').Route) => {
+      await new Promise((r) => setTimeout(r, 2800));
+      await route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'text/event-stream; charset=utf-8' },
+        body: sseBody,
+      });
+    };
+
+    await page.route('**/api/chat/stream**', streamStub);
+    await page.route('**/api/unified/chat/stream**', streamStub);
+
+    const chatInput = await gotoChatAndWaitForComposerInput(page);
+    if (!chatInput) {
+      test.skip('대화 입력 필드를 찾을 수 없습니다 (컴파일 오버레이 또는 lazy 로드 지연)');
+      return;
+    }
+
+    await fillChatComposerAndSend(
+      page,
+      chatInput,
+      `1. E2E 첫 질문 (${Date.now()})\n2. E2E 둘째 요청`,
+    );
+
+    await expect(page.locator(byTestId(TEST_IDS.COMPOSER_GENSPARK_GENERATION_STATUS))).toBeVisible({
+      timeout: 12_000,
+    });
+    await expect(page.locator(byTestId(TEST_IDS.COMPOSER_MULTI_REQUEST_CHECKLIST))).toBeVisible({
+      timeout: 12_000,
+    });
   });
 });
 

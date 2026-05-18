@@ -30,6 +30,8 @@
 ## 3) 채팅 전송
 - [ ] 질문 입력 후 전송 성공
 - [ ] 사용자 메시지 즉시 화면 반영
+- [ ] (선택) `1. …\n2. …` 다중 요청 시 체크리스트·5단계 UI·입력 미리보기(한 줄) — [CHAT_UI §14.7](./guides/CHAT_UI_TEST_SCENARIOS.md) · Jest: `npm run verify:composer-pipeline` · E2E: `npm run test:e2e:composer-pipeline:all`
+- [ ] (선택) `.env.local` `REACT_APP_COMPOSER_MULTI_STEP_MULTI_REQUEST=true` 시 항목별 다단계 답변(순차 API 꺼진 상태)
 - 메모:
 
 **판정 기준**
@@ -49,7 +51,18 @@
 
 ---
 
-## 5) 새로고침 유지성
+## 5) 대화 관계도 handoff (선택)
+- [ ] `/chat`에서 CSV/TXT 첨부 후 「관계도를 만들어줘」 입력 시 첨부 칩·handoff 배너 표시
+- [ ] 「관계도 화면에서 만들기」 클릭 시 `/conversation-graph`·붙여넣기·답변 패널 정상
+- 메모:
+
+**판정 기준**
+- OK: 웰컴·기존 대화 화면 모두 동일. 자동 회귀: `npm run test:e2e:conversation-graph:chromium` · [CONVERSATION_GRAPH.md](./CONVERSATION_GRAPH.md)
+- NG: 첨부만 되고 배너 없음, handoff 후 붙여넣기 비어 있음
+
+---
+
+## 6) 새로고침 유지성
 - [ ] 새로고침 후 프로젝트/대화 상태 유지
 - [ ] 재진입 후 추가 메시지 전송 가능
 - 메모:
@@ -79,4 +92,4 @@
 
 ## 개발자 검증
 
-저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · `npm run test:views`(확장 뷰·라우트) · (권장) `npm run test:sidebar-context`(수동 §14.5 [CHAT_UI_TEST_SCENARIOS](./guides/CHAT_UI_TEST_SCENARIOS.md)) · (선택) `npm run check:doc-verification-hub` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

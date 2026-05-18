@@ -301,6 +301,213 @@ test.describe('ProjectManagement E2E 테스트', () => {
     }
   });
 
+  test('소스 탭에서 파일 업로드 시 목록에 표시되어야 함', async ({ page }) => {
+    if (!(await isServerReachable())) {
+      test.skip(true, `Dev server not reachable at ${BASE_URL}. Run "npm start" then "E2E_SERVER_READY=1 npm run test:e2e:no-server".`);
+      return;
+    }
+    const projectId = 'e2e-project-seed';
+    const fileName = 'e2e-source-upload.txt';
+    const uploadedFile = {
+      id: 'file-e2e-upload-1',
+      name: fileName,
+      type: 'document',
+      size: 18,
+      uploadedAt: new Date().toISOString(),
+    };
+
+    await page.route('**/api/projects/**/files', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, data: { file: uploadedFile } }),
+      });
+    });
+
+    await page.route(`**/api/projects/${projectId}`, async (route) => {
+      const method = route.request().method();
+      if (method === 'GET' || method === 'PUT') {
+        const putBody = method === 'PUT' ? route.request().postDataJSON() : null;
+        const files = (putBody?.files as typeof uploadedFile[] | undefined) ?? [uploadedFile];
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              id: projectId,
+              name: 'E2E 시드 프로젝트',
+              description: '프로젝트 관리 E2E 시드',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              files,
+              web_sources: [],
+              webSources: [],
+            },
+          }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+
+    await page.route('**/api/projects/**/notebook-sources/from-file', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            source: { id: 'nb-src-1', title: fileName, type: 'text' },
+            source_count: 1,
+          },
+        }),
+      });
+    });
+
+    if (!(await ensureProjectSelected(page))) {
+      await expect(page.locator('body')).toBeVisible();
+      return;
+    }
+
+    const sourceTab = await waitVisible(page, [byTestId(TEST_IDS.PROJECT_SOURCES_TAB)], 8000);
+    if (!sourceTab) {
+      test.skip(true, '소스 탭이 없습니다. 프로젝트 UI가 활성화된 빌드에서 실행하세요.');
+      return;
+    }
+    await sourceTab.click({ force: true });
+
+    const addBtn = await waitVisible(page, [
+      byTestId(TEST_IDS.PROJECT_SOURCES_ADD_BTN),
+      byTestId(TEST_IDS.PROJECT_SOURCES_EMPTY_CTA),
+    ], 5000);
+    if (!addBtn) {
+      await expect(page.locator('body')).toBeVisible();
+      return;
+    }
+    await addBtn.click({ force: true });
+
+    const modal = await waitVisible(page, [byTestId(TEST_IDS.ADD_SOURCE_MODAL)], 5000);
+    if (!modal) {
+      await expect(page.locator('body')).toBeVisible();
+      return;
+    }
+
+    const fileInput = page.getByTestId(TEST_IDS.ADD_SOURCE_MODAL_FILE_INPUT);
+    await fileInput.setInputFiles({
+      name: fileName,
+      mimeType: 'text/plain',
+      buffer: Buffer.from('e2e source content'),
+    });
+
+    await expect(
+      page.locator(byTestId(TEST_IDS.PROJECT_SOURCES_FILE_ITEM)).filter({ hasText: fileName }),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId(TEST_IDS.ADD_SOURCE_MODAL)).not.toBeVisible({ timeout: 5000 });
+  });
+
+  test('소스 탭에서 파일 제거 시 목록에서 사라져야 함', async ({ page }) => {
+    if (!(await isServerReachable())) {
+      test.skip(true, `Dev server not reachable at ${BASE_URL}. Run "npm start" then "E2E_SERVER_READY=1 npm run test:e2e:no-server".`);
+      return;
+    }
+    const projectId = 'e2e-project-seed';
+    const fileName = 'e2e-remove-me.txt';
+    const seededFile = {
+      id: 'file-e2e-remove-1',
+      name: fileName,
+      type: 'document',
+      size: 10,
+      uploadedAt: new Date().toISOString(),
+    };
+
+    await page.route(`**/api/projects/${projectId}`, async (route) => {
+      const method = route.request().method();
+      if (method === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              id: projectId,
+              name: 'E2E 시드 프로젝트',
+              description: '',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              files: [seededFile],
+              web_sources: [],
+            },
+          }),
+        });
+        return;
+      }
+      if (method === 'PUT') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              id: projectId,
+              name: 'E2E 시드 프로젝트',
+              files: [],
+              web_sources: [],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+
+    await page.evaluate((seedFile) => {
+      const now = new Date().toISOString();
+      const projects = JSON.parse(localStorage.getItem('chatgpt-projects') || '[]');
+      const idx = projects.findIndex((p: { id: string }) => p.id === 'e2e-project-seed');
+      if (idx >= 0) {
+        projects[idx] = { ...projects[idx], files: [seedFile], webSources: [] };
+        localStorage.setItem('chatgpt-projects', JSON.stringify(projects));
+      } else {
+        localStorage.setItem('chatgpt-projects', JSON.stringify([
+          {
+            id: 'e2e-project-seed',
+            name: 'E2E 시드 프로젝트',
+            files: [seedFile],
+            webSources: [],
+            createdAt: now,
+            updatedAt: now,
+          },
+        ]));
+      }
+    }, seededFile);
+
+    if (!(await ensureProjectSelected(page))) {
+      await expect(page.locator('body')).toBeVisible();
+      return;
+    }
+
+    const sourceTab = await waitVisible(page, [byTestId(TEST_IDS.PROJECT_SOURCES_TAB)], 8000);
+    if (!sourceTab) {
+      test.skip(true, '소스 탭이 없습니다.');
+      return;
+    }
+    await sourceTab.click({ force: true });
+
+    const fileRow = page.locator(byTestId(TEST_IDS.PROJECT_SOURCES_FILE_ITEM)).filter({ hasText: fileName });
+    await expect(fileRow).toBeVisible({ timeout: 8000 });
+
+    await page.locator(byTestId(TEST_IDS.PROJECT_SOURCES_FILE_REMOVE)).first().click({ force: true });
+
+    await expect(fileRow).not.toBeVisible({ timeout: 10_000 });
+  });
+
   test('단축키 도움말에 프로젝트·대화 팁이 표시되어야 함', async ({ page }) => {
     if (!(await isServerReachable())) {
       test.skip(true, `Dev server not reachable at ${BASE_URL}. Run "npm start" then "E2E_SERVER_READY=1 npm run test:e2e:no-server".`);
