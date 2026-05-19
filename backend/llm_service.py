@@ -463,6 +463,10 @@ class LLMService:
                 )
             if context.get("_advanced_memory_instruction"):
                 prefix_parts.append(str(context["_advanced_memory_instruction"]))
+            if context.get("_conversation_graph_instruction"):
+                prefix_parts.append(
+                    str(context["_conversation_graph_instruction"])
+                )
             # Q→A 파이프라인·클라이언트가 넘긴 작성 시나리오(직경로 LLM에도 순서·검증 힌트)
             _gsc = context.get("_generation_scenario_markdown")
             if isinstance(_gsc, str) and _gsc.strip():
@@ -478,8 +482,8 @@ class LLMService:
                 prefix_parts.append(
                     "[지시] 사용자의 요구와 질문에 맞는 논리적 사고로, 아래 수집·학습·검색된 자료와 논리 구성을 반드시 참고하여 답변을 생성하세요. 제시된 자료를 활용해 근거 있는 답변을 작성하세요. 질문의 핵심에 정확히 답하고, 글을 생성할 때는 구조·가독성·논리성을 갖추세요.\n"
                 )
-            else:
-                # 파이프라인 없이도 질문·요구 답변 및 글 생성 품질 유지
+            elif not context.get("_conversation_graph_instruction"):
+                # 파이프라인 없이도 질문·요구 답변 및 글 생성 품질 유지 (관계도 답변은 전용 지시만)
                 prefix_parts.append(
                     "[지시] 질문에는 핵심에 맞게 정확히 답하고, 요구한 형식·길이를 반영하세요. 글을 생성할 때는 서론·본론·결론과 논리적 흐름, 가독성을 갖추세요.\n"
                 )
@@ -937,13 +941,14 @@ class LLMService:
 
 **언어·목표·에러 메시지**를 함께 보내 주시면 더 정확히 답합니다."""
         else:
+            preview = message if len(message) <= 200 else (message[:200] + "…")
             content = f"""## 한 줄 결론
 
 요청하신 내용에 대해 **기본 모드(폴백)** 로 안내합니다.
 
 ## 핵심 내용
 
-입력: `{message}`
+입력: `{preview}`
 
 더 정확한 생성 응답을 쓰려면 LLM API 또는 로컬 모델을 설정하세요.
 

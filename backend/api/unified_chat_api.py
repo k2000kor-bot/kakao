@@ -47,6 +47,12 @@ except ImportError:
         return
 
 try:
+    from api.conversation_graph_chat_hint import attach_conversation_graph_instruction
+except ImportError:
+    def attach_conversation_graph_instruction(ctx: Optional[Dict[str, Any]]) -> None:
+        return
+
+try:
     from api.intelligent_response_engine import get_intelligent_engine
 
     intelligent_engine = get_intelligent_engine()
@@ -1106,6 +1112,7 @@ async def generate_chat_response(
         context = dict(context)
         context["_pipeline_tuning_preset"] = _tuning_preset
         attach_advanced_memory_instruction(context)
+        attach_conversation_graph_instruction(context)
         # 클라이언트 시나리오 → Q→A·직경로 LLM 공통 힌트(파이프라인은 orchestrator에서 서버 시나리오와 병합)
         if not (context.get("_generation_scenario_markdown") or "").strip():
             _cg0 = context.get("client_generation_scenario")
