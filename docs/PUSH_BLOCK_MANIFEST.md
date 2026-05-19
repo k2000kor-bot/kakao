@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-19 09:12:49 KST
+- generated_at: 2026-05-19 09:25:11 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `6fb86c8b4 docs: add push helper and new GitHub repo setup guide`
+- latest_commit: `cf4f09cf1 docs: record GitHub remote diagnosis (kakao vs kakao-frontend)`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1156849900
-- bundle_sha256: `f5584ef3f3f419e8dfd93e71cd4f8478172d62e789d2ab31246522e808973e0d`
+- bundle_size_bytes: 1156852900
+- bundle_sha256: `ff34158849625ce5422a67148ff21bc55cc4aed65e5facbb2000d2d65178ef85`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -24,9 +24,9 @@
 ### Recent Commits
 
 ```
+cf4f09cf1 docs: record GitHub remote diagnosis (kakao vs kakao-frontend)
+2a6c8ac85 chore: refresh bundle SHA for push helper commit
 6fb86c8b4 docs: add push helper and new GitHub repo setup guide
 8ec6abf66 chore: sync push-block bundle SHA after handoff docs commit
 4a7d9992d docs: update push-block handoff for 2026-05-19 bundle and PR draft
-f273d7f04 chore: refresh push-block manifest for composer/graph handoff
-b79b4342b feat(backend): conversation graph API and pytest for CI
 ```

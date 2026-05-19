@@ -16,7 +16,14 @@
 
 ## 2. Collaborator (SSH가 `k2000kor-bot`인 경우)
 
-Settings → Collaborators → `k2000kor-bot` 초대 → **Write** 이상
+Settings → Collaborators → `k2000kor-bot` 초대 → **Write** 이상 → 초대 **수락** 후 재시도
+
+```bash
+ssh -T git@github.com   # Hi k2000kor-bot! 확인
+PUSH_REMOTE_URL=git@github.com:k2000kor/kakao.git npm run push:dev-continue
+```
+
+**개인 계정(`k2000kor`) SSH로 push**하려면: 해당 키로 `ssh -T` 했을 때 본인 계정이 나와야 하며, Collaborator 없이 owner면 바로 push 가능.
 
 ## 3. push
 
