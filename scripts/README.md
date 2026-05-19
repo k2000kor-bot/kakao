@@ -45,7 +45,8 @@
 
 | 스크립트 | 용도 |
 |----------|------|
-| **verify-push-block-artifacts.sh** | 로컬 `bundle`/`patch` 경로·SHA256 검증 |
+| **verify-push-block-artifacts.sh** | 로컬 `bundle` tip·`patch` 시리즈·핵심 2패치 SHA 검증 (`npm run verify:handoff-artifacts`) |
+| **refresh-handoff-artifacts.sh** | bundle·`patches-dev-continue-*` 재생성 + manifest (`npm run refresh:handoff-artifacts`) |
 | **test-sidebar-context.sh** | 미러 동기화 후 사이드바 컨텍스트 관련 Jest만 실행(루트 `cd`) |
 | **run-push-block-local-workflow.sh** | 아티팩트 검증 + `test-sidebar-context` + `verify:composer-pipeline` |
 | **retry-push-with-diagnostics.sh** | SSH·`git ls-remote`·진단 메시지·가능 시 `git push` |
