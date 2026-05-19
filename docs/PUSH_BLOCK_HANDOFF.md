@@ -94,12 +94,22 @@ git checkout -b dev-continue-2026-01-20 FETCH_HEAD
 git push -u origin dev-continue-2026-01-20
 ```
 
-### 반영 방법 B: patch 사용 (2커밋)
+### 반영 방법 B: patch 사용
+
+**전체 9커밋** (feature + handoff):
+
+```bash
+bash scripts/apply-dev-continue-patches.sh /Users/a0/kakao-frontend/patches-dev-continue-2026-05-19
+```
+
+**핵심 2커밋만**:
 
 ```bash
 git am /Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch
 git am /Users/a0/kakao-frontend/0002-feat-backend-conversation-graph-API-and-pytest-for-C.patch
 ```
+
+patch 재생성: `git format-patch bc4451251..HEAD -o /Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 
 ### 로컬 회귀 검증
 
