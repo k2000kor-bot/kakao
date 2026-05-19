@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-19 10:20:26 KST
+- generated_at: 2026-05-19 10:29:06 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `a0983c084 chore: add check:push-ready script and refresh handoff bundle`
+- latest_commit: `0a4305237 fix(test): stabilize integration-test chat timeout and stream check`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1156849428
-- bundle_sha256: `6f76de27e36c489bb9f0b90b420a8eabf57c1b295f5848e9a0ee45c82d4c8c52`
+- bundle_size_bytes: 1156861739
+- bundle_sha256: `80bab0572e2d16cf593e43e5712525d9f713cb4bb13b3212bee86bc3228ae350`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -24,9 +24,9 @@
 ### Recent Commits
 
 ```
+0a4305237 fix(test): stabilize integration-test chat timeout and stream check
+02369a12f docs: document verify:full-stack-local in TESTING_GUIDE
+5a537996b chore: sync bundle SHA after full-stack verify script
+cf201b296 chore: add verify:full-stack-local for server-up smoke suite
 a0983c084 chore: add check:push-ready script and refresh handoff bundle
-e0821cf17 docs: add full patch series apply script for dev-continue handoff
-fbfc79a74 chore: refresh bundle SHA and push troubleshooting notes
-cf4f09cf1 docs: record GitHub remote diagnosis (kakao vs kakao-frontend)
-2a6c8ac85 chore: refresh bundle SHA for push helper commit
 ```
