@@ -32,7 +32,8 @@ PUSH_REMOTE_URL=git@github.com:k2000kor/kakao.git npm run push:dev-continue
 - Bundle: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - Patches: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19/` (19개)
 - `bash scripts/apply-dev-continue-patches.sh <patch-dir>`
-- `bash scripts/verify-push-block-artifacts.sh`
+- `bash scripts/verify-push-block-artifacts.sh` (bundle tip = 브랜치 HEAD)
+- `bash scripts/refresh-handoff-artifacts.sh` (커밋 후 bundle·patch 재생성)
 
 ## PR 초안
 

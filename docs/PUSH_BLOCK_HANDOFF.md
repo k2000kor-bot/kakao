@@ -109,7 +109,8 @@ git am /Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-a
 git am /Users/a0/kakao-frontend/0002-feat-backend-conversation-graph-API-and-pytest-for-C.patch
 ```
 
-patch 재생성: `git format-patch bc4451251..HEAD -o /Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
+patch·bundle 재생성: `bash scripts/refresh-handoff-artifacts.sh`  
+(또는 `git format-patch bc4451251..HEAD -o /Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`)
 
 ### 로컬 회귀 검증
 
