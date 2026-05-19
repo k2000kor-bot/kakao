@@ -132,6 +132,9 @@ bash scripts/run-push-block-local-workflow.sh
 재시도 명령:
 
 ```bash
+# 저장소가 아직 없으면: docs/PUSH_NEW_REPO_SETUP.md
+PUSH_REMOTE_URL=git@github.com:<owner>/<repo>.git bash scripts/push-dev-continue-branch.sh
+# 또는
 git remote set-url origin git@github.com:<owner>/<repo>.git
-git push -u origin HEAD
+git push -u origin dev-continue-2026-01-20
 ```
