@@ -6,7 +6,7 @@ BUNDLE_PATH="/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bun
 PATCH_PATH="/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch"
 PATCH_PATH_2="/Users/a0/kakao-frontend/0002-feat-backend-conversation-graph-API-and-pytest-for-C.patch"
 
-EXPECTED_BUNDLE_SHA="1fee390fb6dd9f10e88c1cf9385b1c7eaec763c130ed824d948a172e2d146f83"
+EXPECTED_BUNDLE_SHA="f5584ef3f3f419e8dfd93e71cd4f8478172d62e789d2ab31246522e808973e0d"
 EXPECTED_PATCH_SHA="cf79c715adf51acea9a3774e98e2557eeaf0cc6295ad68a0e413f61b5e40a9e9"
 EXPECTED_PATCH_2_SHA="f466b3a60f81558e2c5f6e3f0ea78b007acdedeb3e55918d956d460a35734870"
 
