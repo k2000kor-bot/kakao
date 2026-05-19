@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-19 10:58:34 KST
+- generated_at: 2026-05-19 11:05:37 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `4fb383c2c chore: verify handoff bundle by branch tip instead of pinned SHA`
+- latest_commit: `80b8e49e0 chore: allow HANDOFF_REFRESH=1 in push-block maintenance`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1156859568
-- bundle_sha256: `ce04c941bde7ac63387ec8e053a0ba526d5e8156281487587aa2605826db29f5`
+- bundle_size_bytes: 1156860808
+- bundle_sha256: `a7d13a28cf312a49fb750eb3f0d32ab40b8f84cd9d92980bb312e0c3efd315e4`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 20
-- patch_series_expected: 20 (`bc4451251..HEAD`)
+- patch_series_count: 22
+- patch_series_expected: 22 (`bc4451251..HEAD`)
 
 ### Recent Commits
 
 ```
+80b8e49e0 chore: allow HANDOFF_REFRESH=1 in push-block maintenance
+4cdaeecbd docs: document 20-patch handoff series and npm refresh scripts
 4fb383c2c chore: verify handoff bundle by branch tip instead of pinned SHA
 196b58817 chore: sync handoff bundle SHA after patch-series verify commit
 f4882bab7 chore: refresh handoff bundle SHA and verify patch series count
-5ca55d047 docs: add dev-continue branch summary and AGENTS verify hint
-beff3ffd9 chore: refresh handoff bundle after integration-test fix
 ```

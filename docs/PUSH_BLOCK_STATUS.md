@@ -1,9 +1,9 @@
 ## Push Block Status
 
-- 생성 시각: 2026-05-19 09:22:28 KST
+- 생성 시각: 2026-05-19 11:05:37 KST
 - 브랜치: `dev-continue-2026-01-20`
-- 최신 커밋: `2a6c8ac85 chore: refresh bundle SHA for push helper commit`
-- origin: `git@github.com:k2000kor/kakao-frontend.git`
+- 최신 커밋: `80b8e49e0 chore: allow HANDOFF_REFRESH=1 in push-block maintenance`
+- origin: `git@github.com:k2000kor/kakao.git`
 
 ### SSH 확인
 
@@ -14,16 +14,12 @@ Hi k2000kor-bot! You've successfully authenticated, but GitHub does not provide 
 ### 원격 가시성 확인
 
 ```
-ERROR: Repository not found.
-fatal: Could not read from remote repository.
 
-Please make sure you have the correct access rights
-and the repository exists.
 ```
 
 ### 자동 진단
 
-- 저장소 경로 불일치 또는 계정 권한 부족
+- 원격 접근 가능(푸시 가능성 높음)
 
 ### 권장 다음 단계
 

@@ -12,7 +12,7 @@
 - **[docs/COMPONENT_ARCHITECTURE.md](./docs/COMPONENT_ARCHITECTURE.md)** — 컴포넌트·뷰·서비스 매핑, 메시지 UI 스택, 프로젝트 관리(활성/비활성)
 - **[docs/BACKLOG.md](./docs/BACKLOG.md)** — 진행 중·단기·중기 작업 목록 (새 작업 추가·완료 체크는 여기서)
 - **[docs/COMPLETION_CHECKLIST.md](./docs/COMPLETION_CHECKLIST.md)** — 완성도·마무리 검증 순서 (§6), `npm run verify:completion`
-- **[docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md)** — 원격 `git push` 막힘 시 로컬 이관·점검(`npm run maintain:push-block` / `make maintain-push-block`)·사이드바·**컴포저**·**관계도** 회귀(`test:sidebar-context`·`verify:composer-pipeline`·`verify:conversation-graph:unit`; 수동 §14.5·§14.7 [CHAT_UI_TEST_SCENARIOS](./docs/guides/CHAT_UI_TEST_SCENARIOS.md))
+- **[docs/PUSH_BLOCK_HANDOFF.md](./docs/PUSH_BLOCK_HANDOFF.md)** — 원격 `git push` 막힘 시 로컬 이관·점검(`npm run maintain:push-block` / `HANDOFF_REFRESH=1` 시 bundle·patch 재생성)·`npm run refresh:handoff-artifacts`·`verify:handoff-artifacts`·사이드바·**컴포저**·**관계도** 회귀(`test:sidebar-context`·`verify:composer-pipeline`·`verify:conversation-graph:unit`; 수동 §14.5·§14.7 [CHAT_UI_TEST_SCENARIOS](./docs/guides/CHAT_UI_TEST_SCENARIOS.md))
 - **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** — 테스트 구조·검증 명령·`test:sidebar-context`·`verify:composer-pipeline`(§14.7)·`verify:conversation-graph:unit`·활성 md 허브 `check:doc-verification-hub`·백엔드 pytest 목록
 - **[docs/guides/TTS_AND_SCRIPT_STYLE_GUIDE.md](./docs/guides/TTS_AND_SCRIPT_STYLE_GUIDE.md)** — 목소리 생성(TTS) 속도·샘플 스타일·감정 프롬프트·API·검증 (`npm run test:tts:all`)
 
