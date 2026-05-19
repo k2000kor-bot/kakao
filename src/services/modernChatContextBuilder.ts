@@ -357,8 +357,10 @@ export function mergeApiChatContextPayload(
       merged.client_generation_scenario = inheritedScenario;
     }
   }
+  const isConversationGraphAnswer = merged.conversation_graph_analysis === true;
+
   /* 파이프라인 블록이 없을 때도 번호·불릿 다중 요청·기능 플래그는 전달 (streamingClient·ChatService 등) */
-  if (!isUnifiedContextDisabled()) {
+  if (!isUnifiedContextDisabled() && !isConversationGraphAnswer) {
     const featureFlags = buildFeatureContextFromMessage(message);
     for (const [key, val] of Object.entries(featureFlags)) {
       if (merged[key] === undefined) {
@@ -374,6 +376,11 @@ export function mergeApiChatContextPayload(
         merged.multi_request_adaptation_instruction = MULTI_REQUEST_ADAPTATION_INSTRUCTION;
       }
     }
+  }
+  if (isConversationGraphAnswer) {
+    merged.multi_request_mode = false;
+    delete merged.multi_request_items;
+    delete merged.multi_request_adaptation_instruction;
   }
 
   /* 파이프라인이 비어도 대화·원문은 백엔드가 맥락·다중요청·적응 지시에 쓸 수 있게 전달 */

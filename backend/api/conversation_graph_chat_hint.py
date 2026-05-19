@@ -39,6 +39,7 @@ def attach_conversation_graph_instruction(ctx: Optional[Dict[str, Any]]) -> None
         "- 아래 스냅샷·요약·원문·지시만 근거로 한국어 보고서를 작성하세요.",
         "- 관계도 생성 요청이면: (1) 한 줄 요약 (2) 참여자 표 (3) 연결 표 (4) Mermaid flowchart TB (5) 갈등·시공사 반응(데이터 있을 때만).",
         "- 수치·스냅샷·근거 발언에 없는 참여자·연결은 추가하지 마세요.",
+        "- [다중 요청], [혁신적 답변·글쓰기 품질], [답변 다양성], [가이드라인] 등 시스템 태그·빈 불릿(• .)을 본문에 출력하지 마세요.",
     ]
 
     title = _coerce_str(ctx.get("conversation_graph_title"))

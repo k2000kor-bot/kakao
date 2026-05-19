@@ -188,7 +188,7 @@ export function ConversationGraphAnswerPanel({
         trimmed,
         (activeGraph?.nodes ?? []).length > 0,
       );
-      const ctx = buildContextForMessage(apiMessage, {
+      const ctx = buildContextForMessage(trimmed, {
         analysis: activeAnalysis,
         narrative: activeNarrative,
         graph: activeGraph,

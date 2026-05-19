@@ -123,6 +123,8 @@ def _compose_multi_request_instruction(ctx: Optional[Dict[str, Any]]) -> Optiona
     """
     if not ctx or not isinstance(ctx, dict):
         return None
+    if ctx.get("conversation_graph_analysis"):
+        return None
     if not ctx.get("multi_request_mode"):
         return None
     multi_parts: List[str] = [_MULTI_REQUEST_WORKFLOW_PREAMBLE]
@@ -6731,7 +6733,12 @@ def _generate_structured_response(
     parts = []
 
     # 스트리밍/엔진 폴백 시 템플릿 답에도 다중 요청 항목을 명시 (LLM 미경로)
-    if context and isinstance(context, dict) and context.get("multi_request_mode"):
+    if (
+        context
+        and isinstance(context, dict)
+        and context.get("multi_request_mode")
+        and not context.get("conversation_graph_analysis")
+    ):
         m_items = context.get("multi_request_items")
         if isinstance(m_items, list) and m_items:
             bl: List[str] = []

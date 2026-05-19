@@ -24,14 +24,15 @@ describe('conversationGraphAnswerIntent', () => {
   it('isCreateGraphAnswerRequest는 관계도 생성 요청을 감지한다', () => {
     expect(isCreateGraphAnswerRequest('관계도를 만들어 주세요')).toBe(true);
     expect(isCreateGraphAnswerRequest('이 대화로 관계도 생성해줘')).toBe(true);
+    expect(isCreateGraphAnswerRequest('대화를 기준으로 관계도를 만들어줘')).toBe(true);
     expect(isCreateGraphAnswerRequest('보고서 작성해줘')).toBe(false);
   });
 
-  it('resolveGraphAnswerUserMessage는 생성 요청 시 상세 지시문을 붙인다', () => {
+  it('resolveGraphAnswerUserMessage는 생성 요청 시 사용자 문장만 반환한다', () => {
     const { message, isCreateGraph } = resolveGraphAnswerUserMessage('관계도 만들어줘', true);
     expect(isCreateGraph).toBe(true);
-    expect(message).toContain('Mermaid');
-    expect(message).toContain('관계도 만들어줘');
+    expect(message).toBe('관계도 만들어줘');
+    expect(message).not.toContain('1)');
   });
 
   it('buildCreateGraphAnswerInstruction은 데이터 유무에 따라 안내를 바꾼다', () => {
@@ -57,6 +58,15 @@ describe('conversationGraphAnswerIntent', () => {
   it('prepareGraphAnswerGenerationMessage는 API 메시지를 정규화한다', () => {
     const { apiMessage, isCreateGraph } = prepareGraphAnswerGenerationMessage('관계도 만들어줘', false);
     expect(isCreateGraph).toBe(true);
-    expect(apiMessage).toContain('Mermaid');
+    expect(apiMessage).toBe('관계도 만들어줘');
+  });
+
+  it('buildGraphAnswerChatContext는 다중 요청 모드를 끈다', () => {
+    const ctx = buildGraphAnswerChatContext({
+      analysis,
+      userMessage: '1) 첫 항목\n2) 둘째 항목',
+    });
+    expect(ctx.multi_request_mode).toBe(false);
+    expect(ctx.conversation_graph_analysis).toBe(true);
   });
 });
