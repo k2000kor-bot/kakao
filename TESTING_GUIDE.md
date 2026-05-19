@@ -71,6 +71,7 @@ E2E_SERVER_READY=1 npm run test:e2e:no-server   # 터미널 2
 | **컴포저(다중 요청·첨부·순차·다단계)** | `npm run test:composer-pipeline` — 전송·**재생성·편집** 공유(`composerSequentialSend`). 순차: `REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST`(+ `..._STREAM` SSE). 다단계: `REACT_APP_COMPOSER_MULTI_STEP_MULTI_REQUEST`(순차보다 우선순위 낮음). Jest: `npm run verify:composer-pipeline`(13 suites) · E2E 로컬(서버 선기동): `test:e2e:composer-pipeline:all` · E2E CI/자동 기동: `test:e2e:composer-pipeline:ci:all` · CI: `composer-pipeline` · `composer-pipeline-e2e` |
 | **배포 전 Jest 묶음** | `npm run verify:pre-deploy` — sidebar + composer + 관계도 unit (`scripts/pre-deploy-verify.sh`, `make verify-pre-deploy`) |
 | **E2E 파이프라인(선택)** | 로컬: `test:e2e:pipelines:all` · CI: `test:e2e:pipelines:ci:all` |
+| **풀스택 로컬(서버 기동 후)** | `npm run verify:full-stack-local` — pre-deploy + 관계도 API + integration + E2E 15 (`:3000` + `:5002`) |
 | **백+프론 파이프라인 관련 한 번에 (2배 속도 점검)** | `npm run test:dev:dual-pipeline` |
 | ultimate_media (선택, 8 tests) | `cd backend && python3 -m pytest tests/test_api.py -v` |
 
