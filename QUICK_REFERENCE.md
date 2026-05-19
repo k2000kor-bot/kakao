@@ -43,6 +43,7 @@
 | 대화 관계도 | Jest·백엔드: `npm run verify:conversation-graph:unit` · E2E 포함: `verify:conversation-graph` · `make test-conversation-graph-unit` |
 | 배포 전 Jest 묶음 | `npm run verify:pre-deploy` · `make verify-pre-deploy` (sidebar + composer + 관계도 unit) · 빌드 포함: `verify:final` |
 | E2E 파이프라인(선택) | 로컬: `test:e2e:pipelines:all` · CI: `test:e2e:pipelines:ci:all` (컴포저 3 + 관계도 12) |
+| 풀스택 로컬(서버 기동 후) | `npm run verify:full-stack-local` — pre-deploy + API + integration + E2E 15 |
 | `routes.test`만 | `npm run test:routes` (**27** tests, `pretest` 포함) — [TESTING_GUIDE.md](./TESTING_GUIDE.md) |
 | 활성 경로 md 허브 단락 | `npm run check:doc-verification-hub` (동일: `make check-doc-verification-hub`; `git ls-files`·노드만, Jest 미실행) — `DOC_HUB_STRICT=1`이면 누락 시 exit 1 — [TESTING_GUIDE.md](./TESTING_GUIDE.md)·[scripts/README.md](./scripts/README.md) |
 | `AppUnified.test`만 | `npm run test:app-unified` (**122** tests, `pretest` 포함) — [TESTING_GUIDE.md](./TESTING_GUIDE.md) |
