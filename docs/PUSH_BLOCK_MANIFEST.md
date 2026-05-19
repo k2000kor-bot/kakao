@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-19 13:52:29 KST
+- generated_at: 2026-05-19 13:53:58 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `e02b29643 fix(ui): unify route breadcrumb to one line above input and chat routes`
+- latest_commit: `94330e145 chore: refresh handoff manifest after route breadcrumb UI commit`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1157125042
-- bundle_sha256: `e25641529e82844f8659ccfaffd4fe05eebb9277753cccf1412b12c166e6637c`
+- bundle_size_bytes: 1156886035
+- bundle_sha256: `60d56aa40a4f0b92342959ff8fa4ffa4fe6f38203924f5f76691c3da9cd6737b`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 28
-- patch_series_expected: 28 (`bc4451251..HEAD`)
+- patch_series_count: 29
+- patch_series_expected: 29 (`bc4451251..HEAD`)
 
 ### Recent Commits
 
 ```
+94330e145 chore: refresh handoff manifest after route breadcrumb UI commit
 e02b29643 fix(ui): unify route breadcrumb to one line above input and chat routes
 84e9a4b3d fix(conversation-graph): stop multi-request and chat quality blocks in graph answers
 3652088d4 fix(backend): inject conversation graph context into LLM prompts
 d4f5b4efa docs: record full-stack E2E and API verification results
-82bce8f8f chore: verify handoff artifacts before push and refresh PR draft
 ```
