@@ -2,6 +2,11 @@
 
 `git push` 시 `Repository not found`가 나오면, GitHub에 **새 저장소**를 만든 뒤 아래를 실행합니다.
 
+**현재 진단 (2026-05)**
+- `k2000kor/kakao-frontend` — GitHub에 **없음** (`Repository not found`)
+- `k2000kor/kakao` — 저장소는 있으나 `k2000kor-bot` SSH는 **push 거부** (`Permission denied`) → Collaborator Write 필요
+- SSH 인증: `k2000kor-bot` — **성공**
+
 ## 1. GitHub에서 저장소 생성
 
 1. https://github.com/new 접속 (로그인: `k2000kor` 또는 조직)
