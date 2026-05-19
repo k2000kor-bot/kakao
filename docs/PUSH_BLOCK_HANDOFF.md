@@ -96,7 +96,7 @@ git push -u origin dev-continue-2026-01-20
 
 ### 반영 방법 B: patch 사용
 
-**전체 9커밋** (feature + handoff):
+**전체 커밋 시리즈** (feature + handoff, `bc4451251..HEAD`):
 
 ```bash
 bash scripts/apply-dev-continue-patches.sh /Users/a0/kakao-frontend/patches-dev-continue-2026-05-19

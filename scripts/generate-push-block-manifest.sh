@@ -8,6 +8,8 @@ OUTPUT_PATH="${PROJECT_ROOT}/docs/PUSH_BLOCK_MANIFEST.md"
 BUNDLE_PATH="/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle"
 PATCH_PATH="/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch"
 PATCH_PATH_2="/Users/a0/kakao-frontend/0002-feat-backend-conversation-graph-API-and-pytest-for-C.patch"
+PATCH_SERIES_DIR="/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19"
+PATCH_SERIES_BASE="${PATCH_SERIES_BASE:-bc4451251}"
 
 branch="$(git -C "${PROJECT_ROOT}" rev-parse --abbrev-ref HEAD)"
 latest_commit="$(git -C "${PROJECT_ROOT}" log -1 --oneline)"
@@ -40,6 +42,16 @@ if [[ -f "${PATCH_PATH_2}" ]]; then
   patch_2_size="$(stat -f%z "${PATCH_PATH_2}")"
 fi
 
+patch_series_exists="no"
+patch_series_count="N/A"
+patch_series_expected="$(git -C "${PROJECT_ROOT}" rev-list --count "${PATCH_SERIES_BASE}..HEAD")"
+if [[ -d "${PATCH_SERIES_DIR}" ]]; then
+  patch_series_exists="yes"
+  shopt -s nullglob
+  patch_series_files=("${PATCH_SERIES_DIR}"/*.patch)
+  patch_series_count="${#patch_series_files[@]}"
+fi
+
 recent_commits="$(git -C "${PROJECT_ROOT}" log -5 --oneline)"
 
 cat > "${OUTPUT_PATH}" <<EOF_REPORT
@@ -65,6 +77,11 @@ cat > "${OUTPUT_PATH}" <<EOF_REPORT
 - patch_2_exists: ${patch_2_exists}
 - patch_2_size_bytes: ${patch_2_size}
 - patch_2_sha256: \`${patch_2_sha}\`
+
+- patch_series_dir: \`${PATCH_SERIES_DIR}\`
+- patch_series_exists: ${patch_series_exists}
+- patch_series_count: ${patch_series_count}
+- patch_series_expected: ${patch_series_expected} (\`${PATCH_SERIES_BASE}..HEAD\`)
 
 ### Recent Commits
 

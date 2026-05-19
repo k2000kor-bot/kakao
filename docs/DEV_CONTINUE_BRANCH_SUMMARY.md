@@ -30,7 +30,7 @@ PUSH_REMOTE_URL=git@github.com:k2000kor/kakao.git npm run push:dev-continue
 ## 이관 (push 없이)
 
 - Bundle: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
-- Patches: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19/` (15개)
+- Patches: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19/` (17개)
 - `bash scripts/apply-dev-continue-patches.sh <patch-dir>`
 - `bash scripts/verify-push-block-artifacts.sh`
 
