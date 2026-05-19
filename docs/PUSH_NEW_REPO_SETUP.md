@@ -19,7 +19,8 @@
 Settings → Collaborators → `k2000kor-bot` 초대 → **Write** 이상 → 초대 **수락** 후 재시도
 
 ```bash
-ssh -T git@github.com   # Hi k2000kor-bot! 확인
+npm run check:push-ready
+# OK 나오면:
 PUSH_REMOTE_URL=git@github.com:k2000kor/kakao.git npm run push:dev-continue
 ```
 
