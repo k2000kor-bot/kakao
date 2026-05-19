@@ -73,6 +73,18 @@
 
 ---
 
+## 7) 자동 회귀 (선택, 서버 기동 후)
+
+```bash
+npm run restart:backend   # :5002
+npm start                 # :3000
+npm run verify:full-stack-local
+```
+
+- [ ] 위 명령 전체 통과 (Jest + API + integration + E2E 15)
+
+---
+
 ## 장애 발생 시 캡처 항목
 - 발생 시각:
 - 화면 URL:
