@@ -156,7 +156,6 @@ export function buildGraphAnswerChatContext(input: GraphAnswerGenerationInput): 
           }),
         }
       : {}),
-    prefer_informed_answer: true,
     conversation_graph_methodology: input.analysis.methodology.join(' '),
     answer_quality_instruction: isCreateGraph
       ? buildCreateGraphAnswerInstruction(hasGraphNodes, Boolean(rawConversation))

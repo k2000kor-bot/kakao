@@ -41,7 +41,7 @@ export const CREATE_GRAPH_ANSWER_PRESET = {
 
 export function resolveGraphAnswerUserMessage(
   message: string,
-  hasGraphNodes: boolean,
+  _hasGraphNodes: boolean,
 ): { message: string; isCreateGraph: boolean } {
   const trimmed = message.trim();
   if (!trimmed) return { message: trimmed, isCreateGraph: false };

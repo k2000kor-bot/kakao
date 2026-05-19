@@ -116,8 +116,12 @@ describe('ConversationGraphAnswerPanel', () => {
     await waitFor(() => expect(onEnsure).toHaveBeenCalled());
     await waitFor(() => expect(generateGraphAnswerViaChat).toHaveBeenCalled());
     const [apiMessage, ctx] = jest.mocked(generateGraphAnswerViaChat).mock.calls.at(-1) ?? [];
-    expect(String(apiMessage)).toContain('Mermaid');
-    expect(ctx).toMatchObject({ input_intent_hint: 'conversation_graph_create' });
+    expect(String(apiMessage)).toBe('관계도를 만들어 주세요');
+    expect(ctx).toMatchObject({
+      input_intent_hint: 'conversation_graph_create',
+      multi_request_mode: false,
+    });
+    expect(String((ctx as Record<string, unknown>).answer_quality_instruction)).toContain('Mermaid');
   });
 
   it('답변 생성 중 파이프라인 UI를 표시하고 완료 후 결과를 보여준다', async () => {
@@ -144,10 +148,8 @@ describe('ConversationGraphAnswerPanel', () => {
     fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
     fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
 
-    await waitFor(() => {
-      expect(screen.getByTestId('conversation-graph-answer-pipeline')).toBeInTheDocument();
-      expect(screen.getByTestId('genspark-generation-status-mock')).toHaveAttribute('data-variant', 'step');
-    });
+    expect(await screen.findByTestId('conversation-graph-answer-pipeline')).toBeInTheDocument();
+    expect(screen.getByTestId('genspark-generation-status-mock')).toHaveAttribute('data-variant', 'step');
 
     resolveGen('패널 생성 답변');
 

@@ -10,6 +10,12 @@ export function isCreateGraphAnswerRequest(message: string): boolean {
   if (/(만들|생성|그려|작성).{0,12}관계도/i.test(t)) {
     return true;
   }
+  if (/대화.{0,16}(을|를)?\s*(기준|바탕).{0,16}관계도/i.test(t)) {
+    return true;
+  }
+  if (/관계도.{0,16}(을|를)?\s*(기준|바탕).{0,8}대화/i.test(t)) {
+    return true;
+  }
   if (/relationship\s*graph|conversation\s*graph/i.test(t) && /(create|make|build|draw|generate)/i.test(t)) {
     return true;
   }
@@ -35,17 +41,13 @@ export const CREATE_GRAPH_ANSWER_PRESET = {
 
 export function resolveGraphAnswerUserMessage(
   message: string,
-  hasGraphNodes: boolean,
+  _hasGraphNodes: boolean,
 ): { message: string; isCreateGraph: boolean } {
   const trimmed = message.trim();
   if (!trimmed) return { message: trimmed, isCreateGraph: false };
   if (isCreateGraphAnswerRequest(trimmed)) {
-    return {
-      message: hasGraphNodes
-        ? `${CREATE_GRAPH_PROMPT_BODY}\n\n(사용자 요청) ${trimmed}`
-        : `${CREATE_GRAPH_PROMPT_BODY}\n\n(사용자 요청) ${trimmed}\n\n※ 아직 서버 관계도가 없으면 붙여넣은 대화 원문에서 참여자·연결을 추출해 위 형식으로 작성하세요.`,
-      isCreateGraph: true,
-    };
+    /* API message는 사용자 문장만 — 번호 목록(1) 2)…)은 context·백엔드 지시로 전달(다중 요청 오인 방지) */
+    return { message: trimmed, isCreateGraph: true };
   }
   return { message: trimmed, isCreateGraph: false };
 }

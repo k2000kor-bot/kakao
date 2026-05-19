@@ -32,11 +32,12 @@ describe('conversationGraphForceLayout', () => {
       edges: [],
     });
     expect(result === undefined || typeof result === 'object').toBe(true);
-    if (result && typeof result === 'object') {
-      expect(typeof result.destroy).toBe('function');
-      expect(typeof result.resetZoom).toBe('function');
-      expect(() => result.destroy()).not.toThrow();
-      expect(() => result.resetZoom()).not.toThrow();
+    if (!result || typeof result !== 'object') {
+      return;
     }
+    expect(typeof result.destroy).toBe('function');
+    expect(typeof result.resetZoom).toBe('function');
+    expect(() => result.destroy()).not.toThrow();
+    expect(() => result.resetZoom()).not.toThrow();
   });
 });

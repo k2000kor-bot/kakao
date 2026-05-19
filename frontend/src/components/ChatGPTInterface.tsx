@@ -8,6 +8,7 @@ import projectShareService from '../services/projectShareService';
 import LoadingSkeleton from './LoadingSkeleton';
 import { WelcomeWorkspacePanel } from './WelcomeWorkspacePanel';
 import { ChatInputDock } from './ChatInputDock';
+import { RoutePathBreadcrumb } from './RoutePathBreadcrumb';
 import {
   WorkspaceQueryComposer,
   type ComposerResponseModeUi,
@@ -15,9 +16,6 @@ import {
 } from './WorkspaceQueryComposer';
 import { readComposerAttachmentsForSend } from '../utils/composerAttachmentPayload';
 import { buildComposerMultiRequestProgressState } from '../utils/composerMultiRequestProgress';
-import {
-    type SequentialMultiRequestPriorAnswer,
-} from '../utils/composerSequentialMultiRequest';
 import {
     buildSequentialMultiRequestItemContext,
     runComposerSequentialMultiRequestStream,
@@ -63,7 +61,6 @@ import { buildConversationGraphPasteNavState } from '../views/conversationGraphN
 import { isStreamingSupported, streamChatMessage } from '../utils/streamingClient';
 import { analyzeGuidelines, getGuidelineQualityTrend, parseGuideline } from '../utils/guidelineQuality';
 import {
-    buildFeatureContextFromMessage,
     buildMergedFeatureContextFromInputAndAttachments,
     buildKoreanProfileSourceStringForChat,
     extractResponseContent,
@@ -2923,7 +2920,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             isStreamingSupported(),
         );
         const sequentialMultiRequestItems = sequentialSendFlags.items;
-        const multiRequestModeActive = sequentialSendFlags.multiRequestModeActive;
         const buildSequentialItemOutbound = createComposerSequentialItemOutboundBuilder({
             items: sequentialMultiRequestItems,
             buildStructuredGenerationPrompt,
@@ -7357,6 +7353,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         generateConversationTitle,
         structuredInputAssistEnabled,
         attachedConversationFile,
+        withGraphCreateIntentInChatContext,
     ]);
 
     // 메시지 편집 시작
@@ -8217,6 +8214,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         generateConversationTitle,
         structuredInputAssistEnabled,
         attachedConversationFile,
+        withGraphCreateIntentInChatContext,
     ]);
 
     // 대화 검색 필터링 — 일반 대화·프로젝트 소속 대화 통합 리스트
@@ -10826,6 +10824,15 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             </p>
                         )}
                         {projectSourcesTabInputHint}
+                        {isDefaultPage && !currentProject && !gensparkRouteAgentId ? (
+                            <RoutePathBreadcrumb
+                                className="chat-input-dock-route-breadcrumb"
+                                items={[
+                                    { label: '홈', to: '/' },
+                                    { label: '대화' },
+                                ]}
+                            />
+                        ) : null}
                         <ChatInputDock
                             composer={chatWorkspaceComposer}
                             variant={currentConversation ? 'conversation' : 'welcome'}

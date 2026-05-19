@@ -148,10 +148,8 @@ describe('ConversationGraphAnswerPanel', () => {
     fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
     fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
 
-    await waitFor(() => {
-      expect(screen.getByTestId('conversation-graph-answer-pipeline')).toBeInTheDocument();
-      expect(screen.getByTestId('genspark-generation-status-mock')).toHaveAttribute('data-variant', 'step');
-    });
+    expect(await screen.findByTestId('conversation-graph-answer-pipeline')).toBeInTheDocument();
+    expect(screen.getByTestId('genspark-generation-status-mock')).toHaveAttribute('data-variant', 'step');
 
     resolveGen('패널 생성 답변');
 

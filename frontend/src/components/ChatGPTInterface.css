@@ -138,8 +138,19 @@
 }
 
 .chat-main-stage > .bw-project-guidance-hint,
-.chat-main-stage > .project-sources-input-hint {
+.chat-main-stage > .project-sources-input-hint,
+.chat-main-stage > .chat-input-dock-route-breadcrumb {
     flex-shrink: 0;
+}
+
+/* 입력 도크 직상: 홈 › 대화 — 52rem 컬럼·한 줄 */
+.chat-input-dock-route-breadcrumb {
+    width: 100%;
+    max-width: 52rem;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md) var(--spacing-sm);
+    box-sizing: border-box;
+    border-bottom: none;
 }
 
 /* 웰컴: 히어로는 스크롤 안, 입력은 하단 고정 — 대화 시작 후와 동일 52rem 도크 */

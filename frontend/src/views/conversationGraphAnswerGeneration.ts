@@ -1,6 +1,5 @@
 import { buildUnifiedApiChatRequestBody, sendChatMessage } from '../services/unifiedAPI';
 import {
-  buildFeatureContextFromMessage,
   coerceTrimmedString,
   extractResponseContent,
   getAssistantGenerationPhase,
@@ -127,11 +126,11 @@ export function buildGraphAnswerChatContext(input: GraphAnswerGenerationInput): 
     coerceTrimmedString(input.rawConversationText, ''),
   );
   const isCreateGraph = isCreateGraphAnswerRequest(userMsg);
-  const featureFlags = userMsg ? buildFeatureContextFromMessage(userMsg) : { prefer_informed_answer: true };
   const defaultInstruction =
     '대화 관계도·성향·족보 계층·시공사 반응 신호·근거 발언 샘플만 근거로 답하세요. 시공사 선호는 확정이 아닌 추정임을 밝히고, 수치·참여자·발언 인용에 없는 사실은 추측하지 마세요. 보고서 형식(요약→핵심 인물→갈등 축→시공사 반응→실행 제안)으로 한국어만 출력하세요.';
   return {
-    ...featureFlags,
+    prefer_informed_answer: true,
+    multi_request_mode: false,
     [GRAPH_ANSWER_CONTEXT_FLAG]: true,
     input_intent_hint: isCreateGraph ? 'conversation_graph_create' : 'conversation_graph_answer',
     conversation_graph_summary: summary,
@@ -157,7 +156,6 @@ export function buildGraphAnswerChatContext(input: GraphAnswerGenerationInput): 
           }),
         }
       : {}),
-    prefer_informed_answer: true,
     conversation_graph_methodology: input.analysis.methodology.join(' '),
     answer_quality_instruction: isCreateGraph
       ? buildCreateGraphAnswerInstruction(hasGraphNodes, Boolean(rawConversation))

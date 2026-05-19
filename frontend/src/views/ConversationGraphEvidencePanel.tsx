@@ -36,10 +36,9 @@ export function ConversationGraphEvidencePanel({
   selectedNodeId,
   focusEdge = null,
 }: ConversationGraphEvidencePanelProps) {
-  const evidence = graph.evidence ?? [];
   const rows = useMemo(
-    () => filterEvidenceForSelection(evidence, selectedNodeId, focusEdge),
-    [evidence, selectedNodeId, focusEdge],
+    () => filterEvidenceForSelection(graph.evidence ?? [], selectedNodeId, focusEdge),
+    [graph.evidence, selectedNodeId, focusEdge],
   );
 
   const participantSamples = useMemo(() => {

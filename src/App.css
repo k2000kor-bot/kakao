@@ -322,7 +322,7 @@ body {
 .brainwave-chat-route-breadcrumb {
   flex-shrink: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.35rem 0.5rem;
   padding: 0.5rem 0.75rem;
@@ -330,9 +330,12 @@ body {
   background: var(--bg-secondary);
   font-size: var(--font-size-sm);
   line-height: 1.4;
+  min-width: 0;
+  white-space: nowrap;
 }
 /* 홈·프로젝트 목록·프로젝트 상단 경로: 동일 컬럼·중립 톤 */
-.bw-page-root--route-chrome .brainwave-chat-route-breadcrumb--page-aligned {
+.bw-page-root--route-chrome .brainwave-chat-route-breadcrumb--page-aligned,
+.brainwave-chat-route-breadcrumb--page-aligned {
   padding: 0 0 var(--spacing-md) 0;
   margin: 0;
   border: none;
@@ -341,6 +344,15 @@ body {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
+.brainwave-chat-route-breadcrumb--single-line {
+  flex-wrap: nowrap;
+}
+.brainwave-chat-route-breadcrumb--single-line .brainwave-chat-route-breadcrumb__link,
+.brainwave-chat-route-breadcrumb--single-line .brainwave-chat-route-breadcrumb__leaf,
+.brainwave-chat-route-breadcrumb--single-line .brainwave-chat-route-breadcrumb__sep {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .bw-page-root--route-chrome .brainwave-chat-route-breadcrumb--page-aligned .brainwave-chat-route-breadcrumb__link {
   color: var(--accent-info-figma, #3b82f6);
 }
@@ -348,10 +360,15 @@ body {
   color: var(--text-primary);
   font-weight: var(--font-weight-semibold);
 }
-.bw-page-root--route-chrome .brainwave-chat-route-breadcrumb--page-aligned .brainwave-chat-route-breadcrumb__hint {
-  margin-top: var(--spacing-xs);
+.bw-page-root--route-chrome .brainwave-chat-route-breadcrumb--page-aligned .brainwave-chat-route-breadcrumb__hint,
+.brainwave-chat-route-breadcrumb--page-aligned .brainwave-chat-route-breadcrumb__hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 0 0 var(--spacing-sm);
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .brainwave-chat-route-breadcrumb__badge {
   font-weight: var(--font-weight-semibold);
@@ -374,6 +391,12 @@ body {
 .brainwave-chat-route-breadcrumb__link:hover {
   text-decoration: underline;
 }
+.bw-tool-view > .conversation-graph-route-breadcrumb {
+  flex-shrink: 0;
+  padding: var(--spacing-md) var(--spacing-lg) 0;
+  border-bottom: none;
+}
+
 .brainwave-chat-route-breadcrumb__hint {
   flex: 1 0 100%;
   font-size: 0.7rem;

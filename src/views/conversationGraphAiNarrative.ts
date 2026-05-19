@@ -73,7 +73,7 @@ export function buildHeuristicGraphNarrative(analysis: GraphAiAnalysis): string 
   const agree = analysis.agreementHubs.map((p) => p.label).join(', ') || '특정인 없음';
   return [
     analysis.stanceSummary + '.',
-    `${analysis.exchangeSummary} 주요 응답·균형 참여자는 그래프에서 연결 두께로 확인할 수 있습니다.`,
+    `${analysis.exchangeSummary} 주요 교환 주도: ${lead}. 응답·균형 참여자는 그래프에서 연결 두께로 확인할 수 있습니다.`,
     `동조 연결 중심 참여자: ${agree}. 반대·대립 선이 두꺼운 구간은 입장 충돌이 잦은 대화 흐름입니다.`,
     `분석 신뢰도는 ${analysis.trustScore}점(${analysis.trustLabel})입니다. 메시지 맥락·농담·인용은 자동 분류 오차가 있을 수 있으니, 중요한 판단은 원문 대화를 함께 확인하세요.`,
   ].join(' ');

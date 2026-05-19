@@ -3,7 +3,7 @@
  * ChatGPT·Gemini 스타일 3분할: 일반 대화 | 프로젝트 | 프로젝트 · 대화
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, NavLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import ProjectHub, { Project as ProjectHubProject } from '../components/ProjectHub';
 import ProjectEditModal from '../components/ProjectManagement/ProjectEditModal';
 import ProjectCreateModal, { type ProjectCreateFormData, type ProjectCategoryId } from '../components/ProjectManagement/ProjectCreateModal';
@@ -11,6 +11,7 @@ import { projectService } from '../services/projectService';
 import { getStandaloneChatPath } from '../config/uiPreferences';
 import { Project } from '../types/project';
 import LoadingSkeleton from '../components/LoadingSkeleton';
+import { RoutePathBreadcrumb } from '../components/RoutePathBreadcrumb';
 
 const CATEGORY_TO_TYPE: Record<ProjectCategoryId, Project['type']> = {
   investment: 'business',
@@ -31,18 +32,13 @@ function ProjectsRouteChrome() {
   return (
     <div className="bw-page-root bw-page-root--route-chrome">
       <h1 className="sr-only">프로젝트</h1>
-      <nav className="brainwave-chat-route-breadcrumb brainwave-chat-route-breadcrumb--page-aligned" aria-label="현재 위치">
-        <NavLink to={getStandaloneChatPath()} className="brainwave-chat-route-breadcrumb__link">
-          일반 대화
-        </NavLink>
-        <span className="brainwave-chat-route-breadcrumb__sep" aria-hidden>
-          /
-        </span>
-        <span className="brainwave-chat-route-breadcrumb__leaf">프로젝트</span>
-        <span className="brainwave-chat-route-breadcrumb__hint">
-          목록에서 프로젝트를 선택하면 대화·소스 화면으로 이동합니다.
-        </span>
-      </nav>
+      <RoutePathBreadcrumb
+        items={[
+          { label: '일반 대화', to: getStandaloneChatPath() },
+          { label: '프로젝트' },
+        ]}
+        hint="목록에서 프로젝트를 선택하면 대화·소스 화면으로 이동합니다."
+      />
     </div>
   );
 }

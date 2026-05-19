@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-/* eslint-disable jest/no-conditional-expect */
+/* eslint-disable jest/no-conditional-expect, testing-library/no-unnecessary-act, testing-library/no-wait-for-multiple-assertions */
 /**
  * ChatGPTInterface 컴포넌트 테스트
  * ChatGPT 인터페이스 컴포넌트 기능 확인

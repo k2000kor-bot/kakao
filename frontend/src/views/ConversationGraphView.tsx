@@ -77,8 +77,9 @@ import {
   stripConversationGraphHandoffKeys,
 } from './conversationGraphNavigateHandoff';
 import { scrollElementIntoViewSafe } from './conversationGraphScroll';
-import type { GraphAnswerEnsureGraphResult } from './ConversationGraphAnswerPanel';
+import { RoutePathBreadcrumb } from '../components/RoutePathBreadcrumb';
 import { getStandaloneChatPath } from '../config/uiPreferences';
+import type { GraphAnswerEnsureGraphResult } from './ConversationGraphAnswerPanel';
 import { TEST_IDS } from '../constants/testIds';
 import { downloadGraphAiAnalysisJson } from './conversationGraphAiExport';
 import {
@@ -584,7 +585,7 @@ function ConversationGraphView() {
     } catch {
       /* 붙여넣기 미리보기 갱신 실패는 확인 업로드 시 처리 */
     }
-  }, [excludeSystemMessages, kakaoSamplePreset, pasteText, uploadPreview?.source]);
+  }, [excludeSystemMessages, kakaoSamplePreset, pasteText, pendingUploadText, uploadPreview?.source]);
 
   const selectedNode = useMemo(() => {
     if (!graph || !selectedNodeId) return null;
@@ -1024,6 +1025,14 @@ function ConversationGraphView() {
       aria-label="대화 관계도"
       data-testid={TEST_IDS.CONVERSATION_GRAPH_VIEW}
     >
+      <RoutePathBreadcrumb
+        className="conversation-graph-route-breadcrumb"
+        items={[
+          { label: '홈', to: '/' },
+          { label: '대화', to: getStandaloneChatPath() },
+          { label: '대화 관계도' },
+        ]}
+      />
       <header className="bw-detail-header-left" id="conversation-graph-heading">
           <p className="bw-detail-desc">
             카카오톡 대화를 업로드하면 족보형 관계도·입장·시공사 반응 신호·근거 발언을 분석합니다. 통합 답변 생성으로 기획서 형식의 보고서를 만들 수 있으며, 모든 성향·선호는 추정값입니다.

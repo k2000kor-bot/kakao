@@ -12,7 +12,7 @@
 /// <reference types="jest" />
 import '@testing-library/jest-dom';
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { AppUnifiedRoutes } from './AppUnified';
@@ -44,17 +44,8 @@ import {
 } from './config/routes';
 import { STANDALONE_CHAT_PATH } from './config/uiPreferences';
 import { TEST_IDS } from './constants/testIds';
-import {
-  SIDEBAR_CONTEXT_FILTER_STORAGE_KEY,
-  SIDEBAR_CONTEXT_FILTER_UPDATED_EVENT,
-  SIDEBAR_CONTEXT_RESTORE_KEY,
-  SIDEBAR_CONTEXT_RESTORE_UPDATED_EVENT,
-  SIDEBAR_CONTEXT_TOAST_KEY,
-  SIDEBAR_CONTEXT_TOAST_UPDATED_EVENT,
-  type SidebarContextFilterUpdatedDetail,
-} from './constants/sidebarContextFilterEvent';
 import { GENSPARK_REFERENCE_AGENT_ID } from './services/gensparkReferenceAgentPreset';
-import { CHATGPT_CONVERSATIONS_STORAGE_KEY } from './services/chatGptUiStorageKeys';
+import { CHATGPT_CONVERSATIONS_STORAGE_KEY, SIDEBAR_CHATS_UPDATED_EVENT } from './services/chatGptUiStorageKeys';
 import { installJestDomQuietNetworkForTests, setupCommonMocks, withProcessEnvAsync } from './test-utils/testHelpers';
 
 jest.mock('./components/ThemeProvider', () => ({
@@ -222,11 +213,14 @@ jest.mock('./components/BackupRecoveryManager', () => ({
   default: () =>
     require('react').createElement('div', { 'data-testid': 'mock-backup-recovery' }, 'Backup'),
 }));
-jest.mock('./views/ConversationGraphView', () => ({
-  __esModule: true,
-  default: () =>
-    require('react').createElement('div', { 'data-testid': 'conversation-graph-view' }, 'ConversationGraph'),
-}));
+jest.mock('./views/ConversationGraphView', () => {
+  const { TEST_IDS } = require('./constants/testIds');
+  return {
+    __esModule: true,
+    default: () =>
+      require('react').createElement('div', { 'data-testid': TEST_IDS.CONVERSATION_GRAPH_VIEW }, 'ConversationGraph'),
+  };
+});
 jest.mock('./components/UltimateChatGPTInterface', () => ({
   __esModule: true,
   default: () =>
@@ -274,26 +268,29 @@ describe('AppUnified', () => {
     expect(root).toHaveTextContent(/CORBU|대화|에이전트/);
   });
 
-  it('사이드바 PRO 링크가 결제 경로로 연결된다', async () => {
+  it('사이드바 더보기 메뉴에 시스템 대시보드 링크가 있다', async () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <AppUnifiedRoutes />
       </MemoryRouter>
     );
-    const proLink = await screen.findByTestId(TEST_IDS.SIDEBAR_PRO_NAV_LINK);
-    expect(proLink).toHaveAttribute('href', BILLING_PATH);
-    expect(proLink).toHaveAttribute('aria-label', '구독·PRO');
-    expect(proLink).toHaveTextContent('PRO');
+    await userEvent.click(await screen.findByTestId('sidebar-brand-more-btn'));
+    const dashboardLink = await screen.findByRole('menuitem', { name: '시스템 대시보드' });
+    expect(dashboardLink).toHaveAttribute('href', DASHBOARD_PATH);
   });
 
-  it('사이드바 도구 섹션에 대시보드 링크가 있다', async () => {
+  it('사이드바 더보기 메뉴에 대화 관계도·구독 링크가 있다', async () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <AppUnifiedRoutes />
       </MemoryRouter>
     );
-    const dashboardLink = await screen.findByRole('link', { name: '시스템 대시보드' });
-    expect(dashboardLink).toHaveAttribute('href', DASHBOARD_PATH);
+    await userEvent.click(await screen.findByTestId('sidebar-brand-more-btn'));
+    expect(screen.getByRole('menuitem', { name: '대화 관계도' })).toHaveAttribute(
+      'href',
+      CONVERSATION_GRAPH_PATH,
+    );
+    expect(screen.getByRole('menuitem', { name: '구독·플랜' })).toHaveAttribute('href', BILLING_PATH);
   });
 
   it('404 경로에서 "페이지를 찾을 수 없습니다"와 홈 링크를 보여준다', async () => {
@@ -458,6 +455,34 @@ describe('AppUnified', () => {
     await waitFor(() => {
       expect(screen.getByTestId('mock-chat')).toBeInTheDocument();
     });
+  });
+
+  it(`${STANDALONE_CHAT_PATH} 접근 시 앱 셸 상단 브레드크럼은 숨긴다(입력 도크 위 경로 크롬과 중복 방지)`, async () => {
+    render(
+      <MemoryRouter initialEntries={[STANDALONE_CHAT_PATH]}>
+        <AppUnifiedRoutes />
+      </MemoryRouter>
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-chat')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('navigation', { name: '현재 위치' })).not.toBeInTheDocument();
+  });
+
+  it('설정 접근 시 상단 브레드크럼이 한 줄(flex)로 표시된다', async () => {
+    render(
+      <MemoryRouter initialEntries={[SETTINGS_PATH]}>
+        <AppUnifiedRoutes />
+      </MemoryRouter>
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('navigation', { name: '현재 위치' })).toBeInTheDocument();
+    });
+    const nav = screen.getByRole('navigation', { name: '현재 위치' });
+    expect(within(nav).getByRole('list')).toBeInTheDocument();
+    expect(within(nav).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(nav).getByRole('button', { name: '홈으로 이동' })).toBeInTheDocument();
+    expect(within(nav).getByText('설정')).toHaveAttribute('aria-current', 'page');
   });
 
   it(`${STANDALONE_CHAT_PATH} + location.state.conversationId 로 진입해도 독립 대화를 렌더한다`, async () => {
@@ -631,7 +656,7 @@ describe('AppUnified', () => {
       ['/ultimate/', 'mock-ultimate-chat', '말', 'trail-slash-ultimate'] as const,
       ['/integrated/', 'mock-integrated-master', '터', 'trail-slash-integrated'] as const,
       [`${DASHBOARD_PATH}/`, 'mock-integrated-dashboard', '시', 'trail-slash-dashboard'] as const,
-      [`${CONVERSATION_GRAPH_PATH}/`, 'conversation-graph-view', '그', 'trail-slash-conv-graph'] as const,
+      [`${CONVERSATION_GRAPH_PATH}/`, TEST_IDS.CONVERSATION_GRAPH_VIEW, '그', 'trail-slash-conv-graph'] as const,
       [`${BACKUP_PATH}/`, 'mock-backup-recovery', '복', 'trail-slash-backup'] as const,
       [`${DEV_STATUS_PATH}/`, 'dev-status-view', '발', 'trail-slash-dev-status'] as const,
       [`${PIPELINE_TUNING_PATH}/`, 'pipeline-tuning-view', '튜', 'trail-slash-pipeline'] as const,
@@ -1409,13 +1434,14 @@ describe('AppUnified', () => {
     await waitFor(() => {
       expect(screen.getByRole('menu')).toBeInTheDocument();
     });
-    expect(screen.getByRole('menuitem', { name: '새 대화' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: '일반 대화' })).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: '프로젝트' })).not.toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: '에이전트' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: '목소리 생성' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: '설정' })).toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: '도움말' })).not.toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: '분석' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: '시스템 대시보드' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: '도움말' })).toBeInTheDocument();
   });
 
   it('Q 검색에 입력 시 지우기 버튼이 보이고, 클릭하면 검색어가 비워진다', async () => {
@@ -1497,11 +1523,13 @@ describe('AppUnified', () => {
         ]),
       );
       act(() => {
-        window.dispatchEvent(new CustomEvent('sidebar-chats-updated'));
+        window.dispatchEvent(new CustomEvent(SIDEBAR_CHATS_UPDATED_EVENT));
       });
 
       await waitFor(() => {
         expect(screen.getByText(existingTitle)).toBeInTheDocument();
+      });
+      await waitFor(() => {
         expect(screen.getByText(appendedTitle)).toBeInTheDocument();
       });
     } finally {
@@ -1528,7 +1556,7 @@ describe('AppUnified', () => {
         ]),
       );
       act(() => {
-        window.dispatchEvent(new CustomEvent('sidebar-chats-updated'));
+        window.dispatchEvent(new CustomEvent(SIDEBAR_CHATS_UPDATED_EVENT));
       });
 
       await waitFor(() => {
@@ -1550,1272 +1578,22 @@ describe('AppUnified', () => {
     expect(searchInput).toHaveAttribute('title', '대화 검색 (Escape로 지우기)');
   });
 
-  it('사이드바 컴팩트 모드 토글 버튼이 동작하고 상태를 저장한다', async () => {
-    localStorage.removeItem('sidebarCompactMode');
+  it('사이드바 접기 버튼이 동작하고 접힘 상태를 저장한다', async () => {
+    localStorage.removeItem('sidebarCollapsed');
     try {
       render(
         <MemoryRouter initialEntries={['/']}>
           <AppUnifiedRoutes />
         </MemoryRouter>
       );
-      const compactToggle = await screen.findByRole('button', { name: '사이드바 컴팩트 모드 토글' });
-      expect(compactToggle).toHaveAttribute('aria-pressed', 'false');
-      await userEvent.click(compactToggle);
-      expect(compactToggle).toHaveAttribute('aria-pressed', 'true');
-      expect(localStorage.getItem('sidebarCompactMode')).toBe('true');
+      const collapseBtn = await screen.findByRole('button', { name: '사이드바 접기' });
+      await userEvent.click(collapseBtn);
+      expect(localStorage.getItem('sidebarCollapsed')).toBe('true');
+      const expandBtn = await screen.findByRole('button', { name: '사이드바 펼치기' });
+      await userEvent.click(expandBtn);
+      expect(localStorage.getItem('sidebarCollapsed')).toBe('false');
     } finally {
-      localStorage.removeItem('sidebarCompactMode');
-    }
-  });
-
-  it('사이드바 컨텍스트 필터 상태를 로컬 스토리지에서 복원한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'agent');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('필터: 에이전트')).toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('사이드바 컨텍스트 필터 저장값이 잘못되면 전체(all)로 안전하게 정규화한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'invalid-filter');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      const allBtn = await screen.findByRole('button', { name: '전체' });
-      const agentBtn = screen.getByRole('button', { name: '에이전트' });
-      const projectBtn = screen.getByRole('button', { name: '프로젝트' });
-      expect(allBtn).toHaveAttribute('aria-pressed', 'true');
-      expect(agentBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(projectBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(screen.queryByText('필터: 에이전트')).not.toBeInTheDocument();
-      expect(screen.queryByText('필터: 프로젝트')).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('storage 이벤트로 바뀐 컨텍스트 필터를 동기화한다', async () => {
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      const allBtn = await screen.findByRole('button', { name: '전체' });
-      const agentBtn = screen.getByRole('button', { name: '에이전트' });
-      const projectBtn = screen.getByRole('button', { name: '프로젝트' });
-      expect(allBtn).toHaveAttribute('aria-pressed', 'true');
-      expect(agentBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(projectBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(screen.queryByText('필터: 프로젝트')).not.toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'project');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_FILTER_STORAGE_KEY,
-            newValue: 'project',
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('필터: 프로젝트')).toBeInTheDocument();
-      });
-      expect(allBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(agentBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(projectBtn).toHaveAttribute('aria-pressed', 'true');
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('storage 이벤트 newValue가 달라도 실제 저장값 기준으로 컨텍스트 필터를 동기화한다', async () => {
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      const allBtn = await screen.findByRole('button', { name: '전체' });
-      const agentBtn = screen.getByRole('button', { name: '에이전트' });
-      const projectBtn = screen.getByRole('button', { name: '프로젝트' });
-      expect(allBtn).toHaveAttribute('aria-pressed', 'true');
-
-      // 이벤트 payload는 project지만, 실제 저장값은 agent로 두어 저장값 우선 동기화를 검증
-      localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'agent');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_FILTER_STORAGE_KEY,
-            newValue: 'project',
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('필터: 에이전트')).toBeInTheDocument();
-      });
-      expect(allBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(agentBtn).toHaveAttribute('aria-pressed', 'true');
-      expect(projectBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(screen.queryByText('필터: 프로젝트')).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('storage 이벤트 newValue가 잘못된 값이어도 실제 저장값 기준으로 컨텍스트 필터를 동기화한다', async () => {
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      const allBtn = await screen.findByRole('button', { name: '전체' });
-      const agentBtn = screen.getByRole('button', { name: '에이전트' });
-      const projectBtn = screen.getByRole('button', { name: '프로젝트' });
-      expect(allBtn).toHaveAttribute('aria-pressed', 'true');
-
-      localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'project');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_FILTER_STORAGE_KEY,
-            newValue: 'invalid-filter',
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('필터: 프로젝트')).toBeInTheDocument();
-      });
-      expect(allBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(agentBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(projectBtn).toHaveAttribute('aria-pressed', 'true');
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('storage 이벤트 newValue가 유효해도 실제 저장값이 잘못되면 전체(all)로 정규화한다', async () => {
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      const allBtn = await screen.findByRole('button', { name: '전체' });
-      const agentBtn = screen.getByRole('button', { name: '에이전트' });
-      const projectBtn = screen.getByRole('button', { name: '프로젝트' });
-      expect(allBtn).toHaveAttribute('aria-pressed', 'true');
-
-      // 이벤트 payload는 유효한 project지만 실제 저장값은 invalid-filter
-      localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'invalid-filter');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_FILTER_STORAGE_KEY,
-            newValue: 'project',
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.queryByText('필터: 에이전트')).not.toBeInTheDocument();
-        expect(screen.queryByText('필터: 프로젝트')).not.toBeInTheDocument();
-      });
-      expect(allBtn).toHaveAttribute('aria-pressed', 'true');
-      expect(agentBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(projectBtn).toHaveAttribute('aria-pressed', 'false');
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('storage 이벤트의 key가 다르면 컨텍스트 필터 상태를 변경하지 않는다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'agent');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('필터: 에이전트')).toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'project');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: 'unrelated-key',
-            newValue: 'anything',
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('필터: 에이전트')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('필터: 프로젝트')).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('storage 이벤트로 잘못된 필터 저장값이 들어오면 전체(all)로 정규화한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'agent');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('필터: 에이전트')).toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'invalid-filter');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_FILTER_STORAGE_KEY,
-            newValue: 'invalid-filter',
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.queryByText('필터: 에이전트')).not.toBeInTheDocument();
-        expect(screen.queryByText('필터: 프로젝트')).not.toBeInTheDocument();
-      });
-      expect(screen.getByRole('button', { name: '전체' })).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.getByRole('button', { name: '에이전트' })).toHaveAttribute('aria-pressed', 'false');
-      expect(screen.getByRole('button', { name: '프로젝트' })).toHaveAttribute('aria-pressed', 'false');
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('storage 이벤트 key가 null이면 컨텍스트 필터 상태를 변경하지 않는다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'agent');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('필터: 에이전트')).toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'project');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: null,
-            newValue: null,
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('필터: 에이전트')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('필터: 프로젝트')).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('storage 이벤트로 필터 키 값이 제거되면 전체(all)로 복귀한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'agent');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('필터: 에이전트')).toBeInTheDocument();
-
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_FILTER_STORAGE_KEY,
-            newValue: null,
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.queryByText('필터: 에이전트')).not.toBeInTheDocument();
-        expect(screen.queryByText('필터: 프로젝트')).not.toBeInTheDocument();
-      });
-      expect(screen.getByRole('button', { name: '전체' })).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.getByRole('button', { name: '에이전트' })).toHaveAttribute('aria-pressed', 'false');
-      expect(screen.getByRole('button', { name: '프로젝트' })).toHaveAttribute('aria-pressed', 'false');
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('storage 이벤트 newValue가 null이어도 실제 저장값이 있으면 저장값 기준으로 동기화한다', async () => {
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      const allBtn = await screen.findByRole('button', { name: '전체' });
-      const agentBtn = screen.getByRole('button', { name: '에이전트' });
-      const projectBtn = screen.getByRole('button', { name: '프로젝트' });
-      expect(allBtn).toHaveAttribute('aria-pressed', 'true');
-
-      // 이벤트 newValue는 null이지만 실제 저장값은 agent로 유지
-      localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'agent');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_FILTER_STORAGE_KEY,
-            newValue: null,
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('필터: 에이전트')).toBeInTheDocument();
-      });
-      expect(allBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(agentBtn).toHaveAttribute('aria-pressed', 'true');
-      expect(projectBtn).toHaveAttribute('aria-pressed', 'false');
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('사이드바 컨텍스트 필터 업데이트 이벤트 detail로 필터 상태를 동기화한다', async () => {
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-      expect(screen.queryByText('필터: 에이전트')).not.toBeInTheDocument();
-      window.dispatchEvent(new CustomEvent(SIDEBAR_CONTEXT_FILTER_UPDATED_EVENT, { detail: { filter: 'agent' } }));
-      await waitFor(() => {
-        expect(screen.getByText('필터: 에이전트')).toBeInTheDocument();
-      });
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('사이드바 컨텍스트 필터 업데이트 이벤트 detail이 없으면 저장값으로 동기화한다', async () => {
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-      expect(screen.queryByText('필터: 프로젝트')).not.toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'project');
-      window.dispatchEvent(new CustomEvent(SIDEBAR_CONTEXT_FILTER_UPDATED_EVENT, { detail: {} }));
-      await waitFor(() => {
-        expect(screen.getByText('필터: 프로젝트')).toBeInTheDocument();
-      });
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('사이드바 컨텍스트 필터 업데이트 이벤트 detail.filter가 유효하지 않으면 저장값으로 동기화한다', async () => {
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-      expect(screen.queryByText('필터: 프로젝트')).not.toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'project');
-      window.dispatchEvent(new CustomEvent(SIDEBAR_CONTEXT_FILTER_UPDATED_EVENT, { detail: { filter: 'unknown' } }));
-      await waitFor(() => {
-        expect(screen.getByText('필터: 프로젝트')).toBeInTheDocument();
-      });
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('Alt+1/2/3 단축키로 사이드바 컨텍스트 필터를 전환한다', async () => {
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <AppUnifiedRoutes />
-      </MemoryRouter>
-    );
-
-    await screen.findByRole('button', { name: '전체' });
-
-    fireEvent.keyDown(window, { key: '2', altKey: true });
-    expect(await screen.findByText('필터: 에이전트')).toBeInTheDocument();
-
-    fireEvent.keyDown(window, { key: '3', altKey: true });
-    expect(await screen.findByText('필터: 프로젝트')).toBeInTheDocument();
-
-    fireEvent.keyDown(window, { key: '1', altKey: true });
-    await waitFor(() => {
-      expect(screen.queryByText('필터: 에이전트')).not.toBeInTheDocument();
-      expect(screen.queryByText('필터: 프로젝트')).not.toBeInTheDocument();
-    });
-  });
-
-  it('Alt+필터 단축키 연속 전환 시 마지막 상태만 토스트로 안내한다', async () => {
-    jest.useFakeTimers();
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      fireEvent.keyDown(window, { key: '3', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(500);
-      });
-      await waitFor(() => {
-        expect(onToast).toHaveBeenCalledTimes(1);
-        expect(onToast).toHaveBeenCalledWith(
-          expect.objectContaining({ message: '사이드바 필터: 프로젝트', type: 'info' }),
-        );
-      });
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      jest.useRealTimers();
-    }
-  });
-
-  it('필터 전환 토스트 설정이 꺼져 있으면 단축키 전환 시 토스트를 표시하지 않는다', async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '0');
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      expect(onToast).not.toHaveBeenCalled();
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it('토스트 설정 업데이트 이벤트 detail=false면 단축키 전환 시 토스트를 표시하지 않는다', async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '1');
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-      window.dispatchEvent(
-        new CustomEvent(SIDEBAR_CONTEXT_TOAST_UPDATED_EVENT, { detail: { enabled: false } }),
-      );
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      expect(onToast).not.toHaveBeenCalled();
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it('토스트 설정 업데이트 이벤트 detail=true를 우선 반영한다', async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '0');
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-      window.dispatchEvent(
-        new CustomEvent(SIDEBAR_CONTEXT_TOAST_UPDATED_EVENT, { detail: { enabled: true } }),
-      );
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      await waitFor(() => {
-        expect(onToast).toHaveBeenCalled();
-      });
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it('사이드바 필터 복원 설정이 꺼져 있으면 저장된 컨텍스트 필터를 무시한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY, 'agent');
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByTestId('app-unified-root');
-      expect(screen.queryByText('필터: 에이전트')).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('사이드바 필터 시작 정책을 표시한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('항상 전체')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '전체' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '에이전트' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '프로젝트' })).toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('사이드바 필터 시작 정책 업데이트 이벤트 detail로 정책 배지를 동기화한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '1');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('복원 ON')).toBeInTheDocument();
-      window.dispatchEvent(
-        new CustomEvent(SIDEBAR_CONTEXT_RESTORE_UPDATED_EVENT, { detail: { restoreEnabled: false } }),
-      );
-      await waitFor(() => {
-        expect(screen.getByText('항상 전체')).toBeInTheDocument();
-      });
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('사이드바 필터 시작 정책 업데이트 이벤트 detail=true를 우선 반영한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('항상 전체')).toBeInTheDocument();
-      window.dispatchEvent(
-        new CustomEvent(SIDEBAR_CONTEXT_RESTORE_UPDATED_EVENT, { detail: { restoreEnabled: true } }),
-      );
-      await waitFor(() => {
-        expect(screen.getByText('복원 ON')).toBeInTheDocument();
-      });
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('사이드바 필터 시작 정책 업데이트 이벤트 detail이 없으면 저장값으로 정책 배지를 동기화한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '1');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('복원 ON')).toBeInTheDocument();
-      localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-      window.dispatchEvent(new CustomEvent(SIDEBAR_CONTEXT_RESTORE_UPDATED_EVENT, { detail: {} }));
-      await waitFor(() => {
-        expect(screen.getByText('항상 전체')).toBeInTheDocument();
-      });
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('사이드바 필터 시작 정책 업데이트 이벤트 detail이 유효하지 않으면 저장값으로 정책 배지를 동기화한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '1');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('복원 ON')).toBeInTheDocument();
-      localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-      window.dispatchEvent(
-        new CustomEvent(SIDEBAR_CONTEXT_RESTORE_UPDATED_EVENT, { detail: { restoreEnabled: 'invalid' } }),
-      );
-      await waitFor(() => {
-        expect(screen.getByText('항상 전체')).toBeInTheDocument();
-      });
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('storage 이벤트 key가 다르면 사이드바 필터 시작 정책 배지를 변경하지 않는다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '1');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('복원 ON')).toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: 'unrelated-key',
-            newValue: '0',
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('복원 ON')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('항상 전체')).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('storage 이벤트 key가 null이면 사이드바 필터 시작 정책 배지를 변경하지 않는다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '1');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('복원 ON')).toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: null,
-            newValue: null,
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('복원 ON')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('항상 전체')).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('storage 이벤트 key가 복원 설정 키면 사이드바 필터 시작 정책 배지를 동기화한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '1');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('복원 ON')).toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_RESTORE_KEY,
-            newValue: '0',
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('항상 전체')).toBeInTheDocument();
-      });
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('storage 이벤트 newValue와 저장값이 달라도 저장값 기준으로 사이드바 필터 시작 정책 배지를 동기화한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '1');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('복원 ON')).toBeInTheDocument();
-
-      // 이벤트 payload는 restoreEnabled=true에 해당하지만 실제 저장값은 0으로 두어 저장값 우선 동기화 확인
-      localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_RESTORE_KEY,
-            newValue: '1',
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('항상 전체')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('복원 ON')).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('storage 이벤트 newValue가 잘못된 값이어도 저장값 기준으로 사이드바 필터 시작 정책 배지를 동기화한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('항상 전체')).toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '1');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_RESTORE_KEY,
-            newValue: 'invalid',
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('복원 ON')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('항상 전체')).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it("storage 이벤트 newValue가 유효해도 저장값이 비정상 문자열이면 현재 규칙대로 '복원 ON'으로 해석한다", async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('항상 전체')).toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, 'invalid');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_RESTORE_KEY,
-            newValue: '1',
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('복원 ON')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('항상 전체')).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('storage 이벤트 key가 복원 설정 키이고 newValue=null이어도 저장값 기준으로 정책 배지를 동기화한다', async () => {
-    localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '1');
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      expect(await screen.findByText('복원 ON')).toBeInTheDocument();
-
-      localStorage.setItem(SIDEBAR_CONTEXT_RESTORE_KEY, '0');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_RESTORE_KEY,
-            newValue: null,
-          }),
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('항상 전체')).toBeInTheDocument();
-      });
-      expect(screen.queryByText('복원 ON')).not.toBeInTheDocument();
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_RESTORE_KEY);
-    }
-  });
-
-  it('토스트 설정 업데이트 이벤트 detail이 없으면 저장값으로 동기화한다', async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '1');
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-      localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '0');
-      window.dispatchEvent(new CustomEvent(SIDEBAR_CONTEXT_TOAST_UPDATED_EVENT, { detail: {} }));
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      expect(onToast).not.toHaveBeenCalled();
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it('토스트 설정 업데이트 이벤트 detail이 유효하지 않으면 저장값으로 동기화한다', async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '1');
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-      localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '0');
-      window.dispatchEvent(
-        new CustomEvent(SIDEBAR_CONTEXT_TOAST_UPDATED_EVENT, { detail: { enabled: 'invalid' } }),
-      );
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      expect(onToast).not.toHaveBeenCalled();
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it('storage 이벤트 key가 다르면 토스트 설정 상태를 변경하지 않는다', async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '1');
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-
-      localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '0');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: 'unrelated-key',
-            newValue: '0',
-          }),
-        );
-      });
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      await waitFor(() => {
-        expect(onToast).toHaveBeenCalled();
-      });
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it('storage 이벤트 key가 null이면 토스트 설정 상태를 변경하지 않는다', async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '1');
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-
-      localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '0');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: null,
-            newValue: null,
-          }),
-        );
-      });
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      await waitFor(() => {
-        expect(onToast).toHaveBeenCalled();
-      });
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it('storage 이벤트 key가 토스트 설정 키면 토스트 설정 상태를 동기화한다', async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '1');
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-
-      localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '0');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_TOAST_KEY,
-            newValue: '0',
-          }),
-        );
-      });
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      expect(onToast).not.toHaveBeenCalled();
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it('storage 이벤트 newValue와 저장값이 달라도 저장값 기준으로 토스트 설정 상태를 동기화한다', async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '1');
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-
-      // 이벤트 payload는 enabled=true에 해당하지만 실제 저장값은 0으로 두어 저장값 우선 동기화 확인
-      localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '0');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_TOAST_KEY,
-            newValue: '1',
-          }),
-        );
-      });
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      expect(onToast).not.toHaveBeenCalled();
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it('storage 이벤트 key가 토스트 설정 키이고 newValue=null이어도 저장값 기준으로 토스트 상태를 동기화한다', async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '1');
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-
-      localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '0');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_TOAST_KEY,
-            newValue: null,
-          }),
-        );
-      });
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      expect(onToast).not.toHaveBeenCalled();
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it('storage 이벤트 key가 토스트 설정 키이고 newValue가 잘못된 값이어도 저장값 기준으로 토스트 상태를 동기화한다', async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '1');
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-
-      localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '0');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_TOAST_KEY,
-            newValue: 'invalid',
-          }),
-        );
-      });
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      expect(onToast).not.toHaveBeenCalled();
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it("storage 이벤트 newValue가 유효해도 토스트 저장값이 비정상 문자열이면 현재 규칙대로 ON으로 해석한다", async () => {
-    jest.useFakeTimers();
-    localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, '0');
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    const onToast = jest.fn();
-    const handler = (event: Event) => {
-      onToast((event as CustomEvent<{ message: string; type?: string }>).detail);
-    };
-    window.addEventListener('corbu-toast', handler as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      await screen.findByRole('button', { name: '전체' });
-
-      localStorage.setItem(SIDEBAR_CONTEXT_TOAST_KEY, 'invalid');
-      act(() => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: SIDEBAR_CONTEXT_TOAST_KEY,
-            newValue: '1',
-          }),
-        );
-      });
-      fireEvent.keyDown(window, { key: '2', altKey: true });
-      act(() => {
-        jest.advanceTimersByTime(700);
-      });
-      await waitFor(() => {
-        expect(onToast).toHaveBeenCalled();
-      });
-    } finally {
-      window.removeEventListener('corbu-toast', handler as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_TOAST_KEY);
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-      jest.useRealTimers();
-    }
-  });
-
-  it('사이드바 빠른 필터 버튼 클릭 시 선택 상태와 저장값이 함께 갱신된다', async () => {
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-
-      const allBtn = await screen.findByRole('button', { name: '전체' });
-      const agentBtn = screen.getByRole('button', { name: '에이전트' });
-      const projectBtn = screen.getByRole('button', { name: '프로젝트' });
-
-      expect(allBtn).toHaveAttribute('aria-pressed', 'true');
-      expect(agentBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(projectBtn).toHaveAttribute('aria-pressed', 'false');
-
-      await userEvent.click(agentBtn);
-      expect(localStorage.getItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY)).toBe('agent');
-      expect(allBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(agentBtn).toHaveAttribute('aria-pressed', 'true');
-      expect(projectBtn).toHaveAttribute('aria-pressed', 'false');
-
-      await userEvent.click(projectBtn);
-      expect(localStorage.getItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY)).toBe('project');
-      expect(allBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(agentBtn).toHaveAttribute('aria-pressed', 'false');
-      expect(projectBtn).toHaveAttribute('aria-pressed', 'true');
-    } finally {
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    }
-  });
-
-  it('사이드바 빠른 필터 변경 시 컨텍스트 업데이트 이벤트를 발행한다', async () => {
-    localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
-    const onUpdated = jest.fn();
-    window.addEventListener(SIDEBAR_CONTEXT_FILTER_UPDATED_EVENT, onUpdated as EventListener);
-    try {
-      render(
-        <MemoryRouter initialEntries={['/']}>
-          <AppUnifiedRoutes />
-        </MemoryRouter>
-      );
-      const agentBtn = await screen.findByRole('button', { name: '에이전트' });
-      await userEvent.click(agentBtn);
-      await waitFor(() => {
-        expect(onUpdated).toHaveBeenCalled();
-        const lastCall = onUpdated.mock.calls.at(-1)?.[0] as CustomEvent<SidebarContextFilterUpdatedDetail>;
-        expect(lastCall?.detail?.filter).toBe('agent');
-      });
-    } finally {
-      window.removeEventListener(SIDEBAR_CONTEXT_FILTER_UPDATED_EVENT, onUpdated as EventListener);
-      localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
+      localStorage.removeItem('sidebarCollapsed');
     }
   });
 
@@ -3008,7 +1786,7 @@ describe('AppUnified', () => {
       </MemoryRouter>
     );
     await waitFor(() => {
-      expect(screen.getByTestId('conversation-graph-view')).toBeInTheDocument();
+      expect(screen.getByTestId(TEST_IDS.CONVERSATION_GRAPH_VIEW)).toBeInTheDocument();
     });
   });
 
@@ -3039,7 +1817,7 @@ describe('AppUnified', () => {
       [AUTOMATION_PATH, 'automation-view', '자'],
       [WORKSPACE_PATH, 'workspace-view', '워'],
       [COMMUNITY_PATH, 'community-view', '커'],
-      [CONVERSATION_GRAPH_PATH, 'conversation-graph-view', '관'],
+      [CONVERSATION_GRAPH_PATH, TEST_IDS.CONVERSATION_GRAPH_VIEW, '관'],
       [PIPELINE_TUNING_PATH, 'pipeline-tuning-view', '파'],
       [DEV_STATUS_PATH, 'dev-status-view', '개'],
       [VOICE_GENERATION_PATH, 'mock-voice-generation', '성'],

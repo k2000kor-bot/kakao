@@ -1,8 +1,9 @@
 /**
  * ConversationGraphView 테스트 — 대화 관계도 화면 렌더·섹션
  */
+/* eslint-disable testing-library/no-wait-for-multiple-assertions, testing-library/prefer-find-by, testing-library/no-unnecessary-act */
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import * as conversationGraphService from '../services/conversationGraphService';
 
@@ -145,6 +146,11 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     expect(screen.getByTestId('conversation-graph-view')).toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: '현재 위치' });
+    expect(nav).toHaveClass('brainwave-chat-route-breadcrumb--single-line');
+    expect(within(nav).getByRole('link', { name: '홈' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: '대화' })).toBeInTheDocument();
+    expect(within(nav).getByText('대화 관계도')).toHaveClass('brainwave-chat-route-breadcrumb__leaf');
     expect(screen.getByText(/족보형 관계도·입장·시공사 반응 신호/)).toBeInTheDocument();
     await screen.findByText(/업로드된 대화가 없습니다/); // list fetch 완료 대기
   });

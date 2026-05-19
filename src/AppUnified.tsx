@@ -38,7 +38,7 @@ import {
   DEV_STATUS_PATH,
   GOOGLE_DRIVE_OAUTH_CALLBACK_PATH,
 } from './config/routes';
-import { IconLogo, IconSun, IconMoon, IconMenu, IconX, IconSearch, IconFolder, IconMoreVertical, IconVolume, IconMessage, IconChevronLeft, IconChevronRight, IconPlus, IconEdit, IconTrash, IconDashboard } from './components/Icons/BrainwaveIcons';
+import { IconLogo, IconSun, IconMoon, IconMenu, IconX, IconSearch, IconFolder, IconMoreVertical, IconMessage, IconChevronLeft, IconChevronRight, IconPlus, IconEdit, IconTrash } from './components/Icons/BrainwaveIcons';
 import './App.css';
 import './styles/theme.css';
 import './styles/brainwave-global.css';
@@ -57,11 +57,12 @@ import {
   getStandaloneChatPath,
   isGensparkPrimaryExperience,
   isStandaloneChatPath,
-  isUiProjectsEnabled,
+  isUiProjectsLegacySurfaceEnabled,
 } from './config/uiPreferences';
-import { CHATGPT_CONVERSATION_REMOVED_EVENT, CHATGPT_CONVERSATIONS_STORAGE_KEY } from './services/chatGptUiStorageKeys';
+import { CHATGPT_CONVERSATION_REMOVED_EVENT, CHATGPT_CONVERSATIONS_STORAGE_KEY, SIDEBAR_CHATS_UPDATED_EVENT } from './services/chatGptUiStorageKeys';
 import { TEST_IDS } from './constants/testIds';
 import { removeConversationFromLocalStorage } from './utils/removeConversationFromLocalStorage';
+import { shouldHideAppShellBreadcrumb } from './utils/appShellBreadcrumb';
 
 const ChatGPTInterface = lazy(() => import('./components/ChatGPTInterface'));
 const ProjectsPage = lazy(() => import('./views/ProjectsPage'));
@@ -283,7 +284,7 @@ function GlobalToastListener() {
       tabIndex={-1}
       data-testid="global-toast"
     >
-      {toast.type === 'error' ? '⚠️ ' : toast.type === 'info' ? 'ℹ️ ' : '✅ '}{toast.message}
+      {toast.message}
     </div>
   );
 }
@@ -349,7 +350,10 @@ function SidebarConversationRow(props: {
           <span className="sidebar-chat-title">
             {chat.pinned && (
               <span className="sidebar-chat-pin-icon" aria-label="고정된 대화" title="고정된 대화">
-                📌
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 17s7-4.5 7-10a7 7 0 10-14 0c0 5.5 7 10 7 10z" />
+                  <circle cx="12" cy="7" r="1.5" fill="currentColor" stroke="none" />
+                </svg>
               </span>
             )}
             {titlePrefix}
@@ -458,26 +462,26 @@ function loadSidebarChats(): SidebarChatItem[] {
 
 /* ── 브레드크럼 경로 맵 ── */
 const BREADCRUMB_MAP: Record<string, { label: string; icon: string }> = {
-  '/': { label: '홈', icon: '🏠' },
-  '/chat': { label: '대화', icon: '💬' },
-  '/agents': { label: '에이전트 허브', icon: '🤖' },
-  '/dashboard': { label: '대시보드', icon: '📊' },
-  '/analytics': { label: '분석', icon: '📈' },
-  '/automation': { label: '자동화', icon: '⚡' },
-  '/templates': { label: '템플릿', icon: '📋' },
-  '/community': { label: '커뮤니티', icon: '👥' },
-  '/team': { label: '팀', icon: '🫂' },
-  '/learn': { label: '학습', icon: '🎓' },
-  '/search': { label: '검색', icon: '🔍' },
-  '/settings': { label: '설정', icon: '⚙️' },
-  '/billing': { label: '청구', icon: '💳' },
-  '/docs': { label: '문서', icon: '📄' },
-  '/devstatus': { label: '개발 현황', icon: '🛠' },
+  '/': { label: '홈', icon: '' },
+  '/chat': { label: '대화', icon: '' },
+  '/agents': { label: '에이전트 허브', icon: '' },
+  '/dashboard': { label: '대시보드', icon: '' },
+  '/analytics': { label: '분석', icon: '' },
+  '/automation': { label: '자동화', icon: '' },
+  '/templates': { label: '템플릿', icon: '' },
+  '/community': { label: '커뮤니티', icon: '' },
+  '/team': { label: '팀', icon: '' },
+  '/learn': { label: '학습', icon: '' },
+  '/search': { label: '검색', icon: '' },
+  '/settings': { label: '설정', icon: '' },
+  '/billing': { label: '청구', icon: '' },
+  '/docs': { label: '문서', icon: '' },
+  '/devstatus': { label: '개발 현황', icon: '' },
 };
 
 function buildBreadcrumbs(pathname: string): { label: string; icon: string; path: string }[] {
   const exact = BREADCRUMB_MAP[pathname];
-  const crumbs: { label: string; icon: string; path: string }[] = [{ label: '홈', icon: '🏠', path: '/' }];
+  const crumbs: { label: string; icon: string; path: string }[] = [{ label: '홈', icon: '', path: '/' }];
   if (pathname !== '/') {
     if (exact) {
       crumbs.push({ ...exact, path: pathname });
@@ -487,7 +491,7 @@ function buildBreadcrumbs(pathname: string): { label: string; icon: string; path
       segments.forEach((seg) => {
         acc += `/${seg}`;
         const map = BREADCRUMB_MAP[acc];
-        crumbs.push({ label: map?.label ?? seg, icon: map?.icon ?? '📂', path: acc });
+        crumbs.push({ label: map?.label ?? seg, icon: map?.icon ?? '', path: acc });
       });
     }
   }
@@ -511,13 +515,15 @@ function Breadcrumb({ pathname }: { pathname: string }) {
                   onClick={() => navigate(c.path)}
                   aria-label={`${c.label}으로 이동`}
                 >
-                  <span aria-hidden>{c.icon}</span> {c.label}
+                  {c.icon ? <span aria-hidden>{c.icon} </span> : null}
+                  {c.label}
                 </button>
                 <span className="app-breadcrumb-sep" aria-hidden>›</span>
               </>
             ) : (
               <span className="app-breadcrumb-current" aria-current="page">
-                <span aria-hidden>{c.icon}</span> {c.label}
+                {c.icon ? <span aria-hidden>{c.icon} </span> : null}
+                {c.label}
               </span>
             )}
           </li>
@@ -532,18 +538,17 @@ const ONBOARDING_KEY = 'corbu.onboarding.done';
 
 interface OnboardingStep {
   id: number;
-  icon: string;
   title: string;
   desc: string;
 }
 
 const ONBOARDING_STEPS: OnboardingStep[] = [
-  { id: 1, icon: '👋', title: '환영합니다!', desc: 'Corbu AI에 오신 것을 환영합니다. 이 짧은 투어로 핵심 기능을 소개해 드릴게요.' },
-  { id: 2, icon: '💬', title: 'AI 대화', desc: '왼쪽 사이드바에서 "새 대화"를 클릭하거나 Ctrl+N을 눌러 AI와 대화를 시작할 수 있습니다.' },
-  { id: 3, icon: '🤖', title: 'AI 에이전트 허브', desc: '코딩, 번역, 요약 등 특화된 AI 에이전트를 에이전트 허브에서 선택해 사용해 보세요.' },
-  { id: 4, icon: '⚡', title: '자동화 워크플로우', desc: '반복 작업을 자동화하세요. 예약 실행, 반복 실행 등 다양한 자동화 기능을 지원합니다.' },
-  { id: 5, icon: '⌨️', title: '키보드 단축키', desc: 'Ctrl+K로 커맨드 팔레트, Ctrl+Shift+F로 포커스 모드를 빠르게 실행할 수 있습니다.' },
-  { id: 6, icon: '🎉', title: '모든 준비 완료!', desc: '이제 Corbu AI를 자유롭게 탐색해 보세요. 언제든지 ? 키를 눌러 단축키 도움말을 볼 수 있습니다.' },
+  { id: 1, title: '환영합니다!', desc: 'Corbu AI에 오신 것을 환영합니다. 이 짧은 투어로 핵심 기능을 소개해 드릴게요.' },
+  { id: 2, title: 'AI 대화', desc: '왼쪽 사이드바에서 "새 대화"를 클릭하거나 Ctrl+N을 눌러 AI와 대화를 시작할 수 있습니다.' },
+  { id: 3, title: 'AI 에이전트 허브', desc: '코딩, 번역, 요약 등 특화된 AI 에이전트를 에이전트 허브에서 선택해 사용해 보세요.' },
+  { id: 4, title: '자동화 워크플로우', desc: '반복 작업을 자동화하세요. 예약 실행, 반복 실행 등 다양한 자동화 기능을 지원합니다.' },
+  { id: 5, title: '키보드 단축키', desc: 'Ctrl+K로 커맨드 팔레트, Ctrl+Shift+F로 포커스 모드를 빠르게 실행할 수 있습니다.' },
+  { id: 6, title: '모든 준비 완료!', desc: '이제 Corbu AI를 자유롭게 탐색해 보세요. 언제든지 ? 키를 눌러 단축키 도움말을 볼 수 있습니다.' },
 ];
 
 function OnboardingTour({ onClose }: { onClose: () => void }) {
@@ -568,7 +573,7 @@ function OnboardingTour({ onClose }: { onClose: () => void }) {
             />
           ))}
         </div>
-        <div className="onboarding-icon" aria-hidden>{current.icon}</div>
+        <div className="onboarding-icon" aria-hidden>{step + 1}</div>
         <h2 className="onboarding-title">{current.title}</h2>
         <p className="onboarding-desc">{current.desc}</p>
         <div className="onboarding-actions">
@@ -598,7 +603,7 @@ function OnboardingTour({ onClose }: { onClose: () => void }) {
                 onClick={handleFinish}
                 aria-label="투어 완료"
               >
-                🎉 시작하기
+                시작하기
               </button>
             ) : (
               <button
@@ -653,7 +658,7 @@ function NavFavoritesBar({ pathname }: { pathname: string }) {
 
   return (
     <div className="nav-favs-bar" aria-label="바로가기 즐겨찾기">
-      <span className="nav-favs-label">★</span>
+      <span className="nav-favs-label">즐겨찾기</span>
       {displayed.map((path) => {
         const info = BREADCRUMB_MAP[path];
         if (!info) return null;
@@ -666,7 +671,8 @@ function NavFavoritesBar({ pathname }: { pathname: string }) {
             onClick={() => navigate(path)}
             title={info.label}
           >
-            <span aria-hidden>{info.icon}</span> {info.label}
+            {info.icon ? <span aria-hidden>{info.icon} </span> : null}
+            {info.label}
           </button>
         );
       })}
@@ -679,193 +685,6 @@ function NavFavoritesBar({ pathname }: { pathname: string }) {
   );
 }
 
-/* ── 알림 센터 ── */
-const NOTIF_STORE_KEY = 'corbu.notifCenter';
-interface NotifItem { id: string; title: string; body: string; level: 'info' | 'success' | 'warn' | 'error'; ts: string; read: boolean; }
-
-function loadNotifs(): NotifItem[] {
-  try { return JSON.parse(localStorage.getItem(NOTIF_STORE_KEY) ?? '[]') as NotifItem[]; } catch { return []; }
-}
-function saveNotifs(items: NotifItem[]) {
-  try { localStorage.setItem(NOTIF_STORE_KEY, JSON.stringify(items)); } catch { /* ignore */ }
-}
-
-const NOTIF_LEVEL_ICON: Record<NotifItem['level'], string> = {
-  info: 'ℹ️', success: '✅', warn: '⚠️', error: '🔴',
-};
-
-function NotificationCenter() {
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<NotifItem[]>(() => loadNotifs());
-  const unread = items.filter((n) => !n.read).length;
-
-  // 시스템 이벤트 수집 (alert 로그 변경 시)
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === 'corbu.dash.alertLog') {
-        try {
-          const logs: { ts: string; level: string; message: string }[] = JSON.parse(e.newValue ?? '[]');
-          const current = loadNotifs();
-          const existingTs = new Set(current.map((n) => n.ts));
-          const newItems: NotifItem[] = logs
-            .filter((l) => !existingTs.has(l.ts))
-            .slice(0, 3)
-            .map((l) => ({
-              id: `dash-${l.ts}`,
-              title: l.level === 'error' ? '시스템 오류' : l.level === 'warn' ? '경고' : '시스템 정보',
-              body: l.message,
-              level: (l.level as NotifItem['level']) || 'info',
-              ts: l.ts,
-              read: false,
-            }));
-          if (newItems.length > 0) {
-            const updated = [...newItems, ...current].slice(0, 30);
-            setItems(updated);
-            saveNotifs(updated);
-          }
-        } catch { /* ignore */ }
-      }
-      if (e.key === NOTIF_STORE_KEY) {
-        try { setItems(JSON.parse(e.newValue ?? '[]')); } catch { /* ignore */ }
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
-
-  const markAllRead = () => {
-    const updated = items.map((n) => ({ ...n, read: true }));
-    setItems(updated);
-    saveNotifs(updated);
-  };
-
-  const clearAll = () => { setItems([]); saveNotifs([]); setOpen(false); };
-
-  const dismiss = (id: string) => {
-    const updated = items.filter((n) => n.id !== id);
-    setItems(updated);
-    saveNotifs(updated);
-  };
-
-  // 샘플 알림 추가 (비어있을 때)
-  const addSample = () => {
-    const sample: NotifItem[] = [
-      { id: `s1-${Date.now()}`, title: '새 커뮤니티 글', body: 'AI 에이전트 활용 팁 모음 게시글이 올라왔습니다.', level: 'info', ts: new Date().toISOString(), read: false },
-      { id: `s2-${Date.now()}`, title: '자동화 완료', body: '매일 리포트 워크플로우가 성공적으로 실행되었습니다.', level: 'success', ts: new Date(Date.now() - 60000).toISOString(), read: false },
-    ];
-    const updated = [...sample, ...items].slice(0, 30);
-    setItems(updated);
-    saveNotifs(updated);
-  };
-
-  return (
-    <div className="notif-center-wrap" role="region" aria-label="알림 센터">
-      <button
-        type="button"
-        className={`notif-center-btn${open ? ' notif-center-btn--open' : ''}`}
-        onClick={() => {
-          setOpen((v) => !v);
-          if (!open && unread > 0) {
-            setTimeout(markAllRead, 1200);
-          }
-        }}
-        aria-expanded={open}
-        aria-label={`알림 센터 ${unread > 0 ? `(읽지 않은 ${unread}개)` : ''}`}
-        title="알림 센터"
-      >
-        🔔
-        {unread > 0 && (
-          <span className="notif-center-badge" aria-hidden>{unread > 9 ? '9+' : unread}</span>
-        )}
-      </button>
-      {open && (
-        <div className="notif-center-panel" role="dialog" aria-label="알림 목록">
-          <div className="notif-center-header">
-            <span className="notif-center-title">🔔 알림 센터</span>
-            {/* 레벨별 색상 범례 */}
-            {items.length > 0 && (
-              <div className="notif-level-legend">
-                {(['info','success','warn','error'] as const).map(lv => {
-                  const cnt = items.filter(n => n.level === lv).length;
-                  if (cnt === 0) return null;
-                  return (
-                    <span key={lv} className={`notif-level-badge notif-level-badge--${lv}`} title={lv}>
-                      {NOTIF_LEVEL_ICON[lv]} {cnt}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-            <div className="notif-center-header-actions">
-              {items.length === 0 && (
-                <button type="button" className="notif-center-action" onClick={addSample} title="샘플 추가">
-                  + 샘플
-                </button>
-              )}
-              {items.length > 0 && (
-                <>
-                  <button type="button" className="notif-center-action" onClick={markAllRead}>모두 읽음</button>
-                  <button type="button" className="notif-center-action notif-center-action--danger" onClick={clearAll}>전체 삭제</button>
-                </>
-              )}
-              <button type="button" className="notif-center-close" onClick={() => setOpen(false)} aria-label="닫기">✕</button>
-            </div>
-          </div>
-          <ul className="notif-center-list" aria-label="알림 항목">
-            {items.length === 0 ? (
-              <li className="notif-center-empty">
-                <span>📭</span>
-                <span>새 알림이 없습니다</span>
-              </li>
-            ) : (
-              items.map((n) => {
-                const d = new Date(n.ts);
-                const isToday = d.toDateString() === new Date().toDateString();
-                const timeStr = isToday
-                  ? d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-                  : d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-                return (
-                  <li key={n.id} className={`notif-center-item notif-center-item--${n.level}${n.read ? ' notif-center-item--read' : ''}`}>
-                    <span className="notif-center-item-icon" aria-hidden>{NOTIF_LEVEL_ICON[n.level]}</span>
-                    <div className="notif-center-item-body">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span className="notif-center-item-title">{n.title}</span>
-                        <span className={`notif-level-badge notif-level-badge--${n.level}`}>
-                          {{ info: '정보', success: '성공', warn: '경고', error: '오류' }[n.level]}
-                        </span>
-                      </div>
-                      <span className="notif-center-item-desc">{n.body}</span>
-                      <time className="notif-center-item-time" dateTime={d.toISOString()}>{timeStr}</time>
-                    </div>
-                    <button
-                      type="button"
-                      className="notif-center-item-dismiss"
-                      onClick={() => dismiss(n.id)}
-                      aria-label="알림 닫기"
-                    >✕</button>
-                  </li>
-                );
-              })
-            )}
-          </ul>
-          <div className="notif-center-footer">
-            <button type="button" className="notif-center-footer-btn" onClick={() => { navigate('/dashboard'); setOpen(false); }}>
-              📊 대시보드에서 전체 이벤트 보기
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function Layout() {
   const navigate = useNavigate();
@@ -1048,7 +867,6 @@ function Layout() {
       return;
     }
     showToast('대화가 삭제되었습니다', 'success');
-    window.dispatchEvent(new CustomEvent('sidebar-chats-updated'));
     window.dispatchEvent(new CustomEvent(CHATGPT_CONVERSATION_REMOVED_EVENT, { detail: { id } }));
     if (currentConversationId === id) {
       navigate({ pathname, search }, { replace: true, state: {} });
@@ -1061,16 +879,29 @@ function Layout() {
     return () => window.cancelAnimationFrame(id);
   }, [deleteChatConfirm]);
 
+  /** 사이드바 삭제 확인 모달이 열린 동안 Escape가 Outlet(ChatGPTInterface) 등 window 리스너로 버블되지 않도록 캡처에서 처리 (Firefox E2E 등 경합 방지). */
+  useEffect(() => {
+    if (!deleteChatConfirm) return;
+    const onKeyDownCapture = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      setDeleteChatConfirm(null);
+    };
+    document.addEventListener('keydown', onKeyDownCapture, true);
+    return () => document.removeEventListener('keydown', onKeyDownCapture, true);
+  }, [deleteChatConfirm]);
+
   useEffect(() => {
     refreshSidebarChats();
     const onChatsUpdated = () => refreshSidebarChats();
-    window.addEventListener('sidebar-chats-updated', onChatsUpdated);
-    return () => window.removeEventListener('sidebar-chats-updated', onChatsUpdated);
+    window.addEventListener(SIDEBAR_CHATS_UPDATED_EVENT, onChatsUpdated);
+    return () => window.removeEventListener(SIDEBAR_CHATS_UPDATED_EVENT, onChatsUpdated);
   }, [pathname, refreshSidebarChats]);
 
   // 사이드바 프로젝트 목록 — UI 프로젝트 모드일 때만 API 호출(기본 끔: 백엔드 오류·노이즈 방지)
   useEffect(() => {
-    if (!isUiProjectsEnabled()) {
+    if (!isUiProjectsLegacySurfaceEnabled()) {
       setSidebarProjects([]);
       return;
     }
@@ -1175,7 +1006,7 @@ function Layout() {
         >
           <div className="modal-dialog shortcuts-dialog" role="document">
             <div className="modal-header">
-              <h2 id="shortcuts-dialog-title" className="modal-title">⌨️ 키보드 단축키</h2>
+              <h2 id="shortcuts-dialog-title" className="modal-title">키보드 단축키</h2>
               <button
                 type="button"
                 className="modal-close-btn"
@@ -1254,7 +1085,7 @@ function Layout() {
                 whiteSpace: 'nowrap',
               }}
             >
-              💬 {deleteChatConfirm.title}
+              {deleteChatConfirm.title}
             </p>
             <div className="modal-content-actions">
               <button
@@ -1385,7 +1216,7 @@ function Layout() {
               <NavLink to={standaloneChatPath} className="sidebar-brand-more-item" role="menuitem" onClick={() => setBrandMoreOpen(false)}>
                 일반 대화
               </NavLink>
-              {isUiProjectsEnabled() && (
+              {isUiProjectsLegacySurfaceEnabled() && (
               <NavLink to="/projects" className="sidebar-brand-more-item" role="menuitem" onClick={() => setBrandMoreOpen(false)}>
                 프로젝트
               </NavLink>
@@ -1396,12 +1227,38 @@ function Layout() {
               <NavLink to={AGENTS_PATH} className="sidebar-brand-more-item" role="menuitem" onClick={() => setBrandMoreOpen(false)}>
                 에이전트
               </NavLink>
+              <NavLink
+                to={CONVERSATION_GRAPH_PATH}
+                className="sidebar-brand-more-item"
+                role="menuitem"
+                onClick={() => setBrandMoreOpen(false)}
+              >
+                대화 관계도
+              </NavLink>
+              <NavLink
+                to={BILLING_PATH}
+                className="sidebar-brand-more-item"
+                role="menuitem"
+                onClick={() => setBrandMoreOpen(false)}
+              >
+                구독·플랜
+              </NavLink>
               <div className="sidebar-brand-more-separator" role="separator" aria-hidden />
               <NavLink to={SETTINGS_PATH} className="sidebar-brand-more-item" role="menuitem" onClick={() => setBrandMoreOpen(false)}>
                 설정
               </NavLink>
               <NavLink to={ANALYTICS_PATH} className="sidebar-brand-more-item" role="menuitem" onClick={() => setBrandMoreOpen(false)}>
                 분석
+              </NavLink>
+              <NavLink
+                to={DASHBOARD_PATH}
+                className="sidebar-brand-more-item"
+                role="menuitem"
+                onClick={() => setBrandMoreOpen(false)}
+                aria-label="시스템 대시보드"
+                title="시스템 대시보드"
+              >
+                대시보드
               </NavLink>
               <NavLink to={DOCS_PATH} className="sidebar-brand-more-item" role="menuitem" onClick={() => setBrandMoreOpen(false)}>
                 도움말
@@ -1424,7 +1281,7 @@ function Layout() {
             <NavLink
               to={standaloneChatPath}
               className="sidebar-new-chat-btn sidebar-new-chat-btn--top"
-              aria-label={isUiProjectsEnabled() ? '새 일반 대화 (프로젝트 없이)' : '새 대화'}
+              aria-label={isUiProjectsLegacySurfaceEnabled() ? '새 일반 대화 (프로젝트 없이)' : '새 대화'}
               title="새 대화"
             >
               <IconEdit size={18} aria-hidden className="sidebar-icon-new-chat" />
@@ -1477,7 +1334,7 @@ function Layout() {
             <div className="sidebar-quick-filter-tabs" role="tablist" aria-label="대화 날짜 필터">
               {([
                 { key: 'all',    label: '전체' },
-                { key: 'pinned', label: '📌' },
+                { key: 'pinned', label: '고정' },
                 { key: 'today',  label: '오늘' },
                 { key: 'week',   label: '이번 주' },
               ] as const).map(({ key, label }) => (
@@ -1488,39 +1345,13 @@ function Layout() {
                   aria-selected={sidebarChatFilter === key}
                   className={`sidebar-qf-tab${sidebarChatFilter === key ? ' sidebar-qf-tab--active' : ''}`}
                   onClick={() => setSidebarChatFilter(key)}
-                  title={label}
+                  title={key === 'pinned' ? '고정된 대화만' : label}
                 >
                   {label}
                 </button>
               ))}
             </div>
           )}
-          {/* 카테고리 빠른 필터 (사이드바 펼침 상태에서만) */}
-          {!sidebarCollapsed && (
-            <div className="sidebar-cat-filters" aria-label="대화 카테고리 필터">
-              {[
-                { label: '전체', color: null },
-                { label: '코드', color: '#6366f1' },
-                { label: '요약', color: '#22d3ee' },
-                { label: '분석', color: '#f59e0b' },
-                { label: 'AI', color: '#10b981' },
-              ].map(({ label, color }) => (
-                <button
-                  key={label}
-                  type="button"
-                  className={`sidebar-cat-filter-btn${(color ? menuSearch === label : menuSearch === '') ? ' sidebar-cat-filter-btn--active' : ''}`}
-                  style={color ? { '--cat-color': color } as React.CSSProperties : undefined}
-                  onClick={() => setMenuSearch(color ? (menuSearch === label ? '' : label) : '')}
-                  aria-pressed={color ? menuSearch === label : menuSearch === ''}
-                  title={`${label} 필터`}
-                >
-                  {color && <span className="sidebar-cat-dot" style={{ background: color }} aria-hidden />}
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-
           {/* 대화 기록: 프로젝트 목록과 동일한 상단 슬롯(다단계 UI형 기본에서도 맨 위) */}
           <nav className="sidebar-nav sidebar-chatgpt-nav" aria-label="대화 기록">
             {!sidebarCollapsed && <h3 className="sidebar-project-section-title">채팅</h3>}
@@ -1539,7 +1370,7 @@ function Layout() {
                   ? quickFiltered.filter((c) => (c.title || '').toLowerCase().includes(q))
                   : quickFiltered;
 
-                const uiProjects = isUiProjectsEnabled();
+                const uiProjects = isUiProjectsLegacySurfaceEnabled();
 
                 type SidebarChatRow =
                   | { kind: 'general'; chat: SidebarChatItem }
@@ -1671,8 +1502,6 @@ function Layout() {
                   grouped.get(g)!.push(row);
                 }
 
-                const DATE_GROUP_ICONS: Record<string, string> = { '오늘': '🌅', '어제': '🕐', '이번 주': '📅', '이전': '📂' };
-
                 const pinnedGroupId = '__pinned__';
                 return [
                   // 핀 고정 섹션
@@ -1686,7 +1515,7 @@ function Layout() {
                           aria-expanded={!collapsedGroups.has(pinnedGroupId)}
                           aria-label={`고정됨 그룹 ${collapsedGroups.has(pinnedGroupId) ? '펼치기' : '접기'}`}
                         >
-                          <span>📌 고정됨</span>
+                          <span>고정됨</span>
                           <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span className="sidebar-date-group-count">{pinnedRows.length}</span>
                             <span className="sidebar-date-group-chevron" aria-hidden>{collapsedGroups.has(pinnedGroupId) ? '▶' : '▾'}</span>
@@ -1709,7 +1538,7 @@ function Layout() {
                         aria-expanded={!isCollapsed}
                         aria-label={`${groupName} 그룹 ${isCollapsed ? '펼치기' : '접기'}`}
                       >
-                        <span>{DATE_GROUP_ICONS[groupName]} {groupName}</span>
+                        <span>{groupName}</span>
                         <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
                           <span className="sidebar-date-group-count">{groupRows.length}</span>
                           <span className="sidebar-date-group-chevron" aria-hidden>{isCollapsed ? '▶' : '▾'}</span>
@@ -1722,7 +1551,7 @@ function Layout() {
               })()}
             </div>
           </nav>
-          {isUiProjectsEnabled() && (
+          {isUiProjectsLegacySurfaceEnabled() && (
           <>
           <div style={{ height: sidebarCollapsed ? 6 : 12 }} aria-hidden="true" />
           <div className="sidebar-project-section" aria-label="프로젝트">
@@ -1787,28 +1616,6 @@ function Layout() {
           </div>
           </>
           )}
-          {/* 도구: 목소리 생성 (Figma 볼륨 아이콘) */}
-          <div className="sidebar-tools-section">
-            {!sidebarCollapsed && <h3 className="sidebar-project-section-title">도구</h3>}
-            <NavLink
-              to={AGENTS_PATH}
-              className={({ isActive }) => `sidebar-tool-item ${isActive ? 'active' : ''}`}
-              end
-              aria-label="에이전트"
-              title="AI 에이전트 허브"
-            >
-              <IconMessage size={18} aria-hidden className="sidebar-icon-agent" />
-              {!sidebarCollapsed && <span>에이전트</span>}
-            </NavLink>
-            <NavLink to={VOICE_GENERATION_PATH} className={({ isActive }) => `sidebar-tool-item ${isActive ? 'active' : ''}`} end aria-label="목소리 생성" title="목소리 생성">
-              <IconVolume size={18} aria-hidden className="sidebar-icon-voice" />
-              {!sidebarCollapsed && <span>목소리 생성</span>}
-            </NavLink>
-            <NavLink to={DASHBOARD_PATH} className={({ isActive }) => `sidebar-tool-item ${isActive ? 'active' : ''}`} end aria-label="시스템 대시보드" title="시스템 대시보드">
-              <IconDashboard size={18} aria-hidden className="sidebar-icon-dashboard" />
-              {!sidebarCollapsed && <span>대시보드</span>}
-            </NavLink>
-          </div>
         </div>
         <div className="sidebar-footer sidebar-chatgpt-footer">
           <div className="sidebar-chatgpt-footer-inner">
@@ -1821,102 +1628,6 @@ function Layout() {
                 <IconMoon size={14} />
                 Dark
               </button>
-              {/* 대화 전체 내보내기 */}
-              <button
-                type="button"
-                className="sidebar-export-btn"
-                title="대화 전체 내보내기 (JSON)"
-                aria-label="대화 전체 내보내기 (JSON)"
-                onClick={() => {
-                  try {
-                    const key = 'chatgpt_conversations';
-                    const data = localStorage.getItem(key) ?? '[]';
-                    const blob = new Blob([data], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `corbu-conversations-${new Date().toISOString().slice(0, 10)}.json`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  } catch { /* ignore */ }
-                }}
-              >
-                <span aria-hidden>⬇</span>
-                {!sidebarCollapsed && <span>내보내기</span>}
-              </button>
-              {/* 대화 JSON 가져오기 */}
-              <label
-                className="sidebar-export-btn sidebar-import-btn"
-                title="JSON 파일에서 대화 가져오기"
-                aria-label="대화 가져오기 (JSON)"
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter') (e.currentTarget.querySelector('input') as HTMLInputElement)?.click(); }}
-              >
-                <span aria-hidden>⬆</span>
-                {!sidebarCollapsed && <span>가져오기</span>}
-                <input
-                  type="file"
-                  accept=".json"
-                  className="sr-only"
-                  aria-hidden
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                      try {
-                        const imported: unknown[] = JSON.parse(ev.target?.result as string);
-                        if (!Array.isArray(imported)) { alert('올바른 대화 JSON 파일이 아닙니다.'); return; }
-                        const CONV_KEY = 'chatgpt_conversations';
-                        const existing: { id?: string }[] = JSON.parse(localStorage.getItem(CONV_KEY) ?? '[]');
-                        const existingIds = new Set(existing.map((c) => c.id));
-                        const newOnes = (imported as { id?: string }[]).filter((c) => !existingIds.has(c.id));
-                        const merged = [...newOnes, ...existing];
-                        localStorage.setItem(CONV_KEY, JSON.stringify(merged));
-                        setSidebarChats(loadSidebarChats());
-                        alert(`${newOnes.length}개의 대화를 가져왔습니다.`);
-                      } catch { alert('파일을 읽는 중 오류가 발생했습니다.'); }
-                    };
-                    reader.readAsText(file);
-                    e.target.value = '';
-                  }}
-                />
-              </label>
-            </div>
-            <div className="sidebar-footer-right">
-              {/* 사용자 아바타 + 이름 */}
-              {!sidebarCollapsed && (() => {
-                try {
-                  const prof = JSON.parse(localStorage.getItem('corbu.settings.profile') || '{}');
-                  const emoji = prof.avatarEmoji || '🧑';
-                  const name = prof.name ? prof.name.slice(0, 6) : null;
-                  return (
-                    <button
-                      type="button"
-                      className="sidebar-user-avatar-btn"
-                      title={prof.name ? `${prof.name} — 프로필 설정` : '프로필 설정 (설정 > 프로필)'}
-                      onClick={() => { window.location.hash = ''; window.location.pathname !== '/settings' && (window.location.href = '/settings'); }}
-                      aria-label={prof.name ?? '프로필'}
-                    >
-                      <span className="sidebar-user-emoji" aria-hidden>{emoji}</span>
-                      {name && <span className="sidebar-user-name">{name}</span>}
-                    </button>
-                  );
-                } catch { return null; }
-              })()}
-              {/* 알림 센터 */}
-              <NotificationCenter />
-              <NavLink
-                to={BILLING_PATH}
-                className={({ isActive }) => `sidebar-pro-link${isActive ? ' sidebar-pro-link--active' : ''}`}
-                end
-                aria-label="구독·PRO"
-                title="구독·플랜·PRO 안내"
-                data-testid={TEST_IDS.SIDEBAR_PRO_NAV_LINK}
-              >
-                <span className="sidebar-pro-badge">PRO</span>
-              </NavLink>
             </div>
           </div>
         </div>
@@ -1924,7 +1635,7 @@ function Layout() {
       <main id="main-content" className={`brainwave-main${focusMode ? ' brainwave-main--focus' : ''}`} tabIndex={-1} role="main">
         {focusMode && (
           <div className="focus-mode-bar" role="status" aria-live="polite">
-            <span>🎯 포커스 모드 활성 — 사이드바 숨김</span>
+            <span>포커스 모드 활성 — 사이드바 숨김</span>
             <button
               type="button"
               className="focus-mode-exit"
@@ -1935,9 +1646,11 @@ function Layout() {
             </button>
           </div>
         )}
-        <div className="breadcrumb-history-row">
-          <Breadcrumb pathname={pathname} />
-        </div>
+        {!shouldHideAppShellBreadcrumb(pathname) ? (
+          <div className="breadcrumb-history-row">
+            <Breadcrumb pathname={pathname} />
+          </div>
+        ) : null}
         <NavFavoritesBar pathname={pathname} />
         {isMobile && (
           <header className="brainwave-mobile-header">
@@ -2032,7 +1745,7 @@ export function AppUnifiedRoutes() {
             )
           }
         />
-        {isUiProjectsEnabled() ? (
+        {isUiProjectsLegacySurfaceEnabled() ? (
           <>
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="projects/:id" element={<ProjectChatView />} />
@@ -2194,11 +1907,11 @@ export function AppUnifiedRoutes() {
         <Route path="features-map" element={<Navigate to={getStandaloneChatPath()} replace />} />
         <Route
           path="notebook"
-          element={<Navigate to={isUiProjectsEnabled() ? '/projects' : getStandaloneChatPath()} replace />}
+          element={<Navigate to={isUiProjectsLegacySurfaceEnabled() ? '/projects' : getStandaloneChatPath()} replace />}
         />
         <Route
           path="file-analysis"
-          element={<Navigate to={isUiProjectsEnabled() ? '/projects' : getStandaloneChatPath()} replace />}
+          element={<Navigate to={isUiProjectsLegacySurfaceEnabled() ? '/projects' : getStandaloneChatPath()} replace />}
         />
         <Route path="documents" element={<Navigate to={getStandaloneChatPath()} replace />} />
         <Route
