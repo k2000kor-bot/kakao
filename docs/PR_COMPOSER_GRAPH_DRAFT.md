@@ -14,6 +14,10 @@
 
 - [x] `npm run verify:pre-deploy`
 - [x] `npm run verify:final`
+- [x] `npm run verify:conversation-graph:unit` (관계도 Jest + 백엔드 pytest)
+- [x] `ConversationGraphView.test.tsx` (43 tests)
+- [x] `npm run verify:handoff-artifacts` (bundle tip = 브랜치 HEAD)
+- [x] `HANDOFF_REFRESH=1 npm run maintain:push-block` (사이드바·컴포저 회귀)
 - [x] `npm run verify:conversation-graph` (E2E, Dev 서버)
 - [x] `npm run test:e2e:pipelines:all` (컴포저 3 + 관계도 12)
 - [ ] 수동: `.env.local` 순차/multi-step 플래그 후 `1.\n2.` 전송·재생성·편집
@@ -29,8 +33,9 @@ REACT_APP_COMPOSER_MULTI_STEP_MULTI_REQUEST=true
 ## Push (권한 있는 저장소에서)
 
 ```bash
-git remote set-url origin git@github.com:<owner>/<repo>.git
-git push -u origin dev-continue-2026-01-20
+npm run check:push-ready
+npm run refresh:handoff-artifacts   # 커밋 직후라면
+PUSH_REMOTE_URL=git@github.com:<owner>/<repo>.git npm run push:dev-continue
 ```
 
-PR 생성 후 위 체크리스트를 PR 본문에 붙여넣기.
+PR 본문 출력: `npm run pr:composer-graph-body` (또는 이 파일을 GitHub PR에 붙여넣기).

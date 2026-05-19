@@ -30,6 +30,13 @@ fi
 echo "origin → $REMOTE_URL"
 git remote set-url origin "$REMOTE_URL"
 
+echo "--- handoff artifacts ---"
+if ! npm run verify:handoff-artifacts; then
+  echo "FAIL: bundle/patch가 브랜치 tip과 불일치합니다." >&2
+  echo "  npm run refresh:handoff-artifacts" >&2
+  exit 3
+fi
+
 echo "--- remote check ---"
 if ! git ls-remote origin HEAD >/dev/null 2>&1; then
   echo "FAIL: 원격 저장소에 접근할 수 없습니다."
@@ -42,4 +49,5 @@ fi
 echo "--- push ---"
 git push -u origin "$BRANCH"
 echo "OK: pushed $BRANCH"
-echo "PR 초안: docs/PR_COMPOSER_GRAPH_DRAFT.md"
+echo "PR 본문: npm run pr:composer-graph-body"
+echo "  (또는 docs/PR_COMPOSER_GRAPH_DRAFT.md)"

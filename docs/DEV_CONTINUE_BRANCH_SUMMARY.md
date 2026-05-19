@@ -37,4 +37,4 @@ PUSH_REMOTE_URL=git@github.com:k2000kor/kakao.git npm run push:dev-continue
 
 ## PR 초안
 
-[PR_COMPOSER_GRAPH_DRAFT.md](./PR_COMPOSER_GRAPH_DRAFT.md)
+[PR_COMPOSER_GRAPH_DRAFT.md](./PR_COMPOSER_GRAPH_DRAFT.md) · `npm run pr:composer-graph-body`
