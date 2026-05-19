@@ -6,8 +6,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
+if [[ "${HANDOFF_REFRESH:-0}" == "1" ]]; then
+  echo "[0/4] refresh handoff bundle + patch series"
+  bash scripts/refresh-handoff-artifacts.sh
+fi
+
 echo "[1/4] artifact integrity check"
-bash scripts/verify-push-block-artifacts.sh
+bash scripts/verify-push-block-artifacts.sh || {
+  echo "hint: HANDOFF_REFRESH=1 npm run maintain:push-block" >&2
+  exit 1
+}
 
 echo
 echo "[2/4] local regression workflow"

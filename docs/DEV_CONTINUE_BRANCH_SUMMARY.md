@@ -30,7 +30,7 @@ PUSH_REMOTE_URL=git@github.com:k2000kor/kakao.git npm run push:dev-continue
 ## 이관 (push 없이)
 
 - Bundle: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
-- Patches: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19/` (20개, `refresh-handoff-artifacts.sh`로 동기화)
+- Patches: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19/` (`bc4451251..HEAD`, `npm run refresh:handoff-artifacts`로 동기화)
 - `bash scripts/apply-dev-continue-patches.sh <patch-dir>`
 - `bash scripts/verify-push-block-artifacts.sh` (bundle tip = 브랜치 HEAD)
 - `npm run refresh:handoff-artifacts` (커밋 후 bundle·patch 재생성)
