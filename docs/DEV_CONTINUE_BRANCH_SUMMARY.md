@@ -15,7 +15,10 @@
 npm run verify:pre-deploy          # Jest만
 npm run verify:final               # 빌드 + chat-pipeline + composer
 npm run verify:full-stack-local    # 서버 :3000 + :5002 기동 후 전체
+npm run test:e2e:pipelines:all     # 컴포저 3 + 관계도 12 (서버 기동 시)
 ```
+
+최근 풀스택 E2E: 관계도 12 · 컴포저 3 · API 스모크 OK (`:3000` + `:5002`).
 
 ## Push
 

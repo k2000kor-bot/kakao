@@ -18,8 +18,11 @@
 - [x] `ConversationGraphView.test.tsx` (43 tests)
 - [x] `npm run verify:handoff-artifacts` (bundle tip = 브랜치 HEAD)
 - [x] `HANDOFF_REFRESH=1 npm run maintain:push-block` (사이드바·컴포저 회귀)
-- [x] `npm run verify:conversation-graph` (E2E, Dev 서버)
+- [x] `npm run verify:conversation-graph-api` (upload·relationship-graph)
+- [x] `npm run test:e2e:conversation-graph:chromium` (12 passed, `:3000`+`:5002` 기동)
+- [x] `npm run test:e2e:composer-pipeline:all` (3 passed)
 - [x] `npm run test:e2e:pipelines:all` (컴포저 3 + 관계도 12)
+- [x] `npm run verify:conversation-graph` (= unit + E2E)
 - [ ] 수동: `.env.local` 순차/multi-step 플래그 후 `1.\n2.` 전송·재생성·편집
 
 ## Env (선택)
