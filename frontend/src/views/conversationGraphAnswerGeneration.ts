@@ -19,6 +19,29 @@ import {
   createGraphAnswerPipelineController,
   resolveGraphAnswerDisplayText,
 } from './conversationGraphAnswerPipeline';
+import {
+  buildGraphAnswerContextWithRevision,
+  isGraphAnswerSelfImproveEnabled,
+} from './conversationGraphAnswerSelfImprove';
+import {
+  GRAPH_ANSWER_SELF_IMPROVE_MAX_ATTEMPTS,
+  verifyGraphAnswerAgainstContext,
+} from './conversationGraphAnswerVerifier';
+import {
+  buildDeterministicGraphAnswerSections,
+  GRAPH_STRUCTURED_SECTIONS_KEY,
+} from './conversationGraphDeterministicSections';
+import { buildGraphAnswerLessonsPrompt, recordGraphAnswerLessonFromContext } from './conversationGraphAnswerLearning';
+import {
+  getStructuredSectionsFromContext,
+  mergeGraphAnswerWithDeterministicSections,
+} from './conversationGraphAnswerSynthesis';
+import {
+  buildGraphAnswerOutlineContext,
+  buildGraphAnswerReportContext,
+  GRAPH_ANSWER_SKIP_STRUCTURED_MERGE_KEY,
+  shouldUseGraphAnswerTwoPass,
+} from './conversationGraphAnswerTwoPass';
 import { buildExpertGraphSnapshotForAnswer } from './conversationGraphExpertSnapshot';
 import type { ExpertLayerId } from './conversationGraphExpertLayers';
 import {
@@ -126,8 +149,22 @@ export function buildGraphAnswerChatContext(input: GraphAnswerGenerationInput): 
     coerceTrimmedString(input.rawConversationText, ''),
   );
   const isCreateGraph = isCreateGraphAnswerRequest(userMsg);
+  const structuredSections = hasGraphNodes
+    ? buildDeterministicGraphAnswerSections({
+        graph: input.graph!,
+        analysis: input.analysis,
+        conversationTitle: input.conversationTitle,
+        periodLabel: input.periodLabel,
+      })
+    : '';
+  const lessonsPrompt = buildGraphAnswerLessonsPrompt();
+  const synthesisHint = structuredSections
+    ? ' [구조화 데이터 블록]에 참여자 표·연결 표·Mermaid가 이미 포함되어 있습니다. 표·Mermaid를 다시 만들지 말고, 앞에 2~4문장 한 줄 요약, 뒤에 ## 해석·## 갈등 축·## 실행 제안(각 3~6문장)만 작성하세요.'
+    : '';
   const defaultInstruction =
     '대화 관계도·성향·족보 계층·시공사 반응 신호·근거 발언 샘플만 근거로 답하세요. 시공사 선호는 확정이 아닌 추정임을 밝히고, 수치·참여자·발언 인용에 없는 사실은 추측하지 마세요. 보고서 형식(요약→핵심 인물→갈등 축→시공사 반응→실행 제안)으로 한국어만 출력하세요.';
+  const nodeCount = input.graph?.nodes?.length ?? 0;
+  const edgeCount = input.graph?.edges?.length ?? 0;
   return {
     prefer_informed_answer: true,
     multi_request_mode: false,
@@ -157,9 +194,22 @@ export function buildGraphAnswerChatContext(input: GraphAnswerGenerationInput): 
         }
       : {}),
     conversation_graph_methodology: input.analysis.methodology.join(' '),
-    answer_quality_instruction: isCreateGraph
-      ? buildCreateGraphAnswerInstruction(hasGraphNodes, Boolean(rawConversation))
-      : defaultInstruction,
+    ...(structuredSections ? { [GRAPH_STRUCTURED_SECTIONS_KEY]: structuredSections } : {}),
+    ...(nodeCount > 0
+      ? {
+          conversation_graph_lesson_participant_count: nodeCount,
+          conversation_graph_lesson_edge_count: edgeCount,
+        }
+      : {}),
+    answer_quality_instruction: [
+      isCreateGraph
+        ? buildCreateGraphAnswerInstruction(hasGraphNodes, Boolean(rawConversation))
+        : defaultInstruction,
+      synthesisHint,
+      lessonsPrompt,
+    ]
+      .filter(Boolean)
+      .join(' '),
   };
 }
 
@@ -172,6 +222,34 @@ export function prepareGraphAnswerGenerationMessage(
   return { apiMessage: resolved.message, isCreateGraph: resolved.isCreateGraph };
 }
 
+/** 관계도 답변 context에서 multi_request·파이프라인 잔여 키 제거 */
+export function sealConversationGraphChatContext(
+  context: Record<string, unknown>,
+): Record<string, unknown> {
+  if (context[GRAPH_ANSWER_CONTEXT_FLAG] !== true) {
+    return context;
+  }
+  const next: Record<string, unknown> = { ...context, multi_request_mode: false };
+  delete next.multi_request_items;
+  delete next.multi_request_adaptation_instruction;
+  return next;
+}
+
+/** 통합 `/chat` POST·스트리밍 본문 `message` — 관계도 맥락이면 짧은 사용자 문장만 */
+export function resolveUnifiedChatGraphOutboundMessage(
+  trimmedInput: string,
+  context: Record<string, unknown>,
+  fallbackMessage: string,
+): string {
+  if (context[GRAPH_ANSWER_CONTEXT_FLAG] !== true) {
+    return fallbackMessage;
+  }
+  const hasGraphNodes =
+    context.conversation_graph_has_data === true ||
+    Boolean(coerceTrimmedString(String(context.conversation_graph_snapshot ?? ''), ''));
+  return prepareGraphAnswerGenerationMessage(trimmedInput, hasGraphNodes).apiMessage;
+}
+
 export { isCreateGraphAnswerRequest } from './conversationGraphAnswerIntent';
 
 export type GraphAnswerGenerateOptions = {
@@ -179,10 +257,16 @@ export type GraphAnswerGenerateOptions = {
   onPhase?: (phase: AssistantGenerationPhase) => void;
   onPhaseText?: (text: string) => void;
   onMetadata?: (meta: Record<string, unknown>) => void;
+  /** 자가 개선 재시도 직전(attempt는 1부터) */
+  onSelfImproveRetry?: (attempt: number, issues: string[]) => void;
   signal?: AbortSignal;
   preferStream?: boolean;
   /** true면 비스트림 응답 후 crosscheck·verify 단계 대기를 생략 */
   skipPostPhases?: boolean;
+  /** false면 검증·재생성 루프 비활성(기본 env로 제어) */
+  selfImprove?: boolean;
+  /** undefined면 UI prefs·env로 2-pass 여부 결정 */
+  twoPass?: boolean;
 };
 
 async function maybeRunGraphAnswerPostPhases(opts?: GraphAnswerGenerateOptions): Promise<void> {
@@ -211,109 +295,226 @@ function buildGraphAnswerRequestBody(
   });
 }
 
-function finalizeGraphAnswerRaw(raw: string): string | null {
+function finalizeGraphAnswerRaw(
+  raw: string,
+  context?: Record<string, unknown>,
+): string | null {
   const display = resolveGraphAnswerDisplayText(raw);
-  return display || null;
+  if (!display) return null;
+  if (context?.[GRAPH_ANSWER_SKIP_STRUCTURED_MERGE_KEY] === true) {
+    return display;
+  }
+  const structured = context ? getStructuredSectionsFromContext(context) : '';
+  return mergeGraphAnswerWithDeterministicSections(display, structured) || null;
 }
 
-function finalizeGraphAnswerFromStream(streamText: string, accumulated: string): string | null {
+function finalizeGraphAnswerFromStream(
+  streamText: string,
+  accumulated: string,
+  context?: Record<string, unknown>,
+): string | null {
   const trimmedStream = coerceTrimmedString(streamText, '');
   const trimmedAccum = accumulated.trim();
   return (
-    finalizeGraphAnswerRaw(trimmedStream) ||
-    (trimmedAccum !== trimmedStream ? finalizeGraphAnswerRaw(trimmedAccum) : null)
+    finalizeGraphAnswerRaw(trimmedStream, context) ||
+    (trimmedAccum !== trimmedStream ? finalizeGraphAnswerRaw(trimmedAccum, context) : null)
   );
 }
 
-/** 관계도 분석 맥락으로 통합 채팅 API 답변 생성 (스트리밍 우선, 실패 시 비스트림, 다단계 UI 콜백) */
+async function runGraphAnswerGenerationOnce(
+  trimmed: string,
+  context: Record<string, unknown>,
+  opts: GraphAnswerGenerateOptions | undefined,
+  pipeline: ReturnType<typeof createGraphAnswerPipelineController>,
+  preferStream: boolean,
+): Promise<string | null> {
+  if (preferStream) {
+    let accumulated = '';
+    let streamFollowUpStarted = false;
+    const sessionId = `graph-answer-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const body = buildGraphAnswerRequestBody(trimmed, context);
+
+    try {
+      pipeline.startNonStreamTimers();
+      const text = await streamChatMessage(trimmed, sessionId, {
+        signal: opts?.signal,
+        requestBody: body,
+        onMetadata: (meta) => {
+          pipeline.handleMetadata(meta);
+          opts?.onMetadata?.(meta);
+        },
+        onChunk: (chunk) => {
+          accumulated += chunk;
+          const { displayText } = pipeline.handleAccumulated(accumulated);
+          if (displayText && !streamFollowUpStarted) {
+            streamFollowUpStarted = true;
+            pipeline.startStreamFollowUpPhases();
+          }
+          opts?.onChunk?.(accumulated, displayText);
+        },
+      });
+      pipeline.cancel();
+      const finalized = finalizeGraphAnswerFromStream(text, accumulated, context);
+      if (finalized) {
+        return finalized;
+      }
+    } catch {
+      pipeline.cancel();
+      if (opts?.signal?.aborted) return null;
+    }
+  }
+
+  pipeline.startNonStreamTimers();
+  const res = await sendChatMessage({
+    message: trimmed,
+    quality: 'enhanced',
+    context,
+    response_style: 'detailed',
+    perspective: 'practical',
+  });
+  pipeline.cancel();
+
+  if (res.success && res.message?.content?.trim()) {
+    const finalized = finalizeGraphAnswerRaw(res.message.content, context);
+    if (finalized) {
+      await maybeRunGraphAnswerPostPhases(opts);
+      if (opts?.signal?.aborted) return null;
+      opts?.onChunk?.(res.message.content, finalized);
+      return finalized;
+    }
+  }
+  const wrapped = extractResponseContent(res.rawResponse !== undefined ? res.rawResponse : res);
+  if (wrapped && !wrapped.includes('응답을 생성할 수 없습니다')) {
+    const finalized = finalizeGraphAnswerRaw(wrapped, context);
+    if (finalized) {
+      await maybeRunGraphAnswerPostPhases(opts);
+      if (opts?.signal?.aborted) return null;
+      opts?.onChunk?.(wrapped, finalized);
+      return finalized;
+    }
+  }
+  return null;
+}
+
+function finalizeGraphAnswerDraft(
+  draft: string,
+  context: Record<string, unknown>,
+  userMessage: string,
+  verificationPass: boolean,
+): string {
+  const structured = getStructuredSectionsFromContext(context);
+  const merged = mergeGraphAnswerWithDeterministicSections(draft, structured);
+  if (verificationPass && merged) {
+    recordGraphAnswerLessonFromContext(merged, context, userMessage);
+  }
+  return merged || draft;
+}
+
+/** 관계도 분석 맥락으로 통합 채팅 API 답변 생성 (스트리밍 우선, 검증 실패 시 1회 자동 재생성) */
 export async function generateGraphAnswerViaChat(
   userMessage: string,
   context: Record<string, unknown>,
   opts?: GraphAnswerGenerateOptions,
 ): Promise<string | null> {
-  const trimmed = userMessage.trim();
+  const hasGraphNodes =
+    context.conversation_graph_has_data === true ||
+    Boolean(
+      typeof context.conversation_graph_snapshot === 'string' &&
+        String(context.conversation_graph_snapshot).trim(),
+    );
+  const { apiMessage } = prepareGraphAnswerGenerationMessage(userMessage, hasGraphNodes);
+  const trimmed = apiMessage.trim();
   if (!trimmed) return null;
 
-  const pipeline = createGraphAnswerPipelineController({
-    onPhase: opts?.onPhase,
-    onPhaseText: opts?.onPhaseText,
-  });
-
   const preferStream = opts?.preferStream !== false && isStreamingSupported();
+  const selfImprove =
+    opts?.selfImprove !== false && isGraphAnswerSelfImproveEnabled();
+  const maxAttempts = selfImprove ? GRAPH_ANSWER_SELF_IMPROVE_MAX_ATTEMPTS : 1;
+
+  let workingContext = sealConversationGraphChatContext({ ...context });
 
   try {
-    if (preferStream) {
-      let accumulated = '';
-      let streamFollowUpStarted = false;
-      const sessionId = `graph-answer-${Date.now()}`;
-      const body = buildGraphAnswerRequestBody(trimmed, context);
-
-      try {
-        pipeline.startNonStreamTimers();
-        const text = await streamChatMessage(trimmed, sessionId, {
-          signal: opts?.signal,
-          requestBody: body,
-          onMetadata: (meta) => {
-            pipeline.handleMetadata(meta);
-            opts?.onMetadata?.(meta);
-          },
-          onChunk: (chunk) => {
-            accumulated += chunk;
-            const { displayText } = pipeline.handleAccumulated(accumulated);
-            if (displayText && !streamFollowUpStarted) {
-              streamFollowUpStarted = true;
-              pipeline.startStreamFollowUpPhases();
-            }
-            opts?.onChunk?.(accumulated, displayText);
-          },
-        });
-        pipeline.cancel();
-        const finalized = finalizeGraphAnswerFromStream(text, accumulated);
-        if (finalized) {
-          opts?.onPhase?.('verify');
-          return finalized;
-        }
-      } catch {
-        pipeline.cancel();
-        if (opts?.signal?.aborted) return null;
-        /* 비스트림 폴백 */
+    if (shouldUseGraphAnswerTwoPass(workingContext, opts?.twoPass)) {
+      opts?.onPhase?.('outline');
+      const outlinePipeline = createGraphAnswerPipelineController({
+        onPhase: opts?.onPhase,
+        onPhaseText: opts?.onPhaseText,
+      });
+      const outlineDraft = await runGraphAnswerGenerationOnce(
+        trimmed,
+        buildGraphAnswerOutlineContext(workingContext),
+        {
+          ...opts,
+          onChunk: undefined,
+          preferStream: false,
+          skipPostPhases: true,
+          selfImprove: false,
+        },
+        outlinePipeline,
+        false,
+      );
+      const outline = resolveGraphAnswerDisplayText(outlineDraft ?? '');
+      if (outline && outline.length >= 40) {
+        workingContext = sealConversationGraphChatContext(
+          buildGraphAnswerReportContext(workingContext, outline),
+        );
+        opts?.onPhase?.('draft');
       }
     }
 
-    pipeline.startNonStreamTimers();
-    const res = await sendChatMessage({
-      message: trimmed,
-      quality: 'enhanced',
-      context,
-      response_style: 'detailed',
-      perspective: 'practical',
-    });
-    pipeline.cancel();
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      if (opts?.signal?.aborted) return null;
 
-    if (res.success && res.message?.content?.trim()) {
-      const finalized = finalizeGraphAnswerRaw(res.message.content);
-      if (finalized) {
-        await maybeRunGraphAnswerPostPhases(opts);
-        if (opts?.signal?.aborted) return null;
+      const pipeline = createGraphAnswerPipelineController({
+        onPhase: opts?.onPhase,
+        onPhaseText: opts?.onPhaseText,
+      });
+
+      const draft = await runGraphAnswerGenerationOnce(
+        trimmed,
+        workingContext,
+        opts,
+        pipeline,
+        preferStream,
+      );
+
+      if (!draft) {
+        const structuredOnly = getStructuredSectionsFromContext(workingContext);
+        return structuredOnly || null;
+      }
+
+      if (!selfImprove) {
         opts?.onPhase?.('verify');
-        opts?.onChunk?.(res.message.content, finalized);
-        return finalized;
+        return finalizeGraphAnswerDraft(draft, workingContext, trimmed, false);
       }
-    }
-    const wrapped = extractResponseContent(res.rawResponse !== undefined ? res.rawResponse : res);
-    if (wrapped && !wrapped.includes('응답을 생성할 수 없습니다')) {
-      const finalized = finalizeGraphAnswerRaw(wrapped);
-      if (finalized) {
-        await maybeRunGraphAnswerPostPhases(opts);
-        if (opts?.signal?.aborted) return null;
+
+      const verification = verifyGraphAnswerAgainstContext(
+        finalizeGraphAnswerDraft(draft, workingContext, trimmed, false),
+        workingContext,
+      );
+      if (verification.pass) {
         opts?.onPhase?.('verify');
-        opts?.onChunk?.(wrapped, finalized);
-        return finalized;
+        return finalizeGraphAnswerDraft(draft, workingContext, trimmed, true);
       }
+
+      const isLastAttempt = attempt >= maxAttempts - 1;
+      if (isLastAttempt) {
+        opts?.onPhase?.('verify');
+        return finalizeGraphAnswerDraft(draft, workingContext, trimmed, false);
+      }
+
+      opts?.onPhase?.('crosscheck');
+      opts?.onSelfImproveRetry?.(attempt + 1, verification.issues);
+      workingContext = buildGraphAnswerContextWithRevision(
+        workingContext,
+        verification.issues,
+        attempt,
+      );
+      opts?.onPhase?.('retry');
     }
+
     return null;
   } catch {
-    pipeline.cancel();
     return null;
   }
 }

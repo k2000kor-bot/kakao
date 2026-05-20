@@ -23,6 +23,7 @@ import { GensparkGenerationStatus } from '../components/genspark/GensparkGenerat
 import { GensparkAnswerMarkdown } from '../components/genspark/gensparkAnswerMarkdown';
 import { TEST_IDS } from '../constants/testIds';
 import { CREATE_GRAPH_ANSWER_PRESET } from './conversationGraphAnswerIntent';
+import { clearGraphAnswerLessons } from './conversationGraphAnswerLearning';
 import { extractMermaidBlocksFromAnswer } from './conversationGraphMermaidExtract';
 import { ConversationGraphMermaidBlock } from './ConversationGraphMermaidBlock';
 
@@ -55,6 +56,8 @@ export type ConversationGraphAnswerPanelProps = {
   onAutoGenerateAnswerChange?: (value: boolean) => void;
   useStreamAnswer?: boolean;
   onUseStreamAnswerChange?: (value: boolean) => void;
+  useTwoPassAnswer?: boolean;
+  onUseTwoPassAnswerChange?: (value: boolean) => void;
   onOpenInChat: (draft: string, context: Record<string, unknown>, autoSend: boolean) => void;
 };
 
@@ -77,6 +80,8 @@ export function ConversationGraphAnswerPanel({
   onAutoGenerateAnswerChange,
   useStreamAnswer = true,
   onUseStreamAnswerChange,
+  useTwoPassAnswer = false,
+  onUseTwoPassAnswerChange,
   onOpenInChat,
 }: ConversationGraphAnswerPanelProps) {
   const [prompt, setPrompt] = useState('');
@@ -193,18 +198,24 @@ export function ConversationGraphAnswerPanel({
         narrative: activeNarrative,
         graph: activeGraph,
       });
+      let generationSucceeded = false;
       try {
         const stream = useStreamAnswer && isStreamingSupported();
         const text = await generateGraphAnswerViaChat(apiMessage, ctx, {
           signal: controller.signal,
           preferStream: stream,
+          twoPass: useTwoPassAnswer,
           onPhase: (phase) => setGenerationPhase(phase),
+          onSelfImproveRetry: () => {
+            showToast('품질 검토 후 답변을 한 번 더 다듬는 중입니다.', 'info');
+          },
           onChunk: (_accumulated, displayText) => {
             if (displayText) setGeneratedAnswer(displayText);
           },
         });
         if (controller.signal.aborted) return;
         if (text) {
+          generationSucceeded = true;
           setGeneratedAnswer(text);
           setGenerationPhase('verify');
           showToast('답변을 생성했습니다.', 'success');
@@ -218,10 +229,20 @@ export function ConversationGraphAnswerPanel({
           abortRef.current = null;
         }
         setLoading(false);
-        setGenerationPhase(null);
+        if (!generationSucceeded) {
+          setGenerationPhase(null);
+        }
       }
     },
-    [analysis, narrative, graph, buildContextForMessage, onEnsureGraphBeforeAnswer, useStreamAnswer],
+    [
+      analysis,
+      narrative,
+      graph,
+      buildContextForMessage,
+      onEnsureGraphBeforeAnswer,
+      useStreamAnswer,
+      useTwoPassAnswer,
+    ],
   );
 
   const handleGenerate = useCallback(() => {
@@ -234,9 +255,11 @@ export function ConversationGraphAnswerPanel({
         coerceTrimmedString(prompt, '') ||
         promptPresets[0]?.prompt ||
         '관계도 분석을 바탕으로 요약 보고서를 작성해 주세요.';
-      onOpenInChat(draft, buildContextForMessage(draft), autoSend);
+      const hasGraphNodes = (graph?.nodes ?? []).length > 0;
+      const { apiMessage } = prepareGraphAnswerGenerationMessage(draft, hasGraphNodes);
+      onOpenInChat(autoSend ? apiMessage : draft, buildContextForMessage(draft), autoSend);
     },
-    [prompt, buildContextForMessage, onOpenInChat, promptPresets],
+    [prompt, graph, buildContextForMessage, onOpenInChat, promptPresets],
   );
 
   useEffect(() => {
@@ -261,7 +284,7 @@ export function ConversationGraphAnswerPanel({
     [generatedAnswer],
   );
 
-  const showPipelineStatus = loading && !generatedAnswer;
+  const showPipelineStatus = loading;
   const isGenerationFailureMessage = generatedAnswer.startsWith('답변을 생성하지 못했습니다');
   const showStreamingPartial =
     loading && !!generatedAnswer && !isGenerationFailureMessage;
@@ -347,6 +370,21 @@ export function ConversationGraphAnswerPanel({
             스트리밍으로 실시간 표시
           </label>
         ) : null}
+        {onUseTwoPassAnswerChange ? (
+          <label
+            className="bw-detail-meta-text"
+            style={{ display: 'flex', gap: 8, alignItems: 'center' }}
+            data-testid="conversation-graph-answer-two-pass-label"
+          >
+            <input
+              type="checkbox"
+              checked={useTwoPassAnswer}
+              onChange={(e) => onUseTwoPassAnswerChange(e.target.checked)}
+              data-testid="conversation-graph-answer-two-pass"
+            />
+            2-pass 생성(개요 → 보고서)
+          </label>
+        ) : null}
         {onAutoGenerateAnswerChange ? (
           <label
             className="bw-detail-meta-text"
@@ -362,6 +400,18 @@ export function ConversationGraphAnswerPanel({
             관계도 생성 후 보고서 답변 자동 생성
           </label>
         ) : null}
+        <button
+          type="button"
+          className="bw-btn-secondary"
+          style={{ fontSize: 12 }}
+          data-testid="conversation-graph-answer-clear-lessons"
+          onClick={() => {
+            clearGraphAnswerLessons();
+            showToast('저장된 관계도 답변 학습 기록을 지웠습니다.', 'info');
+          }}
+        >
+          답변 학습 초기화
+        </button>
       </div>
 
       <div className="bw-mt-sm" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>

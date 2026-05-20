@@ -5,9 +5,15 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { ConversationGraphAnswerPanel } from './ConversationGraphAnswerPanel';
 import type { GraphAiAnalysis } from './conversationGraphAiAnalyzer';
+import { CREATE_GRAPH_API_USER_MESSAGE } from './conversationGraphAnswerIntent';
 import { generateGraphAnswerViaChat } from './conversationGraphAnswerGeneration';
 import { isStreamingSupported } from '../utils/streamingClient';
 import { TEST_IDS } from '../constants/testIds';
+import {
+  __readGraphAnswerLessonsForTest,
+  clearGraphAnswerLessons,
+  recordGraphAnswerLessonFromContext,
+} from './conversationGraphAnswerLearning';
 
 jest.mock('../utils/toast', () => ({
   showToast: jest.fn(),
@@ -297,5 +303,78 @@ describe('ConversationGraphAnswerPanel', () => {
     expect(markdown).toHaveTextContent('본문 설명입니다.');
     expect(markdown).toHaveTextContent('## 요약');
     expect(markdown.textContent).not.toMatch(/flowchart\s+TB/);
+  });
+
+  it('2-pass 체크박스를 켜면 generateGraphAnswerViaChat에 twoPass를 전달한다', async () => {
+    jest.mocked(generateGraphAnswerViaChat).mockResolvedValue('합성 답변');
+    const onTwoPass = jest.fn();
+
+    render(
+      <ConversationGraphAnswerPanel
+        analysis={analysis}
+        narrative="해석"
+        graph={{
+          upload_id: 'g1',
+          nodes: [{ id: 'p1', label: '알파', message_count: 1, dominant_stance: '동조' }],
+          edges: [],
+        }}
+        useTwoPassAnswer
+        onUseTwoPassAnswerChange={onTwoPass}
+        onOpenInChat={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
+    fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
+
+    await waitFor(() => expect(generateGraphAnswerViaChat).toHaveBeenCalled());
+    const opts = jest.mocked(generateGraphAnswerViaChat).mock.calls.at(-1)?.[2];
+    expect(opts?.twoPass).toBe(true);
+  });
+
+  it('관계도 만들기 프리셋으로 대화 바로 전송 시 API용 짧은 메시지를 넘긴다', () => {
+    const onOpenInChat = jest.fn();
+    render(
+      <ConversationGraphAnswerPanel
+        analysis={analysis}
+        narrative="해석"
+        onOpenInChat={onOpenInChat}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-create-graph'));
+    fireEvent.click(screen.getByTestId('conversation-graph-answer-open-chat-send'));
+
+    expect(onOpenInChat).toHaveBeenCalledWith(
+      CREATE_GRAPH_API_USER_MESSAGE,
+      expect.objectContaining({
+        input_intent_hint: 'conversation_graph_create',
+        multi_request_mode: false,
+      }),
+      true,
+    );
+    expect(onOpenInChat.mock.calls[0]?.[0]).not.toContain('1)');
+  });
+
+  it('답변 학습 초기화 버튼이 localStorage 기록을 지운다', () => {
+    clearGraphAnswerLessons();
+    recordGraphAnswerLessonFromContext(
+      '## 한 줄 요약\n\n검증 통과한 관계도 답변 본문입니다. '.repeat(4),
+      { conversation_graph_lesson_participant_count: 2, conversation_graph_lesson_edge_count: 1 },
+      '보고서',
+    );
+    expect(__readGraphAnswerLessonsForTest()).toHaveLength(1);
+
+    render(
+      <ConversationGraphAnswerPanel
+        analysis={analysis}
+        narrative="해석"
+        onOpenInChat={jest.fn()}
+        onUseTwoPassAnswerChange={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('conversation-graph-answer-clear-lessons'));
+    expect(__readGraphAnswerLessonsForTest()).toHaveLength(0);
   });
 });

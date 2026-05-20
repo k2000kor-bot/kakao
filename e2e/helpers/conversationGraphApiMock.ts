@@ -105,3 +105,31 @@ export function chatStreamRouteStub(answerText: string, delayMs = 1200) {
     });
   };
 }
+
+/** 비스트림 POST `/api/chat`·`/api/unified/chat` 스텁 */
+export function chatPostRouteStub(answerText: string, delayMs = 300) {
+  return async (route: Route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+    const url = route.request().url();
+    if (url.includes('/stream')) {
+      await route.continue();
+      return;
+    }
+    if (!url.includes('/api/chat') && !url.includes('/api/unified/chat')) {
+      await route.continue();
+      return;
+    }
+    await new Promise((r) => setTimeout(r, delayMs));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        message: { content: answerText, role: 'assistant' },
+      }),
+    });
+  };
+}

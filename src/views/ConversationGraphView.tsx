@@ -77,7 +77,6 @@ import {
   stripConversationGraphHandoffKeys,
 } from './conversationGraphNavigateHandoff';
 import { scrollElementIntoViewSafe } from './conversationGraphScroll';
-import { RoutePathBreadcrumb } from '../components/RoutePathBreadcrumb';
 import { getStandaloneChatPath } from '../config/uiPreferences';
 import type { GraphAnswerEnsureGraphResult } from './ConversationGraphAnswerPanel';
 import { TEST_IDS } from '../constants/testIds';
@@ -143,6 +142,9 @@ function ConversationGraphView() {
     () => initialUiPrefs.kakaoSamplePreset ?? 'recent_20000',
   );
   const [useStreamAnswer, setUseStreamAnswer] = useState(() => initialUiPrefs.useStreamAnswer ?? true);
+  const [useTwoPassAnswer, setUseTwoPassAnswer] = useState(
+    () => initialUiPrefs.useTwoPassAnswer ?? process.env.REACT_APP_GRAPH_ANSWER_TWO_PASS === '1',
+  );
   const [participantSearchQuery, setParticipantSearchQuery] = useState('');
   const [participantSortMode, setParticipantSortMode] = useState<ParticipantSortMode>('influence');
   const [uploadPreview, setUploadPreview] = useState<PreparedConversationUpload | null>(null);
@@ -278,6 +280,7 @@ function ConversationGraphView() {
       autoRequestAiNarrative,
       autoGenerateAnswer,
       useStreamAnswer,
+      useTwoPassAnswer,
       useServerAiAnalysis,
       graphLayoutMode,
       graphViewMode,
@@ -289,6 +292,7 @@ function ConversationGraphView() {
     autoRequestAiNarrative,
     autoGenerateAnswer,
     useStreamAnswer,
+    useTwoPassAnswer,
     useServerAiAnalysis,
     graphLayoutMode,
     graphViewMode,
@@ -1025,21 +1029,13 @@ function ConversationGraphView() {
       aria-label="대화 관계도"
       data-testid={TEST_IDS.CONVERSATION_GRAPH_VIEW}
     >
-      <RoutePathBreadcrumb
-        className="conversation-graph-route-breadcrumb"
-        items={[
-          { label: '홈', to: '/' },
-          { label: '대화', to: getStandaloneChatPath() },
-          { label: '대화 관계도' },
-        ]}
-      />
       <header className="bw-detail-header-left" id="conversation-graph-heading">
           <p className="bw-detail-desc">
             카카오톡 대화를 업로드하면 족보형 관계도·입장·시공사 반응 신호·근거 발언을 분석합니다. 통합 답변 생성으로 기획서 형식의 보고서를 만들 수 있으며, 모든 성향·선호는 추정값입니다.
           </p>
       </header>
 
-      <div className="bw-tool-view-body">
+      <div className="bw-tool-view-body" data-testid="conversation-graph-tool-body">
         <section className="bw-detail-section" aria-labelledby="upload-heading">
           <h2 id="upload-heading" className="bw-detail-section-title">
             대화 업로드
@@ -1786,6 +1782,8 @@ function ConversationGraphView() {
                 onAutoGenerateAnswerChange={setAutoGenerateAnswer}
                 useStreamAnswer={useStreamAnswer}
                 onUseStreamAnswerChange={setUseStreamAnswer}
+                useTwoPassAnswer={useTwoPassAnswer}
+                onUseTwoPassAnswerChange={setUseTwoPassAnswer}
                 onOpenInChat={handleOpenGraphAnswerInChat}
               />
             ) : null}

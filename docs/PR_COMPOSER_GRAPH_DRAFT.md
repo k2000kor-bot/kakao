@@ -11,6 +11,7 @@
 - **Composer Oversight Council v2**·답변 **자가 개발** 루프(전송·재생성·편집 공통) — `03bf9a96e`
 - **재생성 E2E**: Ultimate(+Council)·`/agents` 스트림(ChatGPTInterface) — CI `composer-regenerate-e2e`
 - 대화 관계도 뷰·handoff·Jest/E2E·CI jobs (`composer-pipeline`, `conversation-graph`, E2E)
+- **관계도 정리된 생성 답변**: 결정론적 표·Mermaid + LLM 해석 합성, 로컬 학습 힌트, 2-pass(개요→보고서), 패널 UI 토글
 
 ## Test plan
 
@@ -21,11 +22,11 @@
 - [x] `npm run verify:handoff-artifacts` (bundle tip = 브랜치 HEAD)
 - [x] `HANDOFF_REFRESH=1 npm run maintain:push-block` (사이드바·컴포저 회귀)
 - [x] `npm run verify:conversation-graph-api` (upload·relationship-graph)
-- [x] `npm run test:e2e:conversation-graph:chromium` (12 passed, `:3000`+`:5002` 기동)
+- [x] `npm run test:e2e:conversation-graph:chromium` (13 passed, 합성·2-pass 포함)
 - [x] `npm run verify:composer-pipeline` (19 suites, 147 tests)
 - [x] `npm run test:e2e:composer-regenerate:ci` (2 passed, 파일분석 skip)
 - [x] `npm run test:e2e:composer-pipeline:all` (에이전트·다중요청·재생성)
-- [x] `npm run test:e2e:pipelines:all` (컴포저 묶음 + 관계도 12)
+- [x] `npm run test:e2e:pipelines:all` (컴포저 묶음 + 관계도 13)
 - [x] 백엔드 `pytest tests/test_composer_oversight_*.py tests/test_composer_self_develop_hint.py` (10 passed)
 - [x] `npm run verify:conversation-graph` (= unit + E2E)
 - [ ] 수동: `.env.local` 순차/multi-step 플래그 후 `1.\n2.` 전송·재생성·편집
@@ -37,6 +38,10 @@ REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST=true
 REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST_STREAM=true
 REACT_APP_COMPOSER_MULTI_STEP_MULTI_REQUEST=true
 # REACT_APP_COMPOSER_ANSWER_SELF_DEVELOP=0   # 자가 개발 루프만 끄기 (Council 유지)
+
+# 관계도 답변 (선택 — [CONVERSATION_GRAPH.md](./CONVERSATION_GRAPH.md))
+REACT_APP_GRAPH_ANSWER_SELF_IMPROVE=1
+REACT_APP_GRAPH_ANSWER_TWO_PASS=0
 ```
 
 ## Push (권한 있는 저장소에서)

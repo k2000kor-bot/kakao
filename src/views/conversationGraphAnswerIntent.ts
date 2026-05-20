@@ -39,6 +39,13 @@ export const CREATE_GRAPH_ANSWER_PRESET = {
   prompt: CREATE_GRAPH_PROMPT_BODY,
 } as const;
 
+/** 프리셋·긴 지시문 대신 API `message`에 실을 짧은 사용자 문장 */
+export const CREATE_GRAPH_API_USER_MESSAGE = '대화 관계도를 작성해 주세요.';
+
+function graphAnswerMessageHasNumberedSections(text: string): boolean {
+  return /(?:^|\n)\s*\d+[.)]\s+\S/m.test(text);
+}
+
 export function resolveGraphAnswerUserMessage(
   message: string,
   _hasGraphNodes: boolean,
@@ -46,8 +53,15 @@ export function resolveGraphAnswerUserMessage(
   const trimmed = message.trim();
   if (!trimmed) return { message: trimmed, isCreateGraph: false };
   if (isCreateGraphAnswerRequest(trimmed)) {
-    /* API message는 사용자 문장만 — 번호 목록(1) 2)…)은 context·백엔드 지시로 전달(다중 요청 오인 방지) */
-    return { message: trimmed, isCreateGraph: true };
+    /* API message는 짧은 사용자 문장만 — 1) 2)…·프리셋 본문은 context·answer_quality_instruction으로 전달 */
+    const useShortApiMessage =
+      trimmed === CREATE_GRAPH_PROMPT_BODY ||
+      graphAnswerMessageHasNumberedSections(trimmed) ||
+      trimmed.length > 120;
+    return {
+      message: useShortApiMessage ? CREATE_GRAPH_API_USER_MESSAGE : trimmed,
+      isCreateGraph: true,
+    };
   }
   return { message: trimmed, isCreateGraph: false };
 }

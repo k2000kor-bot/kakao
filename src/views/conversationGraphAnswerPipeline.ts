@@ -89,8 +89,17 @@ export function createGraphAnswerPipelineController(callbacks: GraphAnswerPipeli
       const displayText = resolveGraphAnswerDisplayText(trimmed);
       if (displayText) {
         emitPhase('verify');
+        return { displayText, phase: 'verify' };
       }
-      return { displayText, phase: displayText ? 'verify' : null };
+      const partialBody = stripLeadingPipelinePlaceholders(cleanResponseText(trimmed));
+      if (
+        partialBody.length >= 40 &&
+        !isAssistantGenerationStepUi(partialBody)
+      ) {
+        emitPhase('draft');
+        return { displayText: partialBody, phase: 'draft' };
+      }
+      return { displayText: '', phase: null };
     },
     startNonStreamTimers: () => {
       emitPhase('analyze');

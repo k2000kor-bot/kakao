@@ -1,5 +1,7 @@
 import {
   buildCreateGraphAnswerInstruction,
+  CREATE_GRAPH_ANSWER_PRESET,
+  CREATE_GRAPH_API_USER_MESSAGE,
   isCreateGraphAnswerRequest,
   resolveGraphAnswerUserMessage,
 } from './conversationGraphAnswerIntent';
@@ -28,10 +30,20 @@ describe('conversationGraphAnswerIntent', () => {
     expect(isCreateGraphAnswerRequest('보고서 작성해줘')).toBe(false);
   });
 
-  it('resolveGraphAnswerUserMessage는 생성 요청 시 사용자 문장만 반환한다', () => {
+  it('resolveGraphAnswerUserMessage는 짧은 생성 요청 문장을 그대로 반환한다', () => {
     const { message, isCreateGraph } = resolveGraphAnswerUserMessage('관계도 만들어줘', true);
     expect(isCreateGraph).toBe(true);
     expect(message).toBe('관계도 만들어줘');
+    expect(message).not.toContain('1)');
+  });
+
+  it('resolveGraphAnswerUserMessage는 프리셋·번호 목록 본문을 API용 짧은 문장으로 바꾼다', () => {
+    const { message, isCreateGraph } = resolveGraphAnswerUserMessage(
+      CREATE_GRAPH_ANSWER_PRESET.prompt,
+      true,
+    );
+    expect(isCreateGraph).toBe(true);
+    expect(message).toBe(CREATE_GRAPH_API_USER_MESSAGE);
     expect(message).not.toContain('1)');
   });
 
@@ -59,6 +71,15 @@ describe('conversationGraphAnswerIntent', () => {
     const { apiMessage, isCreateGraph } = prepareGraphAnswerGenerationMessage('관계도 만들어줘', false);
     expect(isCreateGraph).toBe(true);
     expect(apiMessage).toBe('관계도 만들어줘');
+  });
+
+  it('prepareGraphAnswerGenerationMessage는 관계도 만들기 프리셋을 짧은 API 메시지로 보낸다', () => {
+    const { apiMessage, isCreateGraph } = prepareGraphAnswerGenerationMessage(
+      CREATE_GRAPH_ANSWER_PRESET.prompt,
+      false,
+    );
+    expect(isCreateGraph).toBe(true);
+    expect(apiMessage).toBe(CREATE_GRAPH_API_USER_MESSAGE);
   });
 
   it('buildGraphAnswerChatContext는 다중 요청 모드를 끈다', () => {

@@ -58,7 +58,7 @@
 | 2차 메뉴·상세 페이지 bw-detail 통일 | brainwave-global.css bw-detail-* 클래스. 8개 페이지 아이콘·제목·설명·탭(pill)·콘텐츠 통일. AppUnified 모바일 헤더·ErrorBoundary fallback·SimpleChatView confidence-value·NotebookLLM mindmap CSS 클래스화. DESIGN_CONSISTENCY_REPORT §2. · 표 행과 교차 |
 | 도구 뷰 12개 섹션·카드 구조 통일 | 설정·분석·도움말·템플릿·검색·연동·팀·학습·구독·워크스페이스·자동화·커뮤니티 뷰에 bw-detail-section·bw-features-card·bw-detail-section-title 일관 적용. DocsView 가이드·단축키·문제 해결 카드화. BACKLOG 확장 뷰 구조 강화 완료. · 표 행과 교차 |
 | 확장 뷰 검증(유닛·E2E·라우트) | 뷰+라우트: `npm run test:views`. E2E: `E2E_SERVER_READY=1 npx playwright test e2e/example.spec.ts`. views/README §확장 뷰 검증. · 표 행과 교차 |
-| 대화 관계도 (`/conversation-graph`) | [CONVERSATION_GRAPH.md](./CONVERSATION_GRAPH.md)·[FEATURE_LOGIC_AND_STRENGTHS.md](./FEATURE_LOGIC_AND_STRENGTHS.md) §3.4·§3.5(`/chat` handoff). 백엔드: `main_server` `/api/conversations/*`·`npm run test:backend:conversation-graph`. 프론트: `test:p4:services`·`npm run test:conversation-graph`(169+)·`npm run test:conversation-graph:chat-handoff`(10). 통합: `npm run verify:conversation-graph`. E2E: `test:e2e:conversation-graph`·`e2e/example.spec.ts`(handoff 스모크). 수동: [CHAT_UI_TEST_SCENARIOS §14.6](./guides/CHAT_UI_TEST_SCENARIOS.md). · 표 행과 교차 |
+| 대화 관계도 (`/conversation-graph`) | [CONVERSATION_GRAPH.md](./CONVERSATION_GRAPH.md)·[FEATURE_LOGIC_AND_STRENGTHS.md](./FEATURE_LOGIC_AND_STRENGTHS.md) §3.4·§3.5(`/chat` handoff). **답변 합성·2-pass·학습** §답변 생성. 백엔드: `test:backend:conversation-graph`(15, chat_hint 포함). 프론트: `test:conversation-graph`(200+)·`chat-handoff`(10). E2E: 13(`test:e2e:conversation-graph:chromium`). 통합: `verify:conversation-graph`. 수동: [CHAT_UI_TEST_SCENARIOS §14.6](./guides/CHAT_UI_TEST_SCENARIOS.md). · 표 행과 교차 |
 | 도구 뷰 예시 플레이스홀더 10개 | Analytics·Integrations·Billing·Search·Templates·Team·Learn·Workspace·Automation·Community 첫 섹션에 예시(—) 블록·aria-label·유닛 테스트. API 연동 전 UI 힌트. BACKLOG 완료. · 표 행과 교차 |
 | 도구 뷰 10개 실 API 연동 | extended_views_api GET /api/*/summary. Workspace·Templates·Search는 프로젝트 데이터 기반 실 데이터. 실패 시 프론트 폴백. backend/tests/test_extended_views_api.py 7 tests. · 표 행과 교차 |
 | 프로젝트별 통계 (AnalyticsView) | GET /api/projects/{id}/analytics (세션 수·메시지 수·노트북 소스). AnalyticsView 프로젝트 선택 드롭다운·통계 표시. project_session_api·analyticsViewService. · 표 행과 교차 |
@@ -136,7 +136,7 @@
 | **배포 직전 스크립트** | `npm run verify:final` → `scripts/final-verify.sh` — `test:frontend:chat-pipeline`·`verify:composer-pipeline` 필수 · [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md) · 표 행과 교차 |
 | **컴포저 파이프라인 (Jest)** | `npm run verify:composer-pipeline` | 19 suites, 147 tests · Council·자가 개발·재생성 유틸 · CI `composer-pipeline` · §14.7–14.9 |
 | **컴포저 E2E (선택)** | `npm run test:e2e:composer-pipeline:all` (로컬) · `...:ci:all` (CI) | 에이전트·다중요청·재생성 포함 · CI `composer-pipeline-e2e` · `composer-regenerate-e2e` |
-| **관계도 (Jest·E2E)** | `npm run verify:conversation-graph:unit` · `npm run verify:conversation-graph` | Jest 169 · E2E 12 · CI `conversation-graph` · `conversation-graph-e2e` |
+| **관계도 (Jest·E2E)** | `npm run verify:conversation-graph:unit` · `npm run verify:conversation-graph` | Jest 200+ · E2E 13 · 백엔드 15 · CI `conversation-graph` · `conversation-graph-e2e` |
 | **완성도 검증 (한 번에)** | `npm run dev:check` · 표 행과 교차 |
 | **E2E (chromium, 69 passed 6 skipped)** | `E2E_SERVER_READY=1 npx playwright test --project=chromium` (서버·playwright chromium 사전 필요) · 표 행과 교차 |
 | **P4 서비스 (9 suites, 158 tests)** | `npm run test:p4:services` · 표 행과 교차 |

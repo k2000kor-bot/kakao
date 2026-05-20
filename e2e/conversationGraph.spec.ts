@@ -7,6 +7,8 @@ import {
   clickConversationGraphSearch,
   dismissWebpackDevOverlay,
   openConversationGraphWithMock,
+  setConversationGraphUiPrefsForE2e,
+  stubGraphAnswerChatStream,
 } from './helpers/conversationGraphPage';
 
 test.describe('대화 관계도 E2E', () => {
@@ -183,11 +185,13 @@ test.describe('대화 관계도 E2E', () => {
       return;
     }
 
-    const answerText = 'E2E 관계도 기반 생성 답변입니다.';
-    const streamStub = chatStreamRouteStub(answerText);
-
-    await page.route('**/api/chat/stream**', streamStub);
-    await page.route('**/api/unified/chat/stream**', streamStub);
+    const llmNarrative = [
+      '## 해석',
+      '',
+      'E2E 관계도 기반 생성 답변입니다. 알파와 베타의 갈등 축·동조·반대 구조를 정리했습니다.',
+      '표·다이어그램은 시스템이 생성한 블록을 유지하고 해석만 보강했습니다.',
+    ].join('\n');
+    await stubGraphAnswerChatStream(page, llmNarrative);
     await openConversationGraphWithMock(
       page,
       [
@@ -206,9 +210,12 @@ test.describe('대화 관계도 E2E', () => {
       timeout: 10_000,
     });
     await expect(page.getByTestId(TEST_IDS.GENSPARK_GENERATION_STATUS)).toBeVisible();
-    await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_RESULT)).toContainText(answerText, {
-      timeout: 20_000,
-    });
+    const result = page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_RESULT);
+    await expect(result).toContainText('E2E 관계도 기반 생성 답변', { timeout: 20_000 });
+    await expect(result).toContainText('참여자');
+    await expect(result).toContainText('알파');
+    await expect(result).toContainText('베타');
+    await expect(page.getByTestId('conversation-graph-mermaid-block')).toBeVisible({ timeout: 10_000 });
   });
 
   test('대화에서 답변 생성 클릭 시 /chat으로 이동하고 프리셋 초안이 입력된다', async ({ page }) => {
@@ -379,6 +386,83 @@ flowchart TB
       { timeout: 30_000 },
     );
     await expect(page.getByTestId('conversation-graph-mermaid-block')).toBeVisible({ timeout: 20_000 });
+  });
+
+  test('2-pass 모드에서 개요·보고서 단계 후 합성 답변이 표시된다', async ({ page }) => {
+    if (!(await isServerReachable())) {
+      test.skip(true, devServerUnreachableSkipMessageShort());
+      return;
+    }
+
+    await setConversationGraphUiPrefsForE2e(page, {
+      useTwoPassAnswer: true,
+      useStreamAnswer: false,
+    });
+
+    const outlineText = [
+      '## 한 줄 요약',
+      '',
+      '알파와 베타의 관계를 짧게 요약합니다.',
+      '',
+      '## 해석',
+      '',
+      '개요 해석입니다.',
+      '',
+      '## 갈등 축',
+      '',
+      '갈등 축 개요.',
+      '',
+      '## 실행 제안',
+      '',
+      '실행 제안 개요.',
+    ].join('\n');
+    const reportText = '## 해석\n\n2-pass E2E 확장 보고서입니다. 알파와 베타 분석을 보강했습니다.';
+
+    let postCall = 0;
+    await page.route('**/api/**/chat**', async (route) => {
+      const url = route.request().url();
+      if (route.request().method() !== 'POST' || url.includes('/stream')) {
+        await route.continue();
+        return;
+      }
+      postCall += 1;
+      const text = postCall === 1 ? outlineText : reportText;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          message: { content: text, role: 'assistant' },
+        }),
+      });
+    });
+
+    await openConversationGraphWithMock(
+      page,
+      [
+        { id: 'p1', label: '알파', message_count: 3, dominant_stance: '동조' },
+        { id: 'p2', label: '베타', message_count: 2, dominant_stance: '반대' },
+      ],
+      [{ source: 'p1', target: 'p2', weight: 2, weight_동조: 2, edge_type: '동조' }],
+    );
+    await clickConversationGraphSearch(page);
+    await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PANEL)).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId('conversation-graph-answer-two-pass')).toBeChecked();
+
+    await page.getByTestId('conversation-graph-answer-preset-report').click();
+    await page.getByTestId('conversation-graph-answer-generate').click();
+
+    await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PIPELINE)).toBeVisible({
+      timeout: 15_000,
+    });
+    const result = page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_RESULT);
+    await expect(result).toContainText('2-pass E2E 확장 보고서', { timeout: 30_000 });
+    await expect(result).toContainText('참여자');
+    await expect(result).toContainText('알파');
+    await expect(page.getByTestId('conversation-graph-mermaid-block')).toBeVisible({ timeout: 10_000 });
+    expect(postCall).toBeGreaterThanOrEqual(2);
   });
 
   test('대화에서 바로 전송 클릭 시 /chat으로 이동한다', async ({ page }) => {

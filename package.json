@@ -145,7 +145,7 @@
     "test:e2e:build": "npm run build && E2E_USE_BUILD=1 playwright test",
     "test:tts:all": "npm test -- --testPathPattern=\"AdvancedFeaturesPanel|scriptStyleAPI|qwenTtsService\" --watchAll=false && (cd backend && (if [ -x .venv/bin/python ]; then .venv/bin/python -m pytest tests/test_tts_api.py -v; elif [ -x venv/bin/python ]; then venv/bin/python -m pytest tests/test_tts_api.py -v; else python3 -m pytest tests/test_tts_api.py -v; fi))",
     "test:p4:services": "npm test -- --testPathPattern=\"notebookLLMStreamingService|chatGPTProjectService|chatService\\.test|fileLearningService|services/__tests__/api\\.test|services/__tests__/intentApi|projectService\\.test|pipelineTuningService\\.test|conversationGraphService\\.test\" --watchAll=false",
-    "test:backend:conversation-graph": "bash scripts/run-backend-pytest.sh tests/test_conversation_graph.py -v",
+    "test:backend:conversation-graph": "bash scripts/run-backend-pytest.sh tests/test_conversation_graph.py tests/test_conversation_graph_chat_hint.py -v",
     "test:composer-pipeline": "bash scripts/test-composer-pipeline.sh",
     "test:conversation-graph": "npm run pretest && CI=true react-scripts test --testPathPattern='conversationGraph|ConversationGraphView|ConversationGraphAnswer|generateGraphAnswer|conversationGraphTestIds|kakaoTalk' --watchAll=false",
     "test:e2e:conversation-graph": "E2E_SERVER_READY=1 playwright test e2e/conversationGraph.spec.ts",

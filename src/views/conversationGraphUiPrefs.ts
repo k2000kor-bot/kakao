@@ -12,6 +12,8 @@ export interface ConversationGraphUiPrefs {
   autoRequestAiNarrative?: boolean;
   autoGenerateAnswer?: boolean;
   useStreamAnswer?: boolean;
+  /** 2-pass LLM(개요→보고서). 미설정 시 `REACT_APP_GRAPH_ANSWER_TWO_PASS` env */
+  useTwoPassAnswer?: boolean;
   useServerAiAnalysis?: boolean;
   graphLayoutMode?: ConversationGraphLayoutMode;
   graphViewMode?: ConversationGraphViewMode;

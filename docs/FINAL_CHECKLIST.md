@@ -36,7 +36,7 @@
 | 통합 테스트 | `npm run test:integration` | 대화·에러 시나리오·스트리밍 모두 OK (백엔드 실행 중 필요). 수동·스크립트 흐름: [INTEGRATION_TEST_GUIDE.md](../INTEGRATION_TEST_GUIDE.md)·표 행과 교차 |
 | 대화 파이프라인 (Jest) | `npm run test:frontend:chat-pipeline` | `chatInputUtils`·스트리밍·프롬프트·Genspark 패널·`AppUnified`·`routes.test` 등 (백엔드 불필요). **`npm run verify:final` 필수 단계**와 동일 범위의 핵심 Jest. 보조 트리: `npm run sync:frontend-src` … · 표 행과 교차 |
 | 컴포저 파이프라인 (Jest) | `npm run verify:composer-pipeline` | 다중 요청·Council·자가 개발·재생성 유틸(19 suites) — **`verify:final` 6단계** · env: `REACT_APP_COMPOSER_*` · [CHAT_UI §14.7–14.9](./guides/CHAT_UI_TEST_SCENARIOS.md) |
-| 대화 관계도 (Jest·E2E) | `npm run verify:conversation-graph` | Jest 169 · E2E 12(chromium) · `typecheck:views-tests` · [TESTING_GUIDE](../TESTING_GUIDE.md) |
+| 대화 관계도 (Jest·E2E) | `npm run verify:conversation-graph` | Jest 200+ · E2E 13(chromium) · 백엔드 15 · 합성·2-pass · [CONVERSATION_GRAPH.md](./CONVERSATION_GRAPH.md) |
 | 컴포저 E2E (선택) | `npm run test:e2e:composer-pipeline:all` (로컬) · `test:e2e:composer-pipeline:ci:all` (CI) | 에이전트·다중요청·재생성 · CI `composer-pipeline-e2e` · `composer-regenerate-e2e` |
 | 채팅 UI·통합 셸 회귀 (별도 권장) | `npm run test:sidebar-context`, `npm run test:app-unified` | `ChatGPTInterface`·설정·사이드바 맥락 등 — **`verify:final`에 자동 포함되지 않음** · 표 행과 교차 |
 | (참고) 특정 파일만 Jest | `npm test -- --testPathPattern='ChatGPTInterface\\.test' --watchAll=false` 등 | 필요 시 경로·패턴만 지정해 실행 · 표 행과 교차 |

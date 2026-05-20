@@ -5,6 +5,7 @@ import {
   buildParticipantAnswerPreset,
   GRAPH_ANSWER_CONTEXT_FLAG,
 } from './conversationGraphAnswerGeneration';
+import { GRAPH_STRUCTURED_SECTIONS_KEY } from './conversationGraphDeterministicSections';
 import type { ParticipantAiInsight } from './conversationGraphAiAnalyzer';
 import {
   CONVERSATION_GRAPH_CHAT_AUTOSEND_STATE_KEY,
@@ -58,6 +59,26 @@ describe('conversationGraphAnswerGeneration', () => {
     expect(ctx.conversation_graph_title).toBe('단체 채팅');
     expect(String(ctx.conversation_graph_summary)).toContain('신뢰 지표');
     expect(String(ctx.conversation_graph_snapshot)).toContain('참여자');
+  });
+
+  it('buildGraphAnswerChatContext는 노드가 있으면 구조화 블록·합성 힌트를 포함한다', () => {
+    const ctx = buildGraphAnswerChatContext({
+      analysis,
+      graph: {
+        upload_id: 'g1',
+        nodes: [
+          { id: 'p1', label: '알파', message_count: 3, dominant_stance: '동조' },
+          { id: 'p2', label: '베타', message_count: 2, dominant_stance: '반대' },
+        ],
+        edges: [{ source: 'p1', target: 'p2', weight: 2, weight_동조: 1, edge_type: '동조' }],
+      },
+    });
+    const structured = String(ctx[GRAPH_STRUCTURED_SECTIONS_KEY] ?? '');
+    expect(structured).toContain('graph-structured-sections');
+    expect(structured).toContain('## 참여자 표');
+    expect(structured).toContain('```mermaid');
+    expect(String(ctx.answer_quality_instruction)).toContain('구조화 데이터 블록');
+    expect(ctx.conversation_graph_lesson_participant_count).toBe(2);
   });
 
   it('buildParticipantAnswerPreset는 참여자 이름을 프리셋에 포함한다', () => {

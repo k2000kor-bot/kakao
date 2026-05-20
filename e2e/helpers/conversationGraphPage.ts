@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { PATHS } from '../paths';
 import { TEST_IDS } from '../testIds';
 import {
+  chatStreamRouteStub,
   mockConversationsApi,
   type ConversationGraphMockEdge,
   type ConversationGraphMockNode,
@@ -44,6 +45,23 @@ export async function openConversationGraphWithMock(
 }
 
 /** 선택된 대화로 관계도 검색 실행 */
+/** E2E용 관계도 UI prefs (localStorage) */
+export async function setConversationGraphUiPrefsForE2e(
+  page: Page,
+  prefs: Record<string, unknown>,
+): Promise<void> {
+  await page.addInitScript((stored) => {
+    localStorage.setItem('corbu.conversationGraph.uiPrefs', JSON.stringify(stored));
+  }, prefs);
+}
+
+/** 관계도 답변 생성 E2E — 채팅 스트림 SSE 스텁 */
+export async function stubGraphAnswerChatStream(page: Page, llmNarrative: string): Promise<void> {
+  const streamStub = chatStreamRouteStub(llmNarrative);
+  await page.route('**/api/chat/stream**', streamStub);
+  await page.route('**/api/unified/chat/stream**', streamStub);
+}
+
 export async function clickConversationGraphSearch(page: Page): Promise<void> {
   const form = page.locator('form[aria-label="기간 지정 및 관계도 검색"]');
   const searchBtn = form.getByRole('button', { name: '관계도 검색' });

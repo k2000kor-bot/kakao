@@ -3,7 +3,7 @@
  */
 /* eslint-disable testing-library/no-wait-for-multiple-assertions, testing-library/prefer-find-by, testing-library/no-unnecessary-act */
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import * as conversationGraphService from '../services/conversationGraphService';
 
@@ -146,11 +146,6 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     expect(screen.getByTestId('conversation-graph-view')).toBeInTheDocument();
-    const nav = screen.getByRole('navigation', { name: '현재 위치' });
-    expect(nav).toHaveClass('brainwave-chat-route-breadcrumb--single-line');
-    expect(within(nav).getByRole('link', { name: '홈' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: '대화' })).toBeInTheDocument();
-    expect(within(nav).getByText('대화 관계도')).toHaveClass('brainwave-chat-route-breadcrumb__leaf');
     expect(screen.getByText(/족보형 관계도·입장·시공사 반응 신호/)).toBeInTheDocument();
     await screen.findByText(/업로드된 대화가 없습니다/); // list fetch 완료 대기
   });
@@ -793,6 +788,45 @@ describe('ConversationGraphView', () => {
             [GRAPH_ANSWER_CONTEXT_FLAG]: true,
           }),
           [CONVERSATION_GRAPH_CHAT_DRAFT_STATE_KEY]: expect.stringContaining('보고서'),
+        }),
+      }),
+    );
+  });
+
+  it('관계도 만들기 프리셋으로 대화 바로 전송 시 짧은 draft를 넘긴다', async () => {
+    mockListConversations.mockResolvedValue([
+      {
+        id: 'g1',
+        name: '샘플',
+        filename: 'a.txt',
+        uploaded_at: '2026-05-01T00:00:00.000Z',
+        message_count: 1,
+      },
+    ]);
+    mockFetchRelationshipGraph.mockResolvedValue({
+      upload_id: 'g1',
+      nodes: [{ id: 'p1', label: '알파', message_count: 2, dominant_stance: '동조' }],
+      edges: [],
+    });
+
+    render(
+      <MemoryRouter>
+        <ConversationGraphView />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
+    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    await screen.findByTestId('conversation-graph-answer-panel');
+
+    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-create-graph'));
+    fireEvent.click(screen.getByTestId('conversation-graph-answer-open-chat-send'));
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        state: expect.objectContaining({
+          [CONVERSATION_GRAPH_CHAT_AUTOSEND_STATE_KEY]: true,
+          [CONVERSATION_GRAPH_CHAT_DRAFT_STATE_KEY]: '대화 관계도를 작성해 주세요.',
         }),
       }),
     );
