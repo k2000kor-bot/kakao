@@ -30,10 +30,9 @@ fi
 echo "origin → $REMOTE_URL"
 git remote set-url origin "$REMOTE_URL"
 
-echo "--- handoff artifacts ---"
-if ! npm run verify:handoff-artifacts; then
-  echo "FAIL: bundle/patch가 브랜치 tip과 불일치합니다." >&2
-  echo "  npm run refresh:handoff-artifacts" >&2
+echo "--- handoff artifacts (refresh → verify) ---"
+if ! npm run refresh:handoff-artifacts; then
+  echo "FAIL: handoff bundle/patch 갱신·검증 실패." >&2
   exit 3
 fi
 

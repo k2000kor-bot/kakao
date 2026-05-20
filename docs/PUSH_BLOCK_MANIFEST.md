@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-20 17:38:23 KST
+- generated_at: 2026-05-20 17:52:29 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `e00631024 chore: handoff manifest를 3cb19adbb tip에 동기화`
+- latest_commit: `07b2714f2 chore: handoff manifest tip e00631024 동기화`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1157133424
-- bundle_sha256: `9df5158afa30aad4ec211e035a59153f6c5d5a66b87338a3ce9bd2575b77fb86`
+- bundle_size_bytes: 1157133732
+- bundle_sha256: `9b45ff67eeb8bbd85fd6ee209c026ad2241dc108144c110a1707a5b15918a24c`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 56
-- patch_series_expected: 56 (`bc4451251..HEAD`)
+- patch_series_count: 57
+- patch_series_expected: 57 (`bc4451251..HEAD`)
 
 ### Recent Commits
 
 ```
+07b2714f2 chore: handoff manifest tip e00631024 동기화
 e00631024 chore: handoff manifest를 3cb19adbb tip에 동기화
 3cb19adbb docs: PR 초안·handoff manifest 최신 HEAD(9fe4a4027) 반영
 9fe4a4027 chore: handoff bundle·manifest를 a5fb640b6 tip에 맞춤
 a5fb640b6 feat(graph-answer): 연속 질문·답변 기록, 한글 보고서 정리, IME Enter 수정
-848b7a4d8 docs: 로컬 개발·검증 가이드 및 npm run local:verify 추가
 ```

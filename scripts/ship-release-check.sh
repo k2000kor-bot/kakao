@@ -9,7 +9,7 @@ echo "=== ship release check (HEAD $(git rev-parse --short HEAD)) ==="
 echo ""
 
 echo "[1/4] handoff"
-npm run verify:handoff-artifacts
+npm run refresh:handoff-artifacts
 echo ""
 
 echo "[2/4] TypeScript"
