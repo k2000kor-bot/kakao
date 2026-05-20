@@ -13,9 +13,15 @@
 
 ## A. 같은 저장소에 push (권장)
 
-1. GitHub → `k2000kor/kakao` → Settings → Collaborators  
-2. `k2000kor-bot` 초대 → **Write** → 초대 수락  
+1. https://github.com/k2000kor/kakao/settings/access → **Invite collaborator**  
+2. `k2000kor-bot` → **Write** → 초대 수락  
 3. 로컬:
+
+```bash
+npm run ship:preflight   # handoff + 유닛 + push 점검 (일괄)
+```
+
+4. push:
 
 ```bash
 cd kakao-frontend
@@ -24,8 +30,7 @@ npm run check:push-ready
 PUSH_REMOTE_URL=git@github.com:k2000kor/kakao.git npm run push:dev-continue
 ```
 
-4. PR: `npm run pr:open-compare` (macOS 브라우저) 또는 `npm run pr:composer-graph-url`  
-5. 본문: `npm run pr:composer-graph-body` (클립보드: `npm run pr:composer-graph-body | pbcopy`)
+5. PR: `npm run pr:open-compare` · 본문: `npm run pr:copy-body`
 
 ## B. 새 저장소에 push
 

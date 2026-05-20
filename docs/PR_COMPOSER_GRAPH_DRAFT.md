@@ -51,7 +51,7 @@ REACT_APP_GRAPH_ANSWER_TWO_PASS=0
 
 ## Push / PR
 
-단계별 안내: [PUSH_NEXT_STEPS.md](./PUSH_NEXT_STEPS.md) · `npm run push:next-steps`
+일괄 점검: `npm run ship:preflight` · 단계: [PUSH_NEXT_STEPS.md](./PUSH_NEXT_STEPS.md)
 
 ```bash
 npm run check:push-ready
