@@ -68,6 +68,6 @@ npm run handoff:info                # bundle SHA·경로 요약
 npm run test:e2e:conversation-graph:chromium
 ```
 
-**SSH**: 현재 `~/.ssh/kakao_frontend_ed25519` → `k2000kor-bot`. owner 계정 push는 Collaborator Write 또는 개인용 SSH 키 추가 필요.
+**SSH (변경 불필요)**: `~/.ssh/kakao_frontend_ed25519` → `k2000kor-bot` 인증은 **정상**입니다. 막힌 것은 **저장소 쓰기 권한**뿐입니다 → 아래 Collaborator로 `k2000kor-bot`에 Write 부여 후 동일 설정으로 push.
 
 관련: [PR_COMPOSER_GRAPH_DRAFT.md](./PR_COMPOSER_GRAPH_DRAFT.md) · [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) · [CONVERSATION_GRAPH.md](./CONVERSATION_GRAPH.md)

@@ -24,7 +24,7 @@ npm run check:push-ready
 PUSH_REMOTE_URL=git@github.com:k2000kor/kakao.git npm run push:dev-continue
 ```
 
-**개인 계정(`k2000kor`) SSH로 push**하려면: 해당 키로 `ssh -T` 했을 때 본인 계정이 나와야 하며, Collaborator 없이 owner면 바로 push 가능.
+(선택) bot 대신 **owner 개인 SSH**를 쓰는 경우에만 키·`ssh -T` 계정을 바꿉니다. **기존 `k2000kor-bot` 설정을 유지할 때는 Collaborator Write만 하면 됩니다.**
 
 ## 3. push
 

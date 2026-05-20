@@ -78,6 +78,8 @@
     "pr:copy-body": "bash scripts/pr-copy-body.sh",
     "ship:preflight": "bash scripts/ship-dev-continue-preflight.sh",
     "ship:release-check": "bash scripts/ship-release-check.sh",
+    "local:verify": "npm run sync:frontend-src && npx tsc --noEmit && npm run verify:conversation-graph:unit && npm run test:composer-pipeline",
+    "local:dev-guide": "cat docs/LOCAL_DEV_VERIFY.md",
     "verify:build": "npm run build",
     "handoff:info": "bash scripts/print-handoff-info.sh",
     "pr:prepare": "bash scripts/prepare-github-pr.sh",
