@@ -69,6 +69,8 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `verify:composer-pipeline` — 19 suites, 147 tests
 - [x] E2E 관계도 13 (`test:e2e:conversation-graph:chromium`)
 - [x] `npx tsc --noEmit` · `680071efd` TS 수정 (재생성 `messageIndex`, `agentRouteId`, `pipelineExtras`)
+- [x] `npm run verify:final` (빌드·API·integration·chat-pipeline·composer, 2026-05-20)
+- [x] `npm run test:e2e:pipelines:all` (컴포저 3 + 관계도 13, Council 스텁 수정 후)
 - [x] `npm run verify:pre-deploy` (sidebar + composer 147 + 관계도 unit, 2026-05-20)
 - [x] `npm run build` — 프로덕션 빌드 성공 (TS·번들)
 - [x] `npm run pr:prepare` (preflight + PR 본문 export)
