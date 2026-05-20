@@ -1,8 +1,8 @@
 ## Push Block Status
 
-- 생성 시각: 2026-05-19 11:05:37 KST
+- 생성 시각: 2026-05-20 11:16:13 KST
 - 브랜치: `dev-continue-2026-01-20`
-- 최신 커밋: `80b8e49e0 chore: allow HANDOFF_REFRESH=1 in push-block maintenance`
+- 최신 커밋: `820897aea docs: PR 초안에 Council·재생성 E2E 검증 항목 반영`
 - origin: `git@github.com:k2000kor/kakao.git`
 
 ### SSH 확인

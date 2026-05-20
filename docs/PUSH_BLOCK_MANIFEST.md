@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-19 13:53:58 KST
+- generated_at: 2026-05-20 11:16:13 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `94330e145 chore: refresh handoff manifest after route breadcrumb UI commit`
+- latest_commit: `820897aea docs: PR 초안에 Council·재생성 E2E 검증 항목 반영`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1156886035
-- bundle_sha256: `60d56aa40a4f0b92342959ff8fa4ffa4fe6f38203924f5f76691c3da9cd6737b`
+- bundle_size_bytes: 1157049687
+- bundle_sha256: `426219809929cfb37e43f6fac610b3c152aad1fb7e4750914744cf4fe24f6f5d`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 29
-- patch_series_expected: 29 (`bc4451251..HEAD`)
+- patch_series_count: 32
+- patch_series_expected: 32 (`bc4451251..HEAD`)
 
 ### Recent Commits
 
 ```
+820897aea docs: PR 초안에 Council·재생성 E2E 검증 항목 반영
+03bf9a96e feat(composer): Council·자가 개발 파이프라인 및 재생성 E2E
+15426d29b chore: sync handoff bundle SHA after manifest refresh
 94330e145 chore: refresh handoff manifest after route breadcrumb UI commit
 e02b29643 fix(ui): unify route breadcrumb to one line above input and chat routes
-84e9a4b3d fix(conversation-graph): stop multi-request and chat quality blocks in graph answers
-3652088d4 fix(backend): inject conversation graph context into LLM prompts
-d4f5b4efa docs: record full-stack E2E and API verification results
 ```
