@@ -78,6 +78,7 @@
     "pr:copy-body": "bash scripts/pr-copy-body.sh",
     "ship:preflight": "bash scripts/ship-dev-continue-preflight.sh",
     "handoff:info": "bash scripts/print-handoff-info.sh",
+    "pr:prepare": "bash scripts/prepare-github-pr.sh",
     "export:graph-answer-patches": "bash scripts/export-graph-answer-patches.sh",
     "export:composer-council-patches": "bash scripts/export-composer-council-patches.sh",
     "check:push-ready": "bash scripts/check-github-push-ready.sh",

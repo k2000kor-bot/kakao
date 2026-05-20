@@ -78,3 +78,6 @@ backend/project_data/
 # Lighthouse
 lighthouse-report.html
 lighthouse-report.json
+
+# PR prepare export (npm run pr:prepare)
+docs/PR_BODY_FOR_GITHUB.md
