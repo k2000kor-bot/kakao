@@ -51,7 +51,7 @@ REACT_APP_GRAPH_ANSWER_TWO_PASS=0
 
 ## Push / PR
 
-일괄: `npm run pr:prepare` (preflight + 본문 export + URL) · 점검: `npm run ship:preflight` · [PUSH_NEXT_STEPS.md](./PUSH_NEXT_STEPS.md)
+일괄: `npm run pr:prepare` · 릴리스 점검: `npm run ship:release-check` · [PUSH_NEXT_STEPS.md](./PUSH_NEXT_STEPS.md)
 
 ```bash
 npm run check:push-ready

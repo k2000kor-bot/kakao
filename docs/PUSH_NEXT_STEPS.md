@@ -59,6 +59,7 @@ GRAPH_PATCH_END=HEAD npm run export:graph-answer-patches
 ## 검증 (이관·push 전)
 
 ```bash
+npm run ship:release-check          # handoff + tsc + pre-deploy + push 점검 (권장)
 npm run ship:preflight              # handoff + 관계도 유닛 + push 점검
 npm run verify:pre-deploy           # sidebar + composer + 관계도 unit (~1분)
 npm run verify:composer-pipeline    # 컴포저 147 tests
