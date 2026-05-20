@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-20 13:19:07 KST
+- generated_at: 2026-05-20 15:42:39 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `ff911ff77 feat(conversation-graph): 정리된 답변 합성·2-pass·학습·E2E`
+- latest_commit: `848b7a4d8 docs: 로컬 개발·검증 가이드 및 npm run local:verify 추가`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1157084389
-- bundle_sha256: `a3ee6757aaa829834621b239347749dff771fb8c4ecd3212b9d4042cbd3d32a6`
+- bundle_size_bytes: 1157109398
+- bundle_sha256: `da0efd5b588a5e2aa0272d978c68839827e0fa7e80ddc0a8a560dad77a9982d1`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 36
-- patch_series_expected: 36 (`bc4451251..HEAD`)
+- patch_series_count: 52
+- patch_series_expected: 52 (`bc4451251..HEAD`)
 
 ### Recent Commits
 
 ```
-ff911ff77 feat(conversation-graph): 정리된 답변 합성·2-pass·학습·E2E
-99a60f809 docs: Composer Council 기능만 이관하는 handoff·패치 export 추가
-8cc33d921 chore: handoff manifest를 bundle tip bac7933e9와 맞춤
-bac7933e9 chore: handoff bundle·패치 시리즈를 Council 커밋 tip과 동기화
-820897aea docs: PR 초안에 Council·재생성 E2E 검증 항목 반영
+848b7a4d8 docs: 로컬 개발·검증 가이드 및 npm run local:verify 추가
+c35f5d0f6 chore: ship:release-check로 push 직전 handoff·tsc·pre-deploy 일괄 점검
+8e3cac9ef chore(e2e): PATHS.ULTIMATE 추가 및 브랜치 요약 갱신
+27932b48d fix(e2e): Council 패널 테스트에 스트림·비스트림 공통 스텁 적용
+19be9a1fb docs: 프로덕션 빌드·재생성 E2E 검증 항목 반영
 ```

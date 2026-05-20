@@ -87,6 +87,8 @@ import {
     cleanResponseText,
     coerceTrimmedString,
     coerceTrimmedEnd,
+    clearControlledTextareaAfterCommit,
+    isKeyboardEventImeComposing,
     CONCISE_CONVERSATION_TITLE_MAX_LEN,
     getConciseConversationTitleFromUserInput,
     conversationListTitleFromUserMessage,
@@ -2775,6 +2777,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             });
             setInput('');
             inputValueRef.current = '';
+            clearControlledTextareaAfterCommit(inputRef.current);
             setIsLoading(true);
             setResponseStartTime(Date.now());
         });
@@ -4432,7 +4435,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const _handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             // IME 조합 중 Enter는 확정용이므로 전송하지 않음(한글 등 입력 직후 오전송 방지)
-            if (e.nativeEvent.isComposing) return;
+            if (isKeyboardEventImeComposing(e)) return;
             e.preventDefault();
             // 중복 호출 방지
             if (isLoading || isSendingRef.current) return;
@@ -4498,7 +4501,12 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     // WorkspaceQueryComposer용 커밋 핸들러
     const handleWqCommit = useCallback(() => {
         if (isLoading || isSendingRef.current) return;
-        const v = coerceTrimmedString(input, '') || getCurrentInputValue();
+        const fromDom = coerceTrimmedString(inputRef.current?.value ?? '', '');
+        if (fromDom && fromDom !== input) {
+            inputValueRef.current = fromDom;
+            setInput(fromDom);
+        }
+        const v = fromDom || getCurrentInputValue();
         if (v) void sendMessage(v);
         else if (attachedConversationFile) void sendMessage();
     }, [sendMessage, getCurrentInputValue, attachedConversationFile, isLoading, input]);
@@ -10665,6 +10673,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                             onChange={(e) => setEditingContent(e.target.value)}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter' && !e.shiftKey) {
+                                                                    if (isKeyboardEventImeComposing(e)) return;
                                                                     e.preventDefault();
                                                                     void saveEditedMessage(message.id);
                                                                 } else if (e.key === 'Escape') {

@@ -46,7 +46,9 @@ def attach_conversation_graph_instruction(ctx: Optional[Dict[str, Any]]) -> None
     lines = [
         "[대화 관계도 답변 — 반드시 준수]",
         "- 일반 채팅 안내나 '더 구체적으로 말씀해 주세요'류 응답은 금지합니다.",
-        "- 아래 스냅샷·요약·원문·지시만 근거로 한국어 보고서를 작성하세요.",
+        "- 아래 스냅샷·요약·원문·지시만 근거로 **정돈된 한국어** 보고서를 작성하세요.",
+        "- 경어체(~습니다)로 통일하고, ## 한 줄 요약 → (시스템 표·Mermaid) → ## 해석·갈등 축·실행 제안 순을 지키세요.",
+        "- 글 유형은 answer_quality_instruction·conversation_graph_writing_style에 맞추세요(보고서/갈등 분석/실행 제안/참여자 중심/관계도 작성).",
         "- 관계도 생성 요청이면: (1) 한 줄 요약 (2) 참여자 표 (3) 연결 표 (4) Mermaid flowchart TB (5) 갈등·시공사 반응(데이터 있을 때만).",
         "- 수치·스냅샷·근거 발언에 없는 참여자·연결은 추가하지 마세요.",
         "- [다중 요청], [혁신적 답변·글쓰기 품질], [답변 다양성], [가이드라인] 등 시스템 태그·빈 불릿(• .)을 본문에 출력하지 마세요.",
@@ -62,6 +64,12 @@ def attach_conversation_graph_instruction(ctx: Optional[Dict[str, Any]]) -> None
     quality = _coerce_str(ctx.get("answer_quality_instruction"))
     if quality:
         lines.append(f"- 품질 지시: {quality}")
+
+    history = _coerce_str(ctx.get("conversation_graph_answer_history"), 6000)
+    if history:
+        lines.append(
+            "\n[이전 질문·답변 — 연속 생성 맥락, 위·아래 대화를 이어 받음]\n" + history
+        )
 
     revision = ctx.get("conversation_graph_revision_issues")
     if revision:

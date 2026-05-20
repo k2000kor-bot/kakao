@@ -69,6 +69,28 @@ describe('WorkspaceQueryComposer', () => {
     expect(screen.getByRole('button', { name: '파일 첨부' })).toBeInTheDocument();
   });
 
+  it('IME 조합 중 Enter는 onCommit을 호출하지 않는다', () => {
+    const onCommit = jest.fn();
+    render(
+      <MemoryRouter>
+        <WorkspaceQueryComposer
+          value="안녕"
+          onChange={() => {}}
+          onCommit={onCommit}
+          dataTestId="wq-ime"
+          primaryAction={<button type="button">전송</button>}
+        />
+      </MemoryRouter>,
+    );
+    const textarea = screen.getByPlaceholderText(WORKSPACE_COMPOSER_PLACEHOLDER);
+    fireEvent.compositionStart(textarea);
+    fireEvent.keyDown(textarea, { key: 'Enter', nativeEvent: { isComposing: true } });
+    expect(onCommit).not.toHaveBeenCalled();
+    fireEvent.compositionEnd(textarea, { target: { value: '안녕' } });
+    fireEvent.keyDown(textarea, { key: 'Enter' });
+    expect(onCommit).toHaveBeenCalledTimes(1);
+  });
+
   it('txt/csv 첨부 시 onConversationTextFileAttach를 호출한다', () => {
     const onConversationTextFileAttach = jest.fn();
     render(

@@ -94,6 +94,17 @@ def test_includes_structured_sections_block() -> None:
     assert "flowchart" in text
 
 
+def test_includes_answer_history() -> None:
+    ctx = {
+        "conversation_graph_analysis": True,
+        "conversation_graph_answer_history": "[이전 질문 1]\nQ\n\n[이전 답변 1]\nA",
+    }
+    attach_conversation_graph_instruction(ctx)
+    text = ctx.get("_conversation_graph_instruction", "")
+    assert "이전 질문·답변" in text
+    assert "[이전 질문 1]" in text
+
+
 def test_build_structured_graph_answer_fallback_from_snapshot() -> None:
     ctx = {
         "conversation_graph_analysis": True,

@@ -1,6 +1,7 @@
 import { coerceTrimmedString } from '../utils/chatInputUtils';
 import { resolveGraphAnswerDisplayText } from './conversationGraphAnswerPipeline';
 import { GRAPH_STRUCTURED_SECTIONS_KEY } from './conversationGraphDeterministicSections';
+import { polishGraphAnswerMarkdown } from './conversationGraphAnswerProse';
 
 function stripMermaidBlocks(text: string): string {
   return text.replace(/```mermaid[\s\S]*?```/gi, '').trim();
@@ -63,7 +64,7 @@ export function mergeGraphAnswerWithDeterministicSections(
   if (structured && !body) return structured;
 
   if (body.includes('graph-structured-sections')) {
-    return body;
+    return polishGraphAnswerMarkdown(body);
   }
 
   const narrative = stripStructuredDuplicates(body);
@@ -82,7 +83,7 @@ export function mergeGraphAnswerWithDeterministicSections(
     parts.push('', tail.startsWith('##') ? tail : ['## 해석·갈등 축·실행 제안', '', tail].join('\n'));
   }
 
-  return parts.join('\n').trim();
+  return polishGraphAnswerMarkdown(parts.join('\n').trim());
 }
 
 export function getStructuredSectionsFromContext(ctx: Record<string, unknown>): string {

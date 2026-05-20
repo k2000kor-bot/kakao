@@ -356,6 +356,44 @@ describe('ConversationGraphAnswerPanel', () => {
     expect(onOpenInChat.mock.calls[0]?.[0]).not.toContain('1)');
   });
 
+  it('연속 질문·답변을 스크롤 영역에 쌓고 이전 맥락을 API에 전달한다', async () => {
+    jest
+      .mocked(generateGraphAnswerViaChat)
+      .mockResolvedValueOnce('첫 번째 답변')
+      .mockResolvedValueOnce('두 번째 답변');
+
+    render(
+      <ConversationGraphAnswerPanel
+        analysis={analysis}
+        narrative="해석"
+        onOpenInChat={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
+    fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
+    await waitFor(() => {
+      expect(screen.getByTestId('conversation-graph-answer-turns')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getAllByTestId('conversation-graph-answer-turn')).toHaveLength(1);
+    });
+
+    fireEvent.change(screen.getByTestId('conversation-graph-answer-prompt'), {
+      target: { value: '이어서 실행 제안을 주세요' },
+    });
+    fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
+
+    await waitFor(() => {
+      expect(screen.getAllByTestId('conversation-graph-answer-turn')).toHaveLength(2);
+    });
+
+    const secondCtx = jest.mocked(generateGraphAnswerViaChat).mock.calls[1]?.[1] as Record<string, unknown>;
+    expect(String(secondCtx.conversation_graph_answer_history)).toContain('첫 번째 답변');
+    expect(screen.getByText(/질문 1/)).toBeInTheDocument();
+    expect(screen.getByText(/질문 2/)).toBeInTheDocument();
+  });
+
   it('답변 학습 초기화 버튼이 localStorage 기록을 지운다', () => {
     clearGraphAnswerLessons();
     recordGraphAnswerLessonFromContext(

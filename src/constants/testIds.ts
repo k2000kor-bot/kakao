@@ -136,6 +136,8 @@ export const TEST_IDS = {
   CONVERSATION_GRAPH_ANSWER_OPEN_CHAT: 'conversation-graph-answer-open-chat',
   CONVERSATION_GRAPH_ANSWER_OPEN_CHAT_SEND: 'conversation-graph-answer-open-chat-send',
   CONVERSATION_GRAPH_ANSWER_STREAMING: 'conversation-graph-answer-streaming',
+  CONVERSATION_GRAPH_ANSWER_TURNS: 'conversation-graph-answer-turns',
+  CONVERSATION_GRAPH_ANSWER_TURN: 'conversation-graph-answer-turn',
   /** /chat → /conversation-graph handoff (ChatGPTInterface) */
   CONVERSATION_GRAPH_CHAT_ATTACHED_FILE: 'conversation-graph-chat-attached-file',
   CONVERSATION_GRAPH_CHAT_HANDOFF_BANNER: 'conversation-graph-chat-handoff-banner',

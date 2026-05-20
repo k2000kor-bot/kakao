@@ -51,6 +51,15 @@ import {
   resolveGraphAnswerUserMessage,
   truncateRawConversationForAnswer,
 } from './conversationGraphAnswerIntent';
+import {
+  formatGraphAnswerHistoryForContext,
+  type GraphAnswerTurn,
+} from './conversationGraphAnswerTurns';
+import {
+  buildGraphAnswerWritingStyleInstruction,
+  inferGraphAnswerWritingStyle,
+  polishGraphAnswerMarkdown,
+} from './conversationGraphAnswerProse';
 
 export { resolveGraphAnswerDisplayText } from './conversationGraphAnswerPipeline';
 
@@ -70,6 +79,8 @@ export interface GraphAnswerGenerationInput {
   expertLayer?: ExpertLayerId;
   /** 서버 관계도 없을 때 답변 맥락용 대화 원문(붙여넣기 등) */
   rawConversationText?: string;
+  /** 같은 패널에서 이어진 이전 질문·답변(연속 생성) */
+  previousTurns?: GraphAnswerTurn[];
 }
 
 /** 관계도 노드·엣지·근거 발언 요약 (답변 맥락용) */
@@ -158,11 +169,18 @@ export function buildGraphAnswerChatContext(input: GraphAnswerGenerationInput): 
       })
     : '';
   const lessonsPrompt = buildGraphAnswerLessonsPrompt();
+  const historyBlock = input.previousTurns?.length
+    ? formatGraphAnswerHistoryForContext(input.previousTurns)
+    : '';
+  const writingStyle = inferGraphAnswerWritingStyle(userMsg);
+  const styleInstruction = buildGraphAnswerWritingStyleInstruction(
+    isCreateGraph ? 'create' : writingStyle,
+  );
   const synthesisHint = structuredSections
-    ? ' [구조화 데이터 블록]에 참여자 표·연결 표·Mermaid가 이미 포함되어 있습니다. 표·Mermaid를 다시 만들지 말고, 앞에 2~4문장 한 줄 요약, 뒤에 ## 해석·## 갈등 축·## 실행 제안(각 3~6문장)만 작성하세요.'
+    ? ' [구조화 데이터 블록]에 참여자 표·연결 표·Mermaid가 이미 포함되어 있습니다. 표·Mermaid를 다시 만들지 말고, 앞에 2~4문장 한 줄 요약, 뒤에 ## 해석·갈등 축·실행 제안(각 3~6문장, 경어체)만 작성하세요.'
     : '';
   const defaultInstruction =
-    '대화 관계도·성향·족보 계층·시공사 반응 신호·근거 발언 샘플만 근거로 답하세요. 시공사 선호는 확정이 아닌 추정임을 밝히고, 수치·참여자·발언 인용에 없는 사실은 추측하지 마세요. 보고서 형식(요약→핵심 인물→갈등 축→시공사 반응→실행 제안)으로 한국어만 출력하세요.';
+    '대화 관계도·성향·족보 계층·시공사 반응 신호·근거 발언 샘플만 근거로 답하세요. 시공사 선호는 확정이 아닌 추정임을 밝히고, 수치·참여자·발언 인용에 없는 사실은 추측하지 마세요. 마크다운 보고서 형식으로 정돈된 한국어만 출력하세요.';
   const nodeCount = input.graph?.nodes?.length ?? 0;
   const edgeCount = input.graph?.edges?.length ?? 0;
   return {
@@ -201,10 +219,16 @@ export function buildGraphAnswerChatContext(input: GraphAnswerGenerationInput): 
           conversation_graph_lesson_edge_count: edgeCount,
         }
       : {}),
+    conversation_graph_writing_style: isCreateGraph ? 'create' : writingStyle,
+    ...(historyBlock ? { conversation_graph_answer_history: historyBlock } : {}),
     answer_quality_instruction: [
       isCreateGraph
         ? buildCreateGraphAnswerInstruction(hasGraphNodes, Boolean(rawConversation))
         : defaultInstruction,
+      styleInstruction,
+      historyBlock
+        ? '이전 질문·답변 맥락을 이어 받되, 현재 요청에 맞는 글 유형·한국어 문체로 정리하세요.'
+        : '',
       synthesisHint,
       lessonsPrompt,
     ]
@@ -302,10 +326,11 @@ function finalizeGraphAnswerRaw(
   const display = resolveGraphAnswerDisplayText(raw);
   if (!display) return null;
   if (context?.[GRAPH_ANSWER_SKIP_STRUCTURED_MERGE_KEY] === true) {
-    return display;
+    return polishGraphAnswerMarkdown(display) || null;
   }
   const structured = context ? getStructuredSectionsFromContext(context) : '';
-  return mergeGraphAnswerWithDeterministicSections(display, structured) || null;
+  const merged = mergeGraphAnswerWithDeterministicSections(display, structured);
+  return merged ? polishGraphAnswerMarkdown(merged) : null;
 }
 
 function finalizeGraphAnswerFromStream(
