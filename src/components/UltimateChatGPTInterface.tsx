@@ -354,7 +354,7 @@ const UltimateChatGPTInterface: React.FC = () => {
         trimmedInput: trimmed,
         featureCtx: featureCtx as Record<string, unknown>,
         currentProjectId: currentProject?.id,
-        gensparkRouteAgentId: agentRouteId,
+        gensparkRouteAgentId: agentRouteId ?? undefined,
         composerResponseMode: 'balanced',
         responseStyle: DEFAULT_CHAT_RESPONSE_STYLE,
         hasConversationThreadContext: conversationHistory.length > 0,

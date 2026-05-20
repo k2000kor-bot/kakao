@@ -7463,7 +7463,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     );
                     const newTitle = await resolveListTitleAfterAssistantReply({
                         conversationTitle: initialConversation.title,
-                        shouldUpdateTitle: userMessageIndex === 0 && finalMessages.length >= 2,
+                        shouldUpdateTitle: messageIndex === 0 && finalMessages.length >= 2,
                         explicitTitleConcise: explicitTitleConciseFromRegenInput,
                         trimmedUserMessage: trimmedInput,
                         assistantDisplayText: displayText,
@@ -7803,7 +7803,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     );
                     const newTitle = await resolveListTitleAfterAssistantReply({
                         conversationTitle: conversation.title,
-                        shouldUpdateTitle: userMessageIndex === 0 && finalMessages.length >= 2,
+                        shouldUpdateTitle: messageIndex === 0 && finalMessages.length >= 2,
                         explicitTitleConcise: explicitTitleConciseFromRegenInput,
                         trimmedUserMessage: trimmedInput,
                         assistantDisplayText: regenDisplayContent,

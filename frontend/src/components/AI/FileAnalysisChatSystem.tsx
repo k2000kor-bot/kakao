@@ -436,7 +436,7 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
             composerResponseMode: 'balanced',
             responseStyle: DEFAULT_CHAT_RESPONSE_STYLE,
             conversationFileContent: projectKnowledge || undefined,
-            gensparkRouteAgentId: agentRouteId,
+            gensparkRouteAgentId: agentRouteId ?? undefined,
             hasConversationThreadContext: conversationHistory.length > 0,
         });
 

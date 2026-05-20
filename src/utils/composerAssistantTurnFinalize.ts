@@ -123,7 +123,8 @@ export async function finalizeAssistantNonStreamTurn(
 
   return {
     text: sd.text,
-    pipelineExtras: hasPipelineExtras(pipelineExtras) ? pipelineExtras : undefined,
+    pipelineExtras:
+      pipelineExtras != null && hasPipelineExtras(pipelineExtras) ? pipelineExtras : undefined,
   };
 }
 
