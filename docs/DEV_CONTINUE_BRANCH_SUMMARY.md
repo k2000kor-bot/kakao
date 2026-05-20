@@ -13,21 +13,23 @@
 ## 검증 (로컬, 2026-05 통과)
 
 ```bash
-npm run verify:pre-deploy
+npm run ship:preflight
 npm run verify:final
-npm run verify:conversation-graph:unit   # 관계도 Jest + 백엔드
-npm run verify:conversation-graph        # + E2E 13 (서버 :3000)
-npm run verify:handoff-artifacts
-npm run test:e2e:pipelines:all           # 컴포저 + 관계도 13
+npm run verify:pre-deploy
+npm run test:e2e:pipelines:all           # 컴포저 3 + 관계도 13 (E2E_AGENTS_COMPOSER_PIPELINE=1)
+npm run pr:prepare
 ```
 
-최근: 관계도 E2E 13(합성·2-pass) · `verify:conversation-graph:unit` OK · bundle tip = `0eba17f56` (`npm run pr:composer-graph-url`).
+최근 (2026-05-20): `verify:final` · `test:e2e:pipelines:all` · `npm run build` · HEAD `27932b48d` (`npm run handoff:info`).
 
-## Push
+## Push / PR
 
 ```bash
+npm run push:next-steps
 npm run check:push-ready
 PUSH_REMOTE_URL=git@github.com:k2000kor/kakao.git npm run push:dev-continue
+npm run pr:open-compare
+npm run pr:copy-body
 ```
 
 - `k2000kor/kakao-frontend` — GitHub에 없음

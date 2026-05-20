@@ -8,6 +8,8 @@ export const PATHS = {
   HOME: '/',
   /** 독립 일반 대화(ChatGPT 본문) — 기본 빌드에서 스모크용으로 사용 */
   CHAT: '/chat',
+  /** UltimateChatGPTInterface — `allAppPaths`와 동기 */
+  ULTIMATE: '/ultimate',
   PROJECTS: '/projects',
   /** Genspark식 에이전트 허브 — `?id=`·`?type=super_agent` 세션 (`src/config/routes.ts`와 동기) */
   AGENTS: '/agents',
