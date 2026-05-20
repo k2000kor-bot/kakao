@@ -92,6 +92,15 @@ bash scripts/run-push-block-maintenance.sh
 3. 원격 push 진단
 4. 상태/매니페스트 리포트 생성
 
+### push 전 필수 (bundle tip = 브랜치 HEAD)
+
+```bash
+npm run verify:handoff-artifacts   # 실패 시
+npm run refresh:handoff-artifacts  # bundle·패치 시리즈 재생성 (기존 *.patch 삭제 후 format-patch)
+```
+
+커밋 후 manifest만 추가로 커밋하면 bundle tip이 어긋날 수 있습니다. push 직전에 `refresh:handoff-artifacts`를 한 번 더 실행하세요.
+
 ### 반영 방법 A: bundle 사용 (권장)
 
 ```bash

@@ -19,7 +19,7 @@
 - [x] `npm run verify:final`
 - [x] `npm run verify:conversation-graph:unit` (관계도 Jest + 백엔드 pytest)
 - [x] `ConversationGraphView.test.tsx` (43 tests)
-- [x] `npm run verify:handoff-artifacts` (bundle tip = 브랜치 HEAD)
+- [x] `npm run verify:handoff-artifacts` (bundle tip = 브랜치 HEAD; push 직전 `npm run refresh:handoff-artifacts`)
 - [x] `HANDOFF_REFRESH=1 npm run maintain:push-block` (사이드바·컴포저 회귀)
 - [x] `npm run verify:conversation-graph-api` (upload·relationship-graph)
 - [x] `npm run test:e2e:conversation-graph:chromium` (13 passed, 합성·2-pass 포함)
