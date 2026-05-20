@@ -52,8 +52,8 @@ npm run verify:conversation-graph-api
 ```
 
 - 업로드·`relationship-graph`는 **LLM 없이** 통과합니다.
-- **답변 생성 POST /api/chat** 은 `OPENAI_API_KEY` 등 LLM 설정이 없으면 **폴백 문구**만 나와 스크립트가 FAIL 할 수 있습니다.
-- 실제 관계도 **정리된 답변**(표·Mermaid 합성)은 **브라우저**에서 스트림/E2E 스텁과 동일하게 프론트 `generateGraphAnswerViaChat`가 처리합니다.
+- **답변 생성 POST /api/chat** (`conversation_graph_analysis` 맥락)도 스크립트가 검사합니다. LLM 미설정 시 일반 채팅 폴백만 나오면 FAIL합니다. 타임아웃: `CONVERSATION_GRAPH_CHAT_SMOKE_TIMEOUT`(기본 120초).
+- 브라우저의 **정리된 합성 답변**(표·Mermaid)은 프론트 `generateGraphAnswerViaChat` + E2E 스텁이 담당합니다.
 
 LLM 설정: `backend/.env` 또는 `env.example` 참고 (`OPENAI_API_KEY`, `OLLAMA_BASE_URL` 등).
 

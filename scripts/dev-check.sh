@@ -47,6 +47,11 @@ if command -v npx &>/dev/null; then
     fi
     echo "적응형 학습 테스트 타입 검사 통과 (frontend)."
   fi
+  if ! npx tsc --noEmit -p src/views/tsconfig.json; then
+    echo "뷰 테스트 타입 검사 실패. 상세: npm run typecheck:views-tests"
+    exit 1
+  fi
+  echo "뷰 테스트 타입 검사 통과 (src). (미러는 check:src-frontend-parity로 동기화 확인)"
 else
   echo "npx 없음. 타입 검사 스킵."
 fi

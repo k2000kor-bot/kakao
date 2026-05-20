@@ -29,7 +29,7 @@
 - [x] `ConversationGraphView.test.tsx` (43 tests)
 - [x] `npm run verify:handoff-artifacts` (bundle tip = 브랜치 HEAD; push 직전 `npm run refresh:handoff-artifacts`)
 - [x] `HANDOFF_REFRESH=1 npm run maintain:push-block` (사이드바·컴포저 회귀)
-- [x] `npm run verify:conversation-graph-api` (upload·relationship-graph)
+- [x] `npm run verify:conversation-graph-api` (upload·relationship-graph·`conversation_graph_analysis` chat 스모크)
 - [x] `npm run test:e2e:conversation-graph:chromium` (13 passed, 합성·2-pass 포함)
 - [x] `npm run verify:composer-pipeline` (19 suites, 147 tests)
 - [x] `npm run test:e2e:composer-regenerate:ci` (2 passed, 1 skip, 2026-05-20 재확인)

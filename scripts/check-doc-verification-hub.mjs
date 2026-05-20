@@ -2,6 +2,7 @@
 /**
  * Tracked *.md under active paths must contain the shared hub marker (see TESTING_GUIDE.md).
  * Archives, JDK legal trees, venv, and hub/canonical docs are skipped.
+ * Non-regular files (e.g. a tracked directory named `*.md`) are skipped.
  * Usage: node scripts/check-doc-verification-hub.mjs
  * Strict (exit 1 on any miss): DOC_HUB_STRICT=1 node scripts/check-doc-verification-hub.mjs
  */
@@ -49,8 +50,15 @@ function main() {
   for (const rel of files) {
     if (!rel || PATH_SKIP.test(rel) || EXACT_SKIP.has(rel)) continue;
     if (!STRICT_PREFIX_RE.test(rel)) continue;
-    checked += 1;
     const abs = path.join(REPO_ROOT, rel);
+    let st;
+    try {
+      st = fs.statSync(abs);
+    } catch {
+      continue;
+    }
+    if (!st.isFile()) continue;
+    checked += 1;
     let body;
     try {
       body = fs.readFileSync(abs, "utf8");
