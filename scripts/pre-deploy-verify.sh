@@ -28,5 +28,5 @@ npm run verify:conversation-graph:unit
 echo ""
 echo "=== 배포 전 회귀 완료 ==="
 echo "풀 스택: npm run verify:final"
-echo "E2E(서버 :3000): npm run test:e2e:composer-pipeline:all · npm run verify:conversation-graph"
+echo "E2E(서버 :3000): npm run test:e2e:composer-pipeline:all(재생성 포함) · test:e2e:composer-regenerate · npm run verify:conversation-graph"
 echo "push-block: bash scripts/run-push-block-local-workflow.sh (아티팩트 검증 포함)"

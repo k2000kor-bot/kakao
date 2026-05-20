@@ -75,6 +75,25 @@ export interface ParsedInputIntent {
 export const IMPLICIT_COMBINED_INTENT_MAX_CHARS = 6000;
 
 /**
+ * 카카오톡 대화보내기(TXT) 또는 동일 규격 로그.
+ * 메인 대화·노트북·다른 입력창에서 붙여넣을 때 통합 프롬프트·장르·품질 지시를 맞추기 위한 힌트.
+ */
+export function isLikelyKakaoTalkExportText(raw: string): boolean {
+  const t = coerceTrimmedString(raw, '');
+  if (!t) return false;
+  if (/님과 카카오톡 대화/.test(t)) return true;
+  if (/저장한 날짜\s*[:：]/.test(t)) return true;
+  if (t.length < 40) return false;
+  const lineRe = /^\d{4}년 \d{1,2}월 \d{1,2}일 (오전|오후) \d{1,2}:\d{2}, .+ : .+/;
+  let kakaoStyleLines = 0;
+  for (const line of t.split('\n')) {
+    if (lineRe.test(coerceTrimmedString(line, ''))) kakaoStyleLines += 1;
+    if (kakaoStyleLines >= 2) return true;
+  }
+  return false;
+}
+
+/**
  * `질문`·`요구사항` 정규식 의도가 둘 다 참일 때, 질문+요구 결합 프리셋을 켤지.
  * 명시적 `질문:`/`요구사항:` 헤더는 parseQuestionRequirementSections.hasBoth 로 별도 처리.
  */
@@ -89,9 +108,14 @@ export function shouldUseDualKeywordQuestionRequirementsPreset(
 
 /**
  * 입력에 이미 긴 지시문이 있으면 컴포저가 덧붙이는 [강제] 다양성 블록을 생략 (토큰 중복·모델 혼선 완화).
+ * 카카오톡 보내기 로그는 동일 길이여도 분석·요약 요청에 통합 생성 지시를 유지(상한만 별도).
  */
 export function shouldOmitComposerDiversityDirectiveBlock(rawInput: string): boolean {
   const t = coerceTrimmedString(rawInput, '');
+  if (isLikelyKakaoTalkExportText(t)) {
+    const forced = t.match(/\[강제\]/g);
+    return t.length >= 24000 || (forced?.length ?? 0) >= 3;
+  }
   if (t.length >= IMPLICIT_COMBINED_INTENT_MAX_CHARS) return true;
   const forced = t.match(/\[강제\]/g);
   return (forced?.length ?? 0) >= 3;
@@ -577,7 +601,7 @@ export function parseMultiAskItems(rawInput: string): ParsedMultiAskItems {
   return { items: [trimmed], hasMultiple: false };
 }
 
-function mergeBooleanFeatureRecords(
+export function mergeBooleanFeatureRecords(
   base: Record<string, unknown>,
   extra: Record<string, unknown>
 ): Record<string, unknown> {
@@ -676,6 +700,19 @@ function computeFeatureFlagsForTrimmedText(trimmed: string): Record<string, unkn
   if (wantsImageAnalysis) out.hint_image_analysis = true;
   if (wantsPrediction) out.hint_prediction = true;
   if (wantsCapabilityHelp) out.request_capability_help = true;
+  if (isLikelyKakaoTalkExportText(trimmed)) {
+    const tailWindow = trimmed.slice(Math.max(0, trimmed.length - 1600));
+    const transcriptTask =
+      looksLikeQuestionOrExplanation ||
+      looksLikeQualitySeeking ||
+      /요약|정리|분석|핵심|브리핑|관계|입장|대화\s*기록|대화\s*내용|이\s*내용|찬반|동조|반대|대립|메시지\s*로부터/.test(
+        tailWindow
+      );
+    if (transcriptTask) {
+      out.prefer_informed_answer = true;
+    }
+    out.hint_kakao_export_transcript = true;
+  }
   return out;
 }
 
@@ -701,6 +738,65 @@ export function buildFeatureContextFromMessage(message: string): Record<string, 
     }
   }
   return out;
+}
+
+/** 입력·일회 첨부·스레드 첨부 스니펫 스캔 상한 — `buildMergedFeatureContextFromInputAndAttachments`와 전송 경로에서 공통 */
+export const CHAT_FEATURE_ATTACH_CONTEXT_SCAN_MAX = 20000;
+
+/**
+ * 사용자 입력문 + 일회 첨부 본문 + 스레드 첨부 본문 스니펫으로 기능 플래그를 OR 병합.
+ * 메인 전송·재생성·편집 후 전송이 동일 규칙을 쓰도록 공유합니다.
+ */
+export function buildMergedFeatureContextFromInputAndAttachments(options: {
+  trimmedUserInput: string;
+  conversationFileContent?: string;
+  threadAttachedFileContents?: string | null;
+}): Record<string, unknown> {
+  const max = CHAT_FEATURE_ATTACH_CONTEXT_SCAN_MAX;
+  const threadSnippet =
+    options.threadAttachedFileContents != null && typeof options.threadAttachedFileContents === 'string'
+      ? String(options.threadAttachedFileContents).slice(0, max)
+      : '';
+  let featureCtx: Record<string, unknown> = {
+    ...(buildFeatureContextFromMessage(options.trimmedUserInput) as Record<string, unknown>),
+  };
+  const fileContent = options.conversationFileContent;
+  if (fileContent) {
+    featureCtx = mergeBooleanFeatureRecords(
+      featureCtx,
+      buildFeatureContextFromMessage(fileContent.slice(0, max)) as Record<string, unknown>,
+    );
+  }
+  if (threadSnippet) {
+    featureCtx = mergeBooleanFeatureRecords(
+      featureCtx,
+      buildFeatureContextFromMessage(threadSnippet) as Record<string, unknown>,
+    );
+  }
+  const substantialAttachment =
+    (!!fileContent && coerceTrimmedString(fileContent, '').length > 40) ||
+    (!!threadSnippet && coerceTrimmedString(threadSnippet, '').length > 40);
+  if (substantialAttachment) {
+    featureCtx.prefer_informed_answer = true;
+  }
+  return featureCtx;
+}
+
+/**
+ * 한국어 이해 프로필용 소스 문자열 — 짧은 질문일 때 첨부 앞부분을 포함합니다.
+ */
+export function buildKoreanProfileSourceStringForChat(
+  trimmedUserInput: string,
+  conversationFileContent?: string,
+  threadAttachedSnippet?: string,
+): string {
+  const t = coerceTrimmedString(trimmedUserInput, '');
+  if (t.length >= 500) return trimmedUserInput;
+  const parts: string[] = [];
+  if (t) parts.push(t);
+  if (conversationFileContent) parts.push(conversationFileContent.slice(0, 8000));
+  if (threadAttachedSnippet) parts.push(threadAttachedSnippet.slice(0, 8000));
+  return parts.length ? parts.join('\n\n') : trimmedUserInput;
 }
 
 /** 칼럼·유시민 스타일·논설문 요청 여부 (샘플 수준 품질 지침 주입용) */
@@ -996,6 +1092,7 @@ export function computeAssistantPipelineDurationMultiplier(
     multi_request_mode?: boolean;
   },
   structuredQuestionRequirementsAssist: boolean,
+  gensparkAgentRouteSession?: boolean,
 ): number {
   let m = 1;
   const len = coerceTrimmedString(trimmedInput, '').length;
@@ -1005,6 +1102,7 @@ export function computeAssistantPipelineDurationMultiplier(
   if (featureFlags.prefer_informed_answer) m += 0.08;
   if (featureFlags.multi_request_mode) m += 0.12;
   if (structuredQuestionRequirementsAssist) m += 0.15;
+  if (gensparkAgentRouteSession) m += 0.12;
   return Math.min(m, 1.85);
 }
 
@@ -1015,8 +1113,11 @@ export function computeAssistantPipelineDurationMultiplier(
 export function scheduleClientStreamingPipelinePhases(options: {
   multiplier?: number;
   onPhase: (phase: AssistantGenerationPhase) => void;
+  benchmarkGenspark?: boolean;
+  gensparkAgentRouteSession?: boolean;
 }): () => void {
-  const mult = Math.max(0.75, Math.min(options.multiplier ?? 1, 2));
+  const slow = Boolean(options.benchmarkGenspark || options.gensparkAgentRouteSession);
+  const mult = Math.max(0.75, Math.min((options.multiplier ?? 1) * (slow ? 1.08 : 1), 2));
   const D0 = Math.round(650 * mult);
   const D1 = Math.round(520 * mult);
   const ids: ReturnType<typeof setTimeout>[] = [];
@@ -1046,8 +1147,12 @@ export function scheduleAssistantPreRevealStreamPhases(options: {
   onReveal: () => void;
   /** 1=기본. 긴 입력·질문+요구·웹검색 등에서 1보다 크게 */
   durationMultiplier?: number;
+  /** 에이전트·복합 맥락에서 단계 간격을 약간 넓힘 */
+  benchmarkGenspark?: boolean;
+  gensparkAgentRouteSession?: boolean;
 }): () => void {
-  const mult = Math.max(0.65, Math.min(options.durationMultiplier ?? 1, 2));
+  const slow = Boolean(options.benchmarkGenspark || options.gensparkAgentRouteSession);
+  const mult = Math.max(0.65, Math.min((options.durationMultiplier ?? 1) * (slow ? 1.08 : 1), 2));
   const ids: ReturnType<typeof setTimeout>[] = [];
   const run = (fn: () => void, delayMs: number) => {
     ids.push(setTimeout(fn, delayMs));
@@ -1100,14 +1205,27 @@ export function scheduleAssistantNonStreamLoadingPhaseTimers(
 
 /**
  * 비스트리밍 응답 수신 후: 다각도 점검 → 최종 검토 단계를 짧게 보여 준 뒤 본문으로 바꿀 때까지의 지연.
+ * 두 번째 인자는 UI 페이싱(에이전트·벤치마크)용 배율만 반영합니다.
  */
 export async function runAssistantNonStreamPostResponsePhases(
   setPhaseText: (text: string) => void,
+  timing?: {
+    durationMultiplier?: number;
+    benchmarkGenspark?: boolean;
+    gensparkAgentRouteSession?: boolean;
+  },
 ): Promise<void> {
+  const mult =
+    typeof timing?.durationMultiplier === 'number' && Number.isFinite(timing.durationMultiplier)
+      ? Math.max(0.25, timing.durationMultiplier)
+      : 1;
+  const slow = Boolean(timing?.benchmarkGenspark || timing?.gensparkAgentRouteSession);
+  const crossMs = Math.round(ASSISTANT_STREAM_PHASE_CROSSCHECK_MS * mult * (slow ? 1.15 : 1));
+  const verifyMs = Math.round(ASSISTANT_VERIFY_PHASE_MS * mult * (slow ? 1.15 : 1));
   setPhaseText(ASSISTANT_PLACEHOLDER_CROSSCHECK);
-  await new Promise<void>((resolve) => setTimeout(resolve, ASSISTANT_STREAM_PHASE_CROSSCHECK_MS));
+  await new Promise<void>((resolve) => setTimeout(resolve, crossMs));
   setPhaseText(ASSISTANT_PLACEHOLDER_VERIFY);
-  await new Promise<void>((resolve) => setTimeout(resolve, ASSISTANT_VERIFY_PHASE_MS));
+  await new Promise<void>((resolve) => setTimeout(resolve, verifyMs));
 }
 
 /**
@@ -1144,6 +1262,15 @@ export function isAssistantGenerationStepUi(content: unknown): boolean {
 export function mapStreamMetadataToAssistantPlaceholder(
   meta: Record<string, unknown>,
 ): string | null {
+  const councilPhase = meta.oversight_council_phase ?? meta.pipeline_ui_phase;
+  if (typeof councilPhase === 'string' && coerceTrimmedString(councilPhase, '')) {
+    const cp = coerceTrimmedString(councilPhase, '').toLowerCase();
+    if (/analyze|intake/.test(cp)) return ASSISTANT_PLACEHOLDER_ANALYZING;
+    if (/outline|strategy|plan/.test(cp)) return ASSISTANT_PLACEHOLDER_OUTLINE;
+    if (/draft|production|write/.test(cp)) return ASSISTANT_PLACEHOLDER_DRAFT;
+    if (/crosscheck|critique|review/.test(cp)) return ASSISTANT_PLACEHOLDER_CROSSCHECK;
+    if (/verify|integration|guardian/.test(cp)) return ASSISTANT_PLACEHOLDER_VERIFY;
+  }
   const phaseRaw =
     meta.generation_phase ??
     meta.pipeline_phase ??
@@ -1494,6 +1621,20 @@ export type PipelineMessageExtras = {
   responseStyle?: string;
   /** `metadata.generation_phase` 등 파이프라인 단계 에코(비스트리밍 JSON·SSE 병합) */
   pipelineGenerationPhase?: string;
+  /** 프론트 자가 개발 루프 — 품질 재생성 여부 */
+  composerSelfDevelopImproved?: boolean;
+  /** 자가 개발 재시도 횟수 */
+  composerSelfDevelopAttempts?: number;
+  /** 자가 개발 최종 품질 점수(0~100) */
+  composerSelfDevelopScore?: number;
+  /** 중간 관리형 답변 생성(Council) 활성 */
+  composerOversightEnabled?: boolean;
+  /** Council v2 5단계 협의회 */
+  composerOversightCouncilV2?: boolean;
+  /** 작업 항목 수 */
+  composerOversightWorkItemCount?: number;
+  /** 다중 요청 항목 포함 */
+  composerOversightHasMultiple?: boolean;
 };
 
 /** 스트리밍·비스트리밍 소스별 메타 병합 (primary 필드 우선) */
@@ -1530,7 +1671,55 @@ export function mergePipelineMessageExtras(
     responseStyle: primary.responseStyle ?? fallback.responseStyle,
     pipelineGenerationPhase:
       primary.pipelineGenerationPhase ?? fallback.pipelineGenerationPhase,
+    composerSelfDevelopImproved:
+      primary.composerSelfDevelopImproved ?? fallback.composerSelfDevelopImproved,
+    composerSelfDevelopAttempts:
+      primary.composerSelfDevelopAttempts ?? fallback.composerSelfDevelopAttempts,
+    composerSelfDevelopScore:
+      primary.composerSelfDevelopScore ?? fallback.composerSelfDevelopScore,
+    composerOversightEnabled:
+      primary.composerOversightEnabled ?? fallback.composerOversightEnabled,
+    composerOversightCouncilV2:
+      primary.composerOversightCouncilV2 ?? fallback.composerOversightCouncilV2,
+    composerOversightWorkItemCount:
+      primary.composerOversightWorkItemCount ?? fallback.composerOversightWorkItemCount,
+    composerOversightHasMultiple:
+      primary.composerOversightHasMultiple ?? fallback.composerOversightHasMultiple,
   };
+}
+
+/** API metadata·task_plan에서 Council·중간 관리 extras 보강 */
+function applyOversightPipelineExtrasFromMeta(
+  out: PipelineMessageExtras,
+  meta: Record<string, unknown>,
+): void {
+  if (meta.composer_oversight_enabled === true) {
+    out.composerOversightEnabled = true;
+  }
+  if (meta.composer_oversight_council_v2 === true || meta.pipeline_oversight_council === true) {
+    out.composerOversightEnabled = true;
+    out.composerOversightCouncilV2 = true;
+  }
+  if (meta.composer_oversight_has_multiple === true) {
+    out.composerOversightHasMultiple = true;
+  }
+  const workItems = meta.composer_oversight_work_items;
+  if (Array.isArray(workItems) && workItems.length > 0) {
+    out.composerOversightWorkItemCount = workItems.length;
+    out.composerOversightEnabled = true;
+  }
+  const tp = out.taskPlan;
+  if (tp && typeof tp === 'object') {
+    if (tp.pipeline_oversight_council === true) {
+      out.composerOversightEnabled = true;
+      out.composerOversightCouncilV2 = true;
+    }
+    const wc = tp.oversight_work_item_count;
+    if (typeof wc === 'number' && wc > 0) {
+      out.composerOversightWorkItemCount = wc;
+      out.composerOversightEnabled = true;
+    }
+  }
 }
 
 /** 스트리밍 종료 metadata 등에서 블루프린트·trace·비평 요약 추출 */
@@ -1661,6 +1850,7 @@ export function parsePipelineMessageExtras(
   if (typeof gp === 'string' && coerceTrimmedString(gp, '')) {
     out.pipelineGenerationPhase = coerceTrimmedString(gp, '');
   }
+  applyOversightPipelineExtrasFromMeta(out, meta);
   return out;
 }
 
@@ -1716,6 +1906,15 @@ export function hasPipelineExtras(ex: PipelineMessageExtras): boolean {
   const hasPhase =
     typeof ex.pipelineGenerationPhase === 'string' &&
     coerceTrimmedString(ex.pipelineGenerationPhase, '').length > 0;
+  const hasSelfDevelop =
+    ex.composerSelfDevelopImproved === true ||
+    (typeof ex.composerSelfDevelopAttempts === 'number' &&
+      ex.composerSelfDevelopAttempts > 0);
+  const hasOversight =
+    ex.composerOversightEnabled === true ||
+    ex.composerOversightCouncilV2 === true ||
+    (typeof ex.composerOversightWorkItemCount === 'number' &&
+      ex.composerOversightWorkItemCount > 0);
   return Boolean(
     ex.answerBlueprintMarkdown ||
       ex.generationScenarioMarkdown ||
@@ -1728,7 +1927,9 @@ export function hasPipelineExtras(ex: PipelineMessageExtras): boolean {
       hasTaskType ||
       hasAlts ||
       hasUiModes ||
-      hasPhase
+      hasPhase ||
+      hasSelfDevelop ||
+      hasOversight
   );
 }
 
@@ -1756,4 +1957,147 @@ export function extractLastAssistantGenerationScenarioMarkdown(
     if (s.length > 0) return s;
   }
   return undefined;
+}
+
+/** 스레드 id가 바뀔 때 입력창 하단 단계 UI 캐리오버를 지울지 */
+export function shouldClearOutboundStepUiCarryoverOnThreadIdChange(
+  prevId: string | undefined,
+  id: string | undefined,
+  skipForFork: boolean,
+): boolean {
+  if (skipForFork) return false;
+  if (prevId === id) return false;
+  if (prevId === undefined && id !== undefined) return false;
+  return true;
+}
+
+/** 에이전트·웹·프로젝트 맥락에서 비스트리밍 단계 UI 간격을 넓힐지 */
+export function pipelineBenchmarkPacingFromChatContext(args: {
+  gensparkRouteAgentId?: string | null;
+  useInformedOrSearch: boolean;
+  projectId?: string | null;
+}): boolean {
+  if (coerceTrimmedString(args.gensparkRouteAgentId ?? '', '')) return true;
+  if (args.useInformedOrSearch) return true;
+  if (coerceTrimmedString(args.projectId ?? '', '')) return true;
+  return false;
+}
+
+export function userMessageHasAttachmentChatHint(userText: string): boolean {
+  const t = coerceTrimmedString(userText, '');
+  if (!t) return false;
+  return /첨부|attachment|파일\s*올|업로드|\.pdf|\.csv|\.xlsx|image:|data:image|\[image\]/i.test(t);
+}
+
+export function assistantGensparkStepUiFromUserMessage(
+  userText: string,
+  opts: { projectHasFiles: boolean },
+): { webSearch: boolean; documentContext: boolean } {
+  const feat = buildFeatureContextFromMessage(userText);
+  return {
+    webSearch: Boolean(feat.enable_web_research || feat.prefer_informed_answer),
+    documentContext: opts.projectHasFiles,
+  };
+}
+
+/** 입력창 하단 — 다중 질문·요구·요청 또는 질문+요구 구조화 시 생성 안내 문구 */
+export function getComposerGenerationCaption(userText: string): string | null {
+  const trimmed = coerceTrimmedString(userText, '');
+  if (!trimmed) return null;
+
+  const sections = parseQuestionRequirementSections(trimmed);
+  if (sections.hasBoth || (sections.question.length > 0 && sections.requirements.length > 0)) {
+    return '질문과 요구사항 블록을 구분해 순서대로 답변을 구성합니다.';
+  }
+
+  const multi = parseMultiAskItems(trimmed);
+  if (multi.hasMultiple && multi.items.length >= 2) {
+    return `질문·요구·요청 ${multi.items.length}건을 번호 순서대로 답변에 반영합니다.`;
+  }
+
+  return null;
+}
+
+/**
+ * 스트리밍 메타로 어시스턴트 본문·`pipelineExtras.pipelineGenerationPhase` 보강.
+ * 변경 없으면 null.
+ */
+export function patchAssistantBodyFromStreamMetadata(
+  content: unknown,
+  pipelineExtras: PipelineMessageExtras | undefined,
+  meta: Record<string, unknown>,
+): { body: string; pipelineExtras: PipelineMessageExtras } | null {
+  const bodyStr = coerceTrimmedString(content, '');
+  const placeholder = mapStreamMetadataToAssistantPlaceholder(meta);
+  const phase = mapStreamMetadataToAssistantGenerationPhase(meta);
+  const nextExtras: PipelineMessageExtras = { ...(pipelineExtras ?? {}) };
+  let extrasChanged = false;
+  const hasSubstantiveAnswer =
+    bodyStr.length >= 24 && !isAssistantGenerationStepUi(bodyStr);
+  if (phase && !hasSubstantiveAnswer) {
+    const slug = phase;
+    if (nextExtras.pipelineGenerationPhase !== slug) {
+      nextExtras.pipelineGenerationPhase = slug;
+      extrasChanged = true;
+    }
+  }
+  let nextBody = bodyStr;
+  if (placeholder && !hasSubstantiveAnswer && (isAssistantGenerationStepUi(bodyStr) || !bodyStr)) {
+    nextBody = placeholder;
+  }
+  const bodyChanged = nextBody !== bodyStr;
+  if (!bodyChanged && !extrasChanged) return null;
+  return { body: nextBody, pipelineExtras: nextExtras };
+}
+
+type NonStreamTimelineOpts = {
+  durationMultiplier?: number;
+  benchmarkGenspark?: boolean;
+  gensparkAgentRouteSession?: boolean;
+};
+
+/** 비스트리밍 요청 대기 중 단계 문구를 시간차로 갱신. `promise`는 최소 표시 시간 후 resolve. */
+export function startAssistantNonStreamLoadingTimeline(
+  setPhaseText: (text: string) => void,
+  options: NonStreamTimelineOpts = {},
+): { cancel: () => void; promise: Promise<void> } {
+  const mult =
+    typeof options.durationMultiplier === 'number' && Number.isFinite(options.durationMultiplier)
+      ? Math.max(0.25, options.durationMultiplier)
+      : 1;
+  const slow = Boolean(options.benchmarkGenspark || options.gensparkAgentRouteSession);
+  const analyzeMs = Math.round(ASSISTANT_STREAM_PHASE_ANALYZE_MS * mult * (slow ? 1.2 : 1));
+  const outlineMs = Math.round(ASSISTANT_STREAM_PHASE_OUTLINE_MS * mult * (slow ? 1.15 : 1));
+  const draftMs = Math.round(ASSISTANT_STREAM_PHASE_DRAFT_MS * mult * (slow ? 1.1 : 1));
+  const ids: ReturnType<typeof setTimeout>[] = [];
+  let cancelled = false;
+
+  setPhaseText(ASSISTANT_PLACEHOLDER_ANALYZING);
+  ids.push(
+    setTimeout(() => {
+      if (!cancelled) setPhaseText(ASSISTANT_PLACEHOLDER_OUTLINE);
+    }, analyzeMs),
+  );
+  ids.push(
+    setTimeout(() => {
+      if (!cancelled) setPhaseText(ASSISTANT_PLACEHOLDER_DRAFT);
+    }, analyzeMs + outlineMs),
+  );
+
+  const promise = new Promise<void>((resolve) => {
+    ids.push(
+      setTimeout(() => {
+        if (!cancelled) resolve();
+      }, analyzeMs + outlineMs + draftMs + 50),
+    );
+  });
+
+  return {
+    cancel: () => {
+      cancelled = true;
+      ids.forEach(clearTimeout);
+      ids.length = 0;
+    },
+    promise,
+  };
 }

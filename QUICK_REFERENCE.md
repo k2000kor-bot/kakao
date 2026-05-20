@@ -39,10 +39,10 @@
 | 빌드·접속·API·통합 + 대화·컴포저 Jest | `npm run verify:final` (`scripts/final-verify.sh` — … → **`test:frontend:chat-pipeline`** · **`verify:composer-pipeline`** 필수; 채팅 UI는 `test:sidebar-context` 등 별도(수동 §14.5 [CHAT_UI_TEST_SCENARIOS](./docs/guides/CHAT_UI_TEST_SCENARIOS.md))) |
 | 대화 파이프라인 메타 (Jest) | `npm run test:frontend:chat-pipeline` (`chatInputUtils`·스트리밍·프롬프트·Genspark 패널) · `npm test`/`pretest`: `check:src-frontend-parity`(동일 `make check-frontend-parity`) |
 | ChatGPTInterface 등 (Jest) | `npm run test:sidebar-context` 또는 `npm test -- --testPathPattern='ChatGPTInterface\\.test\\.tsx$' --watchAll=false` — [TESTING_GUIDE.md](./TESTING_GUIDE.md) · 수동 첨부·재생성·편집 [CHAT_UI §14.5](./docs/guides/CHAT_UI_TEST_SCENARIOS.md) |
-| 컴포저(다중 요청·첨부·순차·다단계) | Jest: `npm run verify:composer-pipeline` · E2E: `test:e2e:composer-pipeline:all`(로컬) / `...:ci:all`(CI) · [CHAT_UI §14.7](./docs/guides/CHAT_UI_TEST_SCENARIOS.md) · env: `REACT_APP_COMPOSER_SEQUENTIAL_*` / `REACT_APP_COMPOSER_MULTI_STEP_MULTI_REQUEST` |
+| 컴포저(다중 요청·첨부·순차·다단계) | Jest: `npm run verify:composer-pipeline` · E2E: `test:e2e:composer-pipeline:all` · 재생성: `test:e2e:composer-regenerate` (`/chat` 스트림·Ultimate·파일분석, `E2E_COMPOSER_REGENERATE=1`) · [CHAT_UI §14.7–14.9](./docs/guides/CHAT_UI_TEST_SCENARIOS.md) |
 | 대화 관계도 | Jest·백엔드: `npm run verify:conversation-graph:unit` · E2E 포함: `verify:conversation-graph` · `make test-conversation-graph-unit` |
 | 배포 전 Jest 묶음 | `npm run verify:pre-deploy` · `make verify-pre-deploy` (sidebar + composer + 관계도 unit) · 빌드 포함: `verify:final` |
-| E2E 파이프라인(선택) | 로컬: `test:e2e:pipelines:all` · CI: `test:e2e:pipelines:ci:all` (컴포저 3 + 관계도 12) |
+| E2E 파이프라인(선택) | 로컬: `test:e2e:pipelines:all` · CI: `test:e2e:pipelines:ci:all` (컴포저 에이전트·다중요청·재생성 + 관계도 12) |
 | 풀스택 로컬(서버 기동 후) | `npm run verify:full-stack-local` — pre-deploy + API + integration + E2E 15 |
 | `routes.test`만 | `npm run test:routes` (**27** tests, `pretest` 포함) — [TESTING_GUIDE.md](./TESTING_GUIDE.md) |
 | 활성 경로 md 허브 단락 | `npm run check:doc-verification-hub` (동일: `make check-doc-verification-hub`; `git ls-files`·노드만, Jest 미실행) — `DOC_HUB_STRICT=1`이면 누락 시 exit 1 — [TESTING_GUIDE.md](./TESTING_GUIDE.md)·[scripts/README.md](./scripts/README.md) |

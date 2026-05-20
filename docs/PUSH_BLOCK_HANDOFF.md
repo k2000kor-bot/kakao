@@ -124,7 +124,7 @@ npm run verify:conversation-graph
 make test-sidebar-context
 bash scripts/test-sidebar-context.sh
 bash scripts/test-composer-pipeline.sh
-# E2E 컴포저 — 서버 선기동: npm run test:e2e:composer-pipeline:all · 자동 기동: npm run test:e2e:composer-pipeline:ci:all
+# E2E 컴포저 — 서버 선기동: npm run test:e2e:composer-pipeline:all(재생성 포함) · 자동 기동: npm run test:e2e:composer-pipeline:ci:all · 재생성만: npm run test:e2e:composer-regenerate
 ```
 
 한 번에(아티팩트 검증 + 위 Jest):

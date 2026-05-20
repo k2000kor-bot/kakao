@@ -100,6 +100,9 @@ npm run test:e2e:debug
 | `composer-response-mode` | ChatGPTInterface | 공동입력창 응답 스타일 드롭다운 (Auto/간결/상세) |
 | `composer-genspark-generation-status` | ChatGPTInterface | 입력창 하단 5단계 생성 진행 UI |
 | `composer-multi-request-checklist` | ChatGPTInterface | 다중 요청 항목별 순차 처리 체크리스트 |
+| `composer-pipeline-extras` | GensparkPipelineExtrasPanel | 과업 메타(details) |
+| `composer-oversight-council` | GensparkPipelineExtrasPanel | Council v2 섹션 |
+| `composer-regenerate-message` | ChatGPTInterface · UltimateChatGPTInterface · FileAnalysisChatSystem | 어시스턴트 답변 재생성 |
 | `chat-composer-structure-chips` | WorkspaceQueryComposer | 질문·요구·요청 삽입 칩 |
 | `chat-composer-input-hint` | ChatGPTInterface | 다중 요청·질문+요구 미리보기 안내 |
 | `send-button` | ChatGPTInterface | 전송 버튼 |
@@ -149,6 +152,12 @@ E2E에서 사용하는 경로 상수. `src/config/routes` allAppPaths·VOICE_GEN
 ### conversationGraph.spec.ts
 대화 관계도 E2E (**12 tests**, Chromium 기준): 관계도 검색·입장 필터·CSV 프리셋·답변 패널·카카오 CSV 업로드·답변 생성 스트림·Mermaid 카드·session/chat handoff·`/chat` 초안·바로 전송. 로컬(서버 선기동): `test:e2e:conversation-graph:chromium` (`E2E_SERVER_READY=1`). CI·자동 기동: `test:e2e:conversation-graph:ci`. 통합: `npm run verify:conversation-graph`. 헬퍼: `conversationGraphApiMock.ts`, `conversationGraphPage.ts`. **CI**: `e2e-tests.yml` `conversation-graph-e2e`.
 
+### gensparkAgentsComposerPipeline.spec.ts
+`/agents?id=` 컴포저 파이프라인 E2E (`E2E_AGENTS_COMPOSER_PIPELINE=1`): 5단계 UI·다중 요청 체크리스트·Council 패널. 로컬: `npm run test:e2e:composer-pipeline`.
+
+### composerRegenerateNonStream.spec.ts · composerRegenerateStream.spec.ts
+**재생성** E2E (`E2E_COMPOSER_REGENERATE=1`): 비스트림 `/ultimate`(Council extras)·`/file-analysis`, 스트림 `/agents?id=`(ChatGPTInterface·SSE 재호출). 스텁: `helpers/composerChatStub.ts` · 스트림 전용 SSE는 스펙 내 인라인. 로컬: `npm run test:e2e:composer-regenerate` (`E2E_SERVER_READY=1`).
+
 ### chat.spec.ts
 대화 E2E (**15 tests**): 대화 입력 필드·메시지 전송·AI 응답·스트리밍·응답 스타일·에러·**사이드바 대화 삭제** 확정·취소·**ESC 닫기**·**헤더 대화 삭제** 확정·취소·**ESC 닫기**(`sidebar-conversation-delete`, `chat-delete-conversation`, 삭제 확인 `role=dialog`). 추가 수동 검증으로 질문+요구 도우미(누락 가드 클릭 자동 보정, 구조화 배지 미리보기, 복사/전송/닫기, ESC·외부 클릭 닫기, 퀵 스위치 ⚙ 상태 점·툴팁)를 확인. `data-testid="chat-input"`, `send-button` 우선.
 
@@ -184,9 +193,9 @@ PWA·Service Worker 동작 E2E.
 - `E2E_SERVER_READY=1`일 때는 webServer를 띄우지 않고 `http://localhost:3000`에 이미 서버가 있다고 가정합니다.
 - **샌드박스/CI** 등에서 localhost에 접근 불가한 환경에서는 `isServerReachable`로 skip되거나 `page.goto` 타임아웃이 발생할 수 있습니다. E2E는 **localhost 접근 가능한 환경**에서 실행하는 것을 권장합니다.
 - **E2E_SERVER_READY=1**을 설정하면 (1) Playwright가 webServer를 띄우지 않고, (2) example·projectManagement·chat 스펙에서 서버 도달 가능 여부 fetch를 생략하고 곧바로 테스트를 실행합니다. 서버를 수동으로 띄운 뒤 `E2E_SERVER_READY=1 npm run test:e2e:no-server`로 실행할 때 유용합니다.
-- **컴포저 E2E(선택, Chromium)**: 로컬: `test:e2e:composer-pipeline:all` · CI: `test:e2e:composer-pipeline:ci:all` · job `composer-pipeline-e2e`. 입력 대기: `chatComposerPage.ts`.
+- **컴포저 E2E(선택, Chromium)**: 로컬: `test:e2e:composer-pipeline:all`(에이전트·다중요청·재생성) · CI: `test:e2e:composer-pipeline:ci:all` · jobs `composer-pipeline-e2e` · `composer-regenerate-e2e`. 입력 대기: `chatComposerPage.ts`.
 - **관계도 E2E(선택, Chromium)**: 로컬: `test:e2e:conversation-graph:chromium` · CI: `test:e2e:conversation-graph:ci` · job `conversation-graph-e2e`.
-- **한 번에(컴포저+관계도)**: 로컬 `test:e2e:pipelines:all`(15건) · CI `test:e2e:pipelines:ci:all`.
+- **한 번에(컴포저+관계도)**: 로컬 `test:e2e:pipelines:all` · CI `test:e2e:pipelines:ci:all` (컴포저 묶음에 재생성 E2E 포함).
 
 ## CI/CD 통합
 

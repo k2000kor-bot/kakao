@@ -74,4 +74,4 @@ fi
 
 echo ""
 echo "최종 검증 완료."
-echo "권장(별도): npm run test:sidebar-context · verify:conversation-graph:unit · E2E: test:e2e:composer-pipeline:all · verify:conversation-graph (Dev 서버)"
+echo "권장(별도): npm run test:sidebar-context · verify:conversation-graph:unit · E2E: test:e2e:composer-pipeline:all(재생성 포함) · verify:conversation-graph (Dev 서버)"

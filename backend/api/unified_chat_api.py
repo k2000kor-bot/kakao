@@ -47,10 +47,42 @@ except ImportError:
         return
 
 try:
-    from api.conversation_graph_chat_hint import attach_conversation_graph_instruction
+    from api.composer_oversight_hint import attach_composer_oversight_instruction
+except ImportError:
+    def attach_composer_oversight_instruction(ctx: Optional[Dict[str, Any]]) -> None:
+        return
+
+try:
+    from api.user_question_hint import attach_user_question_instruction
+except ImportError:
+    def attach_user_question_instruction(ctx: Optional[Dict[str, Any]]) -> None:
+        return
+
+try:
+    from api.composer_self_develop_hint import attach_composer_self_develop_instruction
+except ImportError:
+    def attach_composer_self_develop_instruction(ctx: Optional[Dict[str, Any]]) -> None:
+        return
+
+try:
+    from api.conversation_graph_chat_hint import (
+        attach_conversation_graph_instruction,
+        build_structured_graph_answer_fallback,
+        is_generic_chat_fallback,
+        seal_context_for_conversation_graph_chat,
+    )
 except ImportError:
     def attach_conversation_graph_instruction(ctx: Optional[Dict[str, Any]]) -> None:
         return
+
+    def seal_context_for_conversation_graph_chat(ctx: Dict[str, Any]) -> Dict[str, Any]:
+        return ctx
+
+    def is_generic_chat_fallback(text: str) -> bool:
+        return False
+
+    def build_structured_graph_answer_fallback(ctx: Dict[str, Any]) -> Optional[str]:
+        return None
 
 try:
     from api.intelligent_response_engine import get_intelligent_engine
@@ -298,6 +330,52 @@ class ChatStreamRequest(BaseModel):
     perspective: Optional[str] = None  # 특정 관점 지정
 
 
+async def _generate_conversation_graph_response_early(
+    message: str,
+    quality: str,
+    context: Dict[str, Any],
+) -> Optional[str]:
+    """
+    관계도 전용 조기 경로 — 일반 Q→A·지능형 템플릿 폴백을 건너뛰고
+    LLM(긴 타임아웃) 또는 스냅샷 기반 구조화 답변을 반환합니다.
+    """
+    graph_ctx = seal_context_for_conversation_graph_chat(context)
+    preset = graph_ctx.get("_pipeline_tuning_preset") or {}
+    graph_ctx["temperature"] = preset.get("temperature", 0.5)
+    graph_ctx["max_tokens"] = graph_ctx.get("max_tokens") or preset.get("max_tokens") or 8192
+
+    if LLM_SERVICE_AVAILABLE and llm_service_instance:
+        import asyncio
+
+        llm_timeout = float(preset.get("conversation_graph_llm_timeout_seconds", 120))
+        try:
+            llm_result = await asyncio.wait_for(
+                llm_service_instance.generate_response(
+                    message=message,
+                    conversation_id=graph_ctx.get("conversation_id"),
+                    context=graph_ctx,
+                ),
+                timeout=llm_timeout,
+            )
+            content = (llm_result or {}).get("content") or ""
+            content = content.strip()
+            if content and len(content) >= 80 and not is_generic_chat_fallback(content):
+                logger.info("✅ 관계도 전용 LLM 응답: %d자", len(content))
+                return content
+            if content and is_generic_chat_fallback(content):
+                logger.warning("관계도 LLM 응답이 일반 채팅 템플릿 — 구조화 폴백 사용")
+        except asyncio.TimeoutError:
+            logger.warning("관계도 LLM 타임아웃(%ss) — 구조화 폴백", llm_timeout)
+        except Exception as e:
+            logger.warning("관계도 LLM 실패 — 구조화 폴백: %s", e)
+
+    fallback = build_structured_graph_answer_fallback(graph_ctx)
+    if fallback:
+        logger.info("✅ 관계도 구조화 폴백 응답: %d자", len(fallback))
+        return fallback
+    return None
+
+
 @router.post("/chat", summary="통합 대화 응답 생성")
 async def unified_chat(request: UnifiedChatRequest):
     """
@@ -514,7 +592,13 @@ async def unified_chat(request: UnifiedChatRequest):
             logger.warning(
                 f"⚠️ 응답이 너무 짧거나 기본 메시지: response_length={len(response_text) if response_text else 0}, 재생성 시도"
             )
-            response_text = generate_default_response(message, enhanced_context)
+            if enhanced_context.get("conversation_graph_analysis") is True:
+                graph_retry = build_structured_graph_answer_fallback(
+                    seal_context_for_conversation_graph_chat(enhanced_context)
+                )
+                response_text = graph_retry or response_text
+            else:
+                response_text = generate_default_response(message, enhanced_context)
             logger.info(
                 f"📥 재생성된 응답: response_length={len(response_text) if response_text else 0}"
             )
@@ -580,12 +664,23 @@ async def unified_chat(request: UnifiedChatRequest):
             or len(response_text.strip()) < 5
             or response_text.strip() == message
             or response_text.strip().startswith("응답:")
+            or (
+                enhanced_context.get("conversation_graph_analysis") is True
+                and is_generic_chat_fallback(response_text or "")
+            )
         ):
             logger.warning(
                 f"⚠️ 생성된 응답이 너무 짧거나 비어있음: response_length={len(response_text) if response_text else 0}, response_preview={response_text[:100] if response_text else 'None'}"
             )
+            if enhanced_context.get("conversation_graph_analysis") is True:
+                graph_fix = build_structured_graph_answer_fallback(
+                    seal_context_for_conversation_graph_chat(enhanced_context)
+                )
+                if graph_fix:
+                    response_text = graph_fix
+                    logger.info("✅ 관계도 일반 템플릿 대신 구조화 폴백 적용")
             # 긴 질문이나 여러 요구사항인 경우 더 상세한 기본 응답 생성
-            if (
+            elif (
                 len(message) > 200
                 or "1)" in message
                 or "2)" in message
@@ -903,6 +998,10 @@ async def unified_chat_stream(request: ChatStreamRequest):
     )
     _ensure_original_message_and_adapt_defaults(normalized_context, message)
     attach_advanced_memory_instruction(normalized_context)
+    attach_user_question_instruction(normalized_context)
+    attach_composer_self_develop_instruction(normalized_context)
+    attach_conversation_graph_instruction(normalized_context)
+    attach_composer_oversight_instruction(normalized_context)
 
     async def generate_stream():
         try:
@@ -1114,7 +1213,23 @@ async def generate_chat_response(
         context = dict(context)
         context["_pipeline_tuning_preset"] = _tuning_preset
         attach_advanced_memory_instruction(context)
+        attach_user_question_instruction(context)
+        attach_composer_self_develop_instruction(context)
         attach_conversation_graph_instruction(context)
+        attach_composer_oversight_instruction(context)
+
+        if context.get("conversation_graph_analysis") is True:
+            try:
+                graph_early = await _generate_conversation_graph_response_early(
+                    message, quality, context
+                )
+                if graph_early and len(graph_early.strip()) >= 50:
+                    if out_metadata is not None:
+                        out_metadata["conversation_graph_answer_path"] = "early"
+                    return graph_early
+            except Exception as eg:
+                logger.warning("관계도 전용 조기 경로 실패, 일반 파이프라인으로 진행: %s", eg)
+
         # 클라이언트 시나리오 → Q→A·직경로 LLM 공통 힌트(파이프라인은 orchestrator에서 서버 시나리오와 병합)
         if not (context.get("_generation_scenario_markdown") or "").strip():
             _cg0 = context.get("client_generation_scenario")
@@ -1150,7 +1265,7 @@ async def generate_chat_response(
                 "slots": wi.slots,
                 "suggested_tool": wi.suggested_tool,
             }
-            route = route_to_tool(wi)
+            route = route_to_tool(wi, context)
             if route:
                 context["_workspace_tool_route"] = route
                 logger.info("workspace_intent: %s -> %s", wi.intent, wi.suggested_tool)
@@ -1164,14 +1279,11 @@ async def generate_chat_response(
                 from api.workspace_tool_executor import execute_workspace_tool
                 tool_result = await execute_workspace_tool(route, context)
                 if tool_result is not None:
-                    # 스텁(미구현 도구)이면 메시지 반환하지 않고 정상 LLM 경로로 진행 — ChatGPT/Gemini처럼 질문에 대한 실제 답변 생성
+                    # 도구 성공 시에도 LLM 본문 생성을 계속 — 안내 문구만 반환하면 질문 답변이 비어 보임
                     if tool_result.get("success") is True:
                         context["_workspace_tool_result"] = tool_result
                         if out_metadata is not None:
                             out_metadata["workspace_tool_result"] = tool_result
-                        msg = (tool_result.get("message") or "").strip()
-                        if msg:
-                            return msg
                     else:
                         logger.debug("workspace tool stub(success=False), LLM 경로로 진행: %s", route.get("tool"))
             except Exception as e:

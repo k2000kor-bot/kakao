@@ -37,7 +37,7 @@
 | **../start_simple_server.sh** | 프론트만 백그라운드 (`logs/dev-server.log`); 하드코딩 경로 제거 |
 | **check-access.sh** | 접속 확인 |
 | **final-verify.sh** | **`check:test-imports`** + 빌드 + 접속 + API + 통합 시도 + **`test:frontend:chat-pipeline`** + **`verify:composer-pipeline`**(실패 시 exit 1). UI·E2E 컴포저는 별도. [docs/FINAL_CHECKLIST.md](../docs/FINAL_CHECKLIST.md) |
-| **test-composer-pipeline.sh** | `sync:frontend-src` + 컴포저 Jest 묶음 · `E2E_COMPOSER_PIPELINE=1` 시 E2E 포함 |
+| **test-composer-pipeline.sh** | `sync:frontend-src` + 컴포저 Jest · `E2E_COMPOSER_PIPELINE=1` 시 E2E 전체 · `E2E_COMPOSER_REGENERATE=1` 시 재생성 E2E만 |
 | **check-doc-verification-hub.mjs** | **`npm run check:doc-verification-hub`** — `git ls-files` 기준 `docs/`·`src/`·`frontend/src/`·`scripts/`·`e2e/`·`android_app/`·`backend/api/`·`corbu-ai/README.md` 추적 `*.md`에 **`저장소 루트 검증 허브`** 문단 존재 여부(백업·JDK 법적 문서 등 제외). 누락 시 목록만 stderr; **`DOC_HUB_STRICT=1`** 이면 exit 1. [TESTING_GUIDE.md](../TESTING_GUIDE.md) |
 | *(일괄 편집 스크립트 작성 시)* | `frontend/` 등에 JDK 트리로 **`*.md`와 동명의 디렉터리**가 있을 수 있음 → `glob`/`rglob` 후 **파일만**(`fs.statSync`·`Dirent.isFile()` 등) 읽기 |
 
@@ -86,7 +86,7 @@ TypeScript **`frontend/tsconfig.json`은 `frontend/src`만** 포함합니다. �
 | **`npm run test:routes`** | `src/config/__tests__/routes.test.ts`만 Jest (**27** tests, `pretest` 포함) — [TESTING_GUIDE.md](../TESTING_GUIDE.md) |
 | **`npm run test:app-unified`** | `AppUnified.test.tsx`만 Jest (**122** tests, `pretest` 포함) — [TESTING_GUIDE.md](../TESTING_GUIDE.md) |
 | **`npm run test:sidebar-context`** | 사이드바 컨텍스트 필터·설정·대화 이력 관련 Jest 묶음(`scripts/test-sidebar-context.sh`; 루트 `cd` 후 `sync:frontend-src` + 패턴 테스트). **동일:** 루트 `make test-sidebar-context` — [docs/PUSH_BLOCK_HANDOFF.md](../docs/PUSH_BLOCK_HANDOFF.md). **수동**(첨부·재생성·편집): [docs/guides/CHAT_UI_TEST_SCENARIOS.md](../docs/guides/CHAT_UI_TEST_SCENARIOS.md) §14.5 · [TESTING_GUIDE.md](../TESTING_GUIDE.md) |
-| **`npm run verify:composer-pipeline`** | 컴포저 다중 요청·첨부·순차·다단계 Jest(`scripts/test-composer-pipeline.sh`). **동일:** `make test-composer-pipeline` · E2E: `test:e2e:composer-pipeline:all` / CI: `...:ci:all` · §14.7 [CHAT_UI_TEST_SCENARIOS](../docs/guides/CHAT_UI_TEST_SCENARIOS.md) |
+| **`npm run verify:composer-pipeline`** | 컴포저 Jest(`scripts/test-composer-pipeline.sh`, 19 suites). **동일:** `make test-composer-pipeline` · E2E: `test:e2e:composer-pipeline:all`(재생성 포함) / `test:e2e:composer-regenerate` · §14.7–14.9 [CHAT_UI_TEST_SCENARIOS](../docs/guides/CHAT_UI_TEST_SCENARIOS.md) |
 | **`npm run verify:pre-deploy`** | `scripts/pre-deploy-verify.sh` — sidebar + composer + 관계도 unit (빌드 없음). 풀: `verify:final` |
 | **`npm run maintain:push-block`** | 원격 `git push`가 막힐 때 아티팩트 검증·위 회귀·SSH/원격 진단·`docs/PUSH_BLOCK_STATUS.md`·`docs/PUSH_BLOCK_MANIFEST.md` 갱신(`scripts/run-push-block-maintenance.sh`). **동일:** 루트 `make maintain-push-block` — 동 문서 |
 | **`LazyComponents.test` ↔ `/dev-status` CHANGES** | `LazyComponents.test.tsx`의 `it`를 추가·제거하면 `DevStatusView.tsx` CHANGES 끝 `·N tests`·`DevStatusView.test.tsx`의 `realTimeSync mock·N tests` 단언을 함께 갱신 — [AGENTS.md](../AGENTS.md) 규칙 **6** · [TESTING_GUIDE.md](../TESTING_GUIDE.md) · [docs/DEVELOPMENT_CONTINUITY.md](../docs/DEVELOPMENT_CONTINUITY.md) §3 |

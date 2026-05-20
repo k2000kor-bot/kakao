@@ -218,5 +218,48 @@ describe('UltimateChatGPTInterface', () => {
         else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
       }
     });
+
+    it('재생성 버튼 클릭 시 동일 사용자 질문으로 API를 다시 호출한다', async () => {
+      const prevSd = process.env.REACT_APP_COMPOSER_ANSWER_SELF_DEVELOP;
+      process.env.REACT_APP_COMPOSER_ANSWER_SELF_DEVELOP = '0';
+      let call = 0;
+      mockFetch.mockImplementation(async () => {
+        call += 1;
+        const response = call === 1 ? '첫 응답' : '재생성 응답';
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            response,
+            analysis: { performance: { response_time: 50 }, emotion: { confidence: 0.9 } },
+          }),
+        } as Response;
+      });
+
+      try {
+        renderWithTheme(<UltimateChatGPTInterface />);
+        await waitFor(() => expect(screen.getAllByRole('textbox').length).toBeGreaterThan(0));
+
+        const input = screen.getAllByRole('textbox')[0];
+        fireEvent.change(input, { target: { value: '질문:\n재생성 테스트\n요구사항:\n요약' } });
+        fireEvent.click(screen.getByRole('button', { name: /메시지 전송/i }));
+
+        await waitFor(() => expect(screen.getByText('첫 응답')).toBeInTheDocument(), { timeout: 8000 });
+
+        const callsAfterFirst = mockFetch.mock.calls.length;
+        fireEvent.click(screen.getByTestId('composer-regenerate-message'));
+
+        await waitFor(
+          () => expect(mockFetch.mock.calls.length).toBeGreaterThan(callsAfterFirst),
+          { timeout: 12000 },
+        );
+        await waitFor(() => expect(screen.getByText('재생성 응답')).toBeInTheDocument(), {
+          timeout: 12000,
+        });
+      } finally {
+        if (prevSd === undefined) delete process.env.REACT_APP_COMPOSER_ANSWER_SELF_DEVELOP;
+        else process.env.REACT_APP_COMPOSER_ANSWER_SELF_DEVELOP = prevSd;
+      }
+    });
   });
 });

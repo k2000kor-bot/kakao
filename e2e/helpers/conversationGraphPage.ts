@@ -6,13 +6,9 @@ import {
   type ConversationGraphMockEdge,
   type ConversationGraphMockNode,
 } from './conversationGraphApiMock';
+import { dismissWebpackDevOverlay } from './playwrightLocators';
 
-export async function dismissWebpackDevOverlay(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    document.getElementById('webpack-dev-server-client-overlay')?.remove();
-    document.querySelector('iframe#webpack-dev-server-client-overlay')?.remove();
-  });
-}
+export { dismissWebpackDevOverlay };
 
 type MockOptions = {
   uploadId?: string;

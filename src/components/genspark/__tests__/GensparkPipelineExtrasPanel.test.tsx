@@ -72,6 +72,25 @@ describe('GensparkPipelineExtrasPanel', () => {
     expect(screen.queryByTestId('genspark-answer-md')).not.toBeInTheDocument();
   });
 
+  it('Council v2 메타가 있으면 협의회 섹션을 표시한다', () => {
+    render(
+      <GensparkPipelineExtrasPanel
+        extras={{
+          composerOversightEnabled: true,
+          composerOversightCouncilV2: true,
+          composerOversightWorkItemCount: 2,
+          composerOversightHasMultiple: true,
+        }}
+        theme={{ borderColor: '#ccc', textSecondary: '#666' }}
+        messageId="m-council"
+      />,
+    );
+    expect(screen.getByText(/Composer Oversight Council v2/)).toBeInTheDocument();
+    expect(screen.getByText(/작업 항목 2개/)).toBeInTheDocument();
+    expect(screen.getByTestId('composer-oversight-council')).toBeInTheDocument();
+    expect(screen.getByTestId('composer-pipeline-extras')).toBeInTheDocument();
+  });
+
   it('pipelineGenerationPhase가 있으면 파이프라인 단계 라벨과 값을 표시한다', () => {
     render(
       <GensparkPipelineExtrasPanel

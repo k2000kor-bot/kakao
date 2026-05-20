@@ -18,7 +18,6 @@ import { resolveGensparkAgentIdFromWindowSearch } from '../services/gensparkAgen
 import {
   extractResponseContent,
   extractPipelineFollowUpsFromChatResponse,
-  extractPipelineMessageExtrasFromChatResponse,
   hasPipelineExtras,
   coerceTrimmedString,
   isAssistantGenerationPlaceholder,
@@ -34,6 +33,13 @@ import {
   ASSISTANT_GENSPARK_QA_BADGE_ANSWER,
 } from '../utils/chatInputUtils';
 import {
+  buildComposerPipelineContextAppend,
+  createPostChatRefinedAnswerFn,
+  finalizeAssistantNonStreamTurn,
+  isComposerSelfDevelopActiveForTurn,
+} from '../utils/composerAssistantTurnFinalize';
+import { resolveComposerRegenerateUserTurn } from '../utils/composerRegenerateTurn';
+import {
   AssistantGensparkBody,
   GensparkPipelineExtrasPanel,
   GensparkNextActionChips,
@@ -42,8 +48,9 @@ import {
   Send, Plus, Settings, FileText,
   Folder, Upload, MessageSquare, BookOpen, BarChart3,
   Zap, Brain,
-  Sun, Moon, Image, Video, X, Edit, Menu, Bot, User
+  Sun, Moon, Image, Video, X, Edit, Menu, Bot, User, RotateCcw
 } from 'lucide-react';
+import { TEST_IDS } from '../constants/testIds';
 
 interface Message {
   id: string;
@@ -234,10 +241,14 @@ const UltimateChatGPTInterface: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- saveConversation/createNewProject 안정적 참조
   }, []);
 
+  type UltimateSendOptions = { baseMessages?: Message[] };
+
   // 메시지 전송
-  const handleSendMessage = async (directUserText?: string) => {
+  const handleSendMessage = async (directUserText?: string, sendOpts?: UltimateSendOptions) => {
     const trimmed = coerceTrimmedString(directUserText, inputValue);
     if (!trimmed || isLoading) return;
+
+    const priorMessages = sendOpts?.baseMessages ?? messages;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -245,10 +256,6 @@ const UltimateChatGPTInterface: React.FC = () => {
       content: trimmed,
       timestamp: new Date()
     };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-    setIsLoading(true);
 
     const placeholderAssistantId = `msg-${Date.now() + 1}`;
     const placeholderAssistant: Message = {
@@ -258,7 +265,10 @@ const UltimateChatGPTInterface: React.FC = () => {
       timestamp: new Date(),
       generationPlaceholder: true,
     };
-    setMessages((prev) => [...prev, placeholderAssistant]);
+
+    setMessages([...priorMessages, userMessage, placeholderAssistant]);
+    setInputValue('');
+    setIsLoading(true);
 
     let clearUltimateNsPhases = scheduleAssistantNonStreamLoadingPhaseTimers((text) => {
       setMessages((prev) =>
@@ -272,7 +282,7 @@ const UltimateChatGPTInterface: React.FC = () => {
         perspective: DEFAULT_CHAT_PERSPECTIVE,
         project: currentProject ? { id: currentProject.id, name: currentProject.name } : undefined,
       });
-      const messagesForContext = messages.filter((m) => !m.generationPlaceholder);
+      const messagesForContext = priorMessages.filter((m) => !m.generationPlaceholder);
       const conversationHistory = normalizeChatTurnsForApiMerge(
         messagesForContext.map((m) =>
           toChatTurnWithPipelineExtras({
@@ -340,9 +350,23 @@ const UltimateChatGPTInterface: React.FC = () => {
         messagesForContext
       );
       const mergeOpts = resolveMergeOptionsFromHistoryAndExplicit(conversationHistory, scenarioMergeOpts);
+      const { pipelineMerge, selfDevelopFlags } = buildComposerPipelineContextAppend({
+        trimmedInput: trimmed,
+        featureCtx: featureCtx as Record<string, unknown>,
+        currentProjectId: currentProject?.id,
+        gensparkRouteAgentId: agentRouteId,
+        composerResponseMode: 'balanced',
+        responseStyle: DEFAULT_CHAT_RESPONSE_STYLE,
+        hasConversationThreadContext: conversationHistory.length > 0,
+      });
+
       const { quality, contextForBody } = mergeApiChatContextPayload(
         trimmed,
-        contextWithExtras,
+        {
+          ...contextWithExtras,
+          ...pipelineMerge,
+          ...selfDevelopFlags,
+        },
         conversationHistory.length > 0 ? conversationHistory : undefined,
         mergeOpts
       );
@@ -364,16 +388,53 @@ const UltimateChatGPTInterface: React.FC = () => {
         const responseText =
           extractResponseContent({ data }) ||
           (typeof data.response === 'string' ? data.response : '');
-        const pipelineExtrasRaw = extractPipelineMessageExtrasFromChatResponse({ data });
-        const pipelineExtras = hasPipelineExtras(pipelineExtrasRaw)
-          ? pipelineExtrasRaw
-          : undefined;
         const suggestedFollowUps = extractPipelineFollowUpsFromChatResponse({ data });
         const analysis = data.analysis;
+
+        await runAssistantNonStreamPostResponsePhases((text) => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === placeholderAssistantId
+                ? { ...m, content: text, generationPlaceholder: true }
+                : m,
+            ),
+          );
+        });
+
+        const requestRefined = createPostChatRefinedAnswerFn({
+          postChat: (body) => postChatJsonWithFallback(body),
+          buildPayload: (outboundMessage, ctx) => ({
+            ...chatPostBody,
+            message: outboundMessage,
+            ...(Object.keys(ctx).length > 0 ? { context: ctx } : {}),
+          }),
+        });
+        const selfDevelopActive = isComposerSelfDevelopActiveForTurn({
+          trimmedInput: trimmed,
+          featureCtx: featureCtx as Record<string, unknown>,
+          pipelineMerge,
+        });
+        const { text: finalText, pipelineExtras } = await finalizeAssistantNonStreamTurn({
+          draft: responseText,
+          userInput: trimmed,
+          requestContext: (contextForBody ?? {}) as Record<string, unknown>,
+          sessionId: currentProject?.id ?? 'ultimate_interface',
+          selfDevelopActive,
+          requestRefined,
+          responseData: { data },
+          onStatusText: (text) => {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === placeholderAssistantId ? { ...m, content: text } : m,
+              ),
+            );
+          },
+        });
+
         const aiMessage: Message = {
           id: placeholderAssistantId,
           role: 'assistant',
-          content: responseText,
+          content: finalText,
           timestamp: new Date(),
           ...(pipelineExtras ? { pipelineExtras } : {}),
           ...(suggestedFollowUps?.length ? { suggestedFollowUps } : {}),
@@ -385,16 +446,6 @@ const UltimateChatGPTInterface: React.FC = () => {
             analysis,
           },
         };
-
-        await runAssistantNonStreamPostResponsePhases((text) => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === placeholderAssistantId
-                ? { ...m, content: text, generationPlaceholder: true }
-                : m,
-            ),
-          );
-        });
         setMessages((prev) => prev.map((m) => (m.id === placeholderAssistantId ? aiMessage : m)));
       } else {
         throw new Error(data.error || 'API 호출 실패');
@@ -424,6 +475,14 @@ const UltimateChatGPTInterface: React.FC = () => {
       clearUltimateNsPhases = () => {};
       setIsLoading(false);
     }
+  };
+
+  const regenerateMessage = async (messageId: string) => {
+    if (isLoading) return;
+    const turn = resolveComposerRegenerateUserTurn(messages, messageId);
+    if (!turn) return;
+    const kept = messages.slice(0, turn.truncateToIndex);
+    await handleSendMessage(turn.userText, { baseMessages: kept });
   };
 
   // 고급 질문-답변 응답 생성
@@ -1104,6 +1163,20 @@ const UltimateChatGPTInterface: React.FC = () => {
                               textSecondary: 'var(--text-secondary)',
                             }}
                           />
+                        )}
+                      {message.role === 'assistant' &&
+                        !message.generationPlaceholder &&
+                        !isLoading && (
+                          <button
+                            type="button"
+                            data-testid={TEST_IDS.COMPOSER_REGENERATE_MESSAGE}
+                            className="mt-2 text-xs bw-text-secondary hover:bw-text-primary inline-flex items-center gap-1"
+                            onClick={() => void regenerateMessage(message.id)}
+                            aria-label="답변 재생성"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" aria-hidden />
+                            재생성
+                          </button>
                         )}
                       {message.metadata && (
                         <div className={`text-xs mt-2 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>

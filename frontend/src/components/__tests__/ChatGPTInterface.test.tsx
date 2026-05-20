@@ -32,7 +32,11 @@ import {
   CONVERSATION_GRAPH_PATH,
   CONVERSATION_GRAPH_PASTE_STATE_KEY,
 } from '../../config/routes';
-import { GRAPH_ANSWER_CONTEXT_FLAG } from '../../views/conversationGraphAnswerGeneration';
+import { CREATE_GRAPH_ANSWER_PRESET, CREATE_GRAPH_API_USER_MESSAGE } from '../../views/conversationGraphAnswerIntent';
+import {
+  generateGraphAnswerViaChat,
+  GRAPH_ANSWER_CONTEXT_FLAG,
+} from '../../views/conversationGraphAnswerGeneration';
 import { GENSPARK_REFERENCE_AGENT_ID } from '../../services/gensparkReferenceAgentPreset';
 import { STANDALONE_CHAT_PATH } from '../../config/uiPreferences';
 import { WORKSPACE_WELCOME_SUGGESTION_CHIPS } from '../../constants/workspaceHomeCopy';
@@ -209,6 +213,14 @@ jest.mock('../../utils/streamingClient', () => ({
   streamChatMessage: jest.fn(),
 }));
 
+jest.mock('../../views/conversationGraphAnswerGeneration', () => {
+  const actual = jest.requireActual('../../views/conversationGraphAnswerGeneration');
+  return {
+    ...actual,
+    generateGraphAnswerViaChat: jest.fn(),
+  };
+});
+
 jest.mock('../../services/notebookLLMDeepLearningIntegration', () => ({
   __esModule: true,
   default: {
@@ -228,6 +240,17 @@ jest.mock('../../services/qwenTtsService', () => ({
 
 const mockedAxios: jest.Mocked<typeof axios> = jest.mocked(axios);
 const mockProjectService: jest.Mocked<typeof projectService> = jest.mocked(projectService);
+const mockGenerateGraphAnswerViaChat = jest.mocked(generateGraphAnswerViaChat);
+
+const graphComposerMockAnswer = [
+  '## 요약',
+  '|이름|입장|',
+  '|알파|동조|',
+  '```mermaid',
+  'flowchart TB',
+  '  A[알파] --> B[베타]',
+  '```',
+].join('\n');
 
 // Mock store 생성 헬퍼
 const createMockStore = (initialState: Partial<{
@@ -636,6 +659,11 @@ describe('ChatGPTInterface', () => {
   });
 
   describe('대화 관계도 → 독립 대화', () => {
+    beforeEach(() => {
+      mockGenerateGraphAnswerViaChat.mockReset();
+      mockGenerateGraphAnswerViaChat.mockResolvedValue(graphComposerMockAnswer);
+    });
+
     it('location.state 초안을 입력창에 반영한다', async () => {
       jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
       const draft = '관계도 기반 질문';
@@ -663,7 +691,7 @@ describe('ChatGPTInterface', () => {
       }, { timeout: 12_000 });
     });
 
-    it('autosend 시 API context에 관계도 분석 플래그가 포함된다', async () => {
+    it('autosend 시 관계도 답변 생성 파이프라인을 호출한다', async () => {
       jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
       const draft = '관계도 보고서 작성';
       const graphContext = {
@@ -692,14 +720,60 @@ describe('ChatGPTInterface', () => {
       );
 
       await waitFor(() => {
-        expect(mockedAxios.post).toHaveBeenCalled();
+        expect(mockGenerateGraphAnswerViaChat).toHaveBeenCalled();
       }, { timeout: 12_000 });
 
-      const withContext = mockedAxios.post.mock.calls.find((call) => {
-        const body = call[1] as { context?: Record<string, unknown> } | undefined;
-        return body?.context?.[GRAPH_ANSWER_CONTEXT_FLAG] === true;
-      });
-      expect(withContext).toBeTruthy();
+      expect(mockGenerateGraphAnswerViaChat).toHaveBeenCalledWith(
+        draft,
+        expect.objectContaining({
+          [GRAPH_ANSWER_CONTEXT_FLAG]: true,
+          conversation_graph_title: '단체 채팅',
+        }),
+        expect.any(Object),
+      );
+    });
+
+    it('관계도 handoff autosend 시 프리셋 draft도 짧은 API message로 답변 생성한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      const graphContext = {
+        [GRAPH_ANSWER_CONTEXT_FLAG]: true,
+        conversation_graph_has_data: true,
+        conversation_graph_title: '단체 채팅',
+        multi_request_mode: false,
+      };
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: STANDALONE_CHAT_PATH,
+              state: {
+                [CONVERSATION_GRAPH_CHAT_DRAFT_STATE_KEY]: CREATE_GRAPH_ANSWER_PRESET.prompt,
+                [CONVERSATION_GRAPH_CHAT_CONTEXT_STATE_KEY]: graphContext,
+                [CONVERSATION_GRAPH_CHAT_AUTOSEND_STATE_KEY]: true,
+              },
+              key: 'graph-autosend-preset',
+            },
+          ]}
+        >
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(mockGenerateGraphAnswerViaChat).toHaveBeenCalled();
+      }, { timeout: 12_000 });
+
+      expect(mockGenerateGraphAnswerViaChat).toHaveBeenCalledWith(
+        CREATE_GRAPH_API_USER_MESSAGE,
+        expect.objectContaining({
+          [GRAPH_ANSWER_CONTEXT_FLAG]: true,
+          multi_request_mode: false,
+        }),
+        expect.any(Object),
+      );
     });
 
     it('대화 파일 첨부와 관계도 생성 의도 입력 시 handoff 배너·첨부 칩을 표시한다', async () => {
@@ -832,22 +906,56 @@ describe('ChatGPTInterface', () => {
       });
 
       await waitFor(() => {
-        expect(mockedAxios.post).toHaveBeenCalled();
+        expect(mockGenerateGraphAnswerViaChat).toHaveBeenCalled();
       }, { timeout: 12_000 });
 
-      const graphCall = mockedAxios.post.mock.calls.find((call) => {
-        const body = call[1] as { context?: Record<string, unknown> } | undefined;
-        return (
-          body?.context?.[GRAPH_ANSWER_CONTEXT_FLAG] === true &&
-          body?.context?.input_intent_hint === 'conversation_graph_create'
-        );
+      const [, ctx] = mockGenerateGraphAnswerViaChat.mock.calls[0] ?? [];
+      expect(ctx).toMatchObject({
+        [GRAPH_ANSWER_CONTEXT_FLAG]: true,
+        input_intent_hint: 'conversation_graph_create',
       });
-      expect(graphCall).toBeTruthy();
-      const ctx = (graphCall![1] as { context: Record<string, unknown> }).context;
       const filePayload = String(
-        ctx.conversation_file_content ?? ctx.conversation_graph_raw_conversation ?? '',
+        (ctx as Record<string, unknown>).conversation_file_content ??
+          (ctx as Record<string, unknown>).conversation_graph_raw_conversation ??
+          '',
       );
       expect(filePayload).toMatch(/알파/);
+    });
+
+    it('첨부 없이 관계도 생성 의도만 전송해도 graph 답변 파이프라인을 호출한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter initialEntries={[STANDALONE_CHAT_PATH]}>
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.CHAT_INPUT)).toBeInTheDocument();
+      });
+
+      const chatInput = screen.getByTestId(TEST_IDS.CHAT_INPUT) as HTMLTextAreaElement;
+      await act(async () => {
+        fireEvent.change(chatInput, { target: { value: '관계도를 만들어줘' } });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId(TEST_IDS.SEND_BUTTON));
+      });
+
+      await waitFor(() => {
+        expect(mockGenerateGraphAnswerViaChat).toHaveBeenCalled();
+      }, { timeout: 12_000 });
+
+      const [, ctx] = mockGenerateGraphAnswerViaChat.mock.calls[0] ?? [];
+      expect(ctx).toMatchObject({
+        [GRAPH_ANSWER_CONTEXT_FLAG]: true,
+        input_intent_hint: 'conversation_graph_create',
+        multi_request_mode: false,
+      });
     });
 
     it('첨부 칩 제거 시 handoff 배너가 사라진다', async () => {
@@ -1088,7 +1196,9 @@ describe('ChatGPTInterface', () => {
       await waitFor(() => {
         expect(screen.getByTestId('project-detail-view')).toBeInTheDocument();
       }, { timeout: 5000 });
-      expect(screen.getByText('상세 테스트 프로젝트')).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { level: 1, name: '상세 테스트 프로젝트' }),
+      ).toBeInTheDocument();
       const settingsBtn = screen.getByTestId(TEST_IDS.PROJECT_DETAIL_SETTINGS_BTN);
       expect(settingsBtn).toBeInTheDocument();
 

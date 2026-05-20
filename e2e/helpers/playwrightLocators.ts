@@ -16,6 +16,14 @@ export async function hasWebpackErrorOverlay(page: Page): Promise<boolean> {
   return (await page.locator('#webpack-dev-server-client-overlay').count()) > 0;
 }
 
+/** dev 서버 컴파일 오버레이가 클릭을 가로막지 않도록 제거 */
+export async function dismissWebpackDevOverlay(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    document.getElementById('webpack-dev-server-client-overlay')?.remove();
+    document.querySelector('iframe#webpack-dev-server-client-overlay')?.remove();
+  });
+}
+
 /**
  * 셀렉터 목록을 순서대로 `waitFor({ state: 'visible' })` — 첫 성공 시 해당 locator 반환.
  * (`pickVisibleLocator`는 즉시 isVisible만 보므로, 늦게 나타나는 UI에는 이쪽 사용)

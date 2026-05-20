@@ -2,6 +2,7 @@
  * Genspark형 파이프라인 부가 메타(과업 계획·검증·블루프린트·trace) — ChatGPTInterface와 동일 UI 계약
  */
 import React from 'react';
+import { TEST_IDS } from '../../constants/testIds';
 import { coerceTrimmedString, type PipelineMessageExtras } from '../../utils/chatInputUtils';
 import { AssistantGensparkBody } from './AssistantGensparkBody';
 
@@ -14,6 +15,9 @@ export interface GensparkPipelineExtrasPanelProps {
   extras: PipelineMessageExtras;
   theme: GensparkPipelineTheme;
   messageId: string;
+  /** 해당 턴 생성 단계 UI와 맞춘 웹검색·문서 맥락 힌트(마크다운 미리보기 톤) */
+  assistantStepWebSearch?: boolean;
+  assistantStepDocumentContext?: boolean;
 }
 
 function taskPlanStringField(
@@ -30,6 +34,8 @@ export const GensparkPipelineExtrasPanel: React.FC<GensparkPipelineExtrasPanelPr
   extras,
   theme,
   messageId,
+  assistantStepWebSearch,
+  assistantStepDocumentContext,
 }) => {
   const { borderColor, textSecondary } = theme;
   const taskAnswerMode =
@@ -39,6 +45,7 @@ export const GensparkPipelineExtrasPanel: React.FC<GensparkPipelineExtrasPanelPr
 
   return (
     <details
+      data-testid={TEST_IDS.COMPOSER_PIPELINE_EXTRAS}
       style={{
         marginTop: '12px',
         border: `1px solid ${borderColor}`,
@@ -178,6 +185,62 @@ export const GensparkPipelineExtrasPanel: React.FC<GensparkPipelineExtrasPanelPr
             >
               {JSON.stringify(extras.taskPlan, null, 2)}
             </pre>
+          </div>
+        )}
+        {(extras.composerOversightEnabled || extras.composerOversightCouncilV2) && (
+          <div
+            data-testid={TEST_IDS.COMPOSER_OVERSIGHT_COUNCIL}
+            style={{
+              marginBottom: '12px',
+              padding: '8px',
+              borderRadius: '6px',
+              border: `1px solid ${borderColor}`,
+              background: 'rgba(139, 92, 246, 0.08)',
+            }}
+          >
+            <strong style={{ fontSize: '12px' }}>
+              {extras.composerOversightCouncilV2
+                ? 'Composer Oversight Council v2'
+                : '중간 관리형 답변 생성'}
+            </strong>
+            <div style={{ marginTop: '4px', fontSize: '12px', color: textSecondary }}>
+              {typeof extras.composerOversightWorkItemCount === 'number' &&
+              extras.composerOversightWorkItemCount > 0
+                ? `작업 항목 ${extras.composerOversightWorkItemCount}개`
+                : '작업 항목 분해'}
+              {extras.composerOversightHasMultiple ? ' · 다중 요청' : ''}
+            </div>
+            {extras.composerOversightCouncilV2 && (
+              <div style={{ marginTop: '6px', fontSize: '11px', color: textSecondary }}>
+                Intake → Strategy → Production → Critique → Integration 순 협의회 파이프라인
+              </div>
+            )}
+          </div>
+        )}
+        {(extras.composerSelfDevelopImproved ||
+          (typeof extras.composerSelfDevelopAttempts === 'number' &&
+            extras.composerSelfDevelopAttempts > 0)) && (
+          <div
+            style={{
+              marginBottom: '12px',
+              padding: '8px',
+              borderRadius: '6px',
+              border: `1px solid ${borderColor}`,
+              background: 'rgba(59, 130, 246, 0.08)',
+            }}
+          >
+            <strong style={{ fontSize: '12px' }}>답변 자가 개발</strong>
+            <div style={{ marginTop: '4px', fontSize: '12px', color: textSecondary }}>
+              {extras.composerSelfDevelopImproved
+                ? `품질 검증 후 ${extras.composerSelfDevelopAttempts ?? 0}회 개선하여 최종 답변을 확정했습니다.`
+                : `자가 검증 ${extras.composerSelfDevelopAttempts ?? 0}회 수행(초안 유지).`}
+              {typeof extras.composerSelfDevelopScore === 'number' && (
+                <span style={{ marginLeft: '6px' }}>품질 점수 {extras.composerSelfDevelopScore}</span>
+              )}
+            </div>
+            <div style={{ marginTop: '6px', fontSize: '11px', color: textSecondary }}>
+              intake → plan → draft → critique → integrate → evolve 순으로 내부 점검했습니다.
+            </div>
           </div>
         )}
         {(extras.verificationSkipped ||
@@ -358,6 +421,8 @@ export const GensparkPipelineExtrasPanel: React.FC<GensparkPipelineExtrasPanelPr
                   className="genspark-md-body"
                   embedded
                   enhancedCodeBlocks
+                  webSearch={assistantStepWebSearch}
+                  documentContext={assistantStepDocumentContext}
                 />
               </div>
             </div>
@@ -376,6 +441,8 @@ export const GensparkPipelineExtrasPanel: React.FC<GensparkPipelineExtrasPanelPr
                   className="genspark-md-body"
                   embedded
                   enhancedCodeBlocks
+                  webSearch={assistantStepWebSearch}
+                  documentContext={assistantStepDocumentContext}
                 />
               </div>
             </div>

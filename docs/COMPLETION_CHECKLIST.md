@@ -134,8 +134,8 @@
 |------|------|
 | **마무리 검증 (1·2 한 번에)** | `npm run verify:completion` · 표 행과 교차 |
 | **배포 직전 스크립트** | `npm run verify:final` → `scripts/final-verify.sh` — `test:frontend:chat-pipeline`·`verify:composer-pipeline` 필수 · [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md) · 표 행과 교차 |
-| **컴포저 파이프라인 (Jest)** | `npm run verify:composer-pipeline` | 13 suites, 113 tests · `scripts/test-composer-pipeline.sh` · CI `composer-pipeline` · §14.7 |
-| **컴포저 E2E (선택)** | `npm run test:e2e:composer-pipeline:all` (로컬) · `...:ci:all` (CI) | Chromium · CI `composer-pipeline-e2e` |
+| **컴포저 파이프라인 (Jest)** | `npm run verify:composer-pipeline` | 19 suites, 147 tests · Council·자가 개발·재생성 유틸 · CI `composer-pipeline` · §14.7–14.9 |
+| **컴포저 E2E (선택)** | `npm run test:e2e:composer-pipeline:all` (로컬) · `...:ci:all` (CI) | 에이전트·다중요청·재생성 포함 · CI `composer-pipeline-e2e` · `composer-regenerate-e2e` |
 | **관계도 (Jest·E2E)** | `npm run verify:conversation-graph:unit` · `npm run verify:conversation-graph` | Jest 169 · E2E 12 · CI `conversation-graph` · `conversation-graph-e2e` |
 | **완성도 검증 (한 번에)** | `npm run dev:check` · 표 행과 교차 |
 | **E2E (chromium, 69 passed 6 skipped)** | `E2E_SERVER_READY=1 npx playwright test --project=chromium` (서버·playwright chromium 사전 필요) · 표 행과 교차 |

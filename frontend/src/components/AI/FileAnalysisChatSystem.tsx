@@ -11,6 +11,7 @@ import {
     Copy,
     ThumbsUp,
     ThumbsDown,
+    RotateCcw,
     Settings,
     BarChart,
     Lightbulb,
@@ -33,7 +34,6 @@ import { DEFAULT_CHAT_PERSPECTIVE, DEFAULT_CHAT_RESPONSE_STYLE } from '../../uti
 import {
     extractResponseContent,
     extractPipelineFollowUpsFromChatResponse,
-    extractPipelineMessageExtrasFromChatResponse,
     hasPipelineExtras,
     coerceTrimmedString,
     buildFeatureContextFromMessage,
@@ -63,6 +63,14 @@ import {
 import { errorLogger } from '../../utils/errorLogger';
 import { enrichChatContextRecordWithOptionalMultilayerStyleHint } from '../../services/multiLayerStyleAnalysisSystem';
 import { resolveGensparkAgentIdFromWindowSearch } from '../../services/gensparkAgentRegistry';
+import {
+    buildComposerPipelineContextAppend,
+    createPostChatRefinedAnswerFn,
+    finalizeAssistantNonStreamTurn,
+    isComposerSelfDevelopActiveForTurn,
+} from '../../utils/composerAssistantTurnFinalize';
+import { resolveComposerRegenerateUserTurn } from '../../utils/composerRegenerateTurn';
+import { TEST_IDS } from '../../constants/testIds';
 import './FileAnalysisChatSystem.css';
 
 interface AnalyzedFile {
@@ -316,33 +324,37 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
         setFileUploadProgress({});
     };
 
-    const handleSendMessage = async (directText?: string) => {
+    type FileAnalysisSendOptions = {
+        baseMessages?: ChatMessage[];
+        filesSnapshot?: AnalyzedFile[];
+    };
+
+    const handleSendMessage = async (directText?: string, sendOpts?: FileAnalysisSendOptions) => {
+        const priorMessages = sendOpts?.baseMessages ?? messages;
+        const filesForTurn = sendOpts?.filesSnapshot ?? analyzedFiles;
         const fromInput = coerceTrimmedString(directText, currentMessage);
-        if (!fromInput && analyzedFiles.length === 0) return;
+        if (!fromInput && filesForTurn.length === 0) return;
 
         const userMessage: ChatMessage = {
             id: `msg-${Date.now()}`,
             type: 'user',
             content: fromInput || '(파일만 업로드됨)',
             timestamp: new Date(),
-            files: analyzedFiles
+            files: filesForTurn,
         };
 
-        setMessages(prev => [...prev, userMessage]);
+        const placeholderAiId = `ai-${Date.now()}`;
+        const placeholderAi: ChatMessage = {
+            id: placeholderAiId,
+            type: 'ai',
+            content: ASSISTANT_PLACEHOLDER_ANALYZING,
+            timestamp: new Date(),
+            generationPlaceholder: true,
+        };
+
+        setMessages([...priorMessages, userMessage, placeholderAi]);
         setCurrentMessage('');
         setIsTyping(true);
-
-        const placeholderAiId = `ai-${Date.now()}`;
-        setMessages((prev) => [
-            ...prev,
-            {
-                id: placeholderAiId,
-                type: 'ai',
-                content: ASSISTANT_PLACEHOLDER_ANALYZING,
-                timestamp: new Date(),
-                generationPlaceholder: true,
-            },
-        ]);
 
         let clearFileAnalysisNsPhases = scheduleAssistantNonStreamLoadingPhaseTimers((text) => {
             setMessages((prev) =>
@@ -355,10 +367,10 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
             responseStyle: DEFAULT_CHAT_RESPONSE_STYLE,
             perspective: DEFAULT_CHAT_PERSPECTIVE,
         });
-        const projectKnowledge = analyzedFiles.length > 0
-            ? analyzedFiles.map((f) => `[파일: ${f.name}]\n요약: ${f.summary}\n내용: ${f.content ?? ''}\n키워드: ${f.keywords.join(', ')}`).join('\n\n')
+        const projectKnowledge = filesForTurn.length > 0
+            ? filesForTurn.map((f) => `[파일: ${f.name}]\n요약: ${f.summary}\n내용: ${f.content ?? ''}\n키워드: ${f.keywords.join(', ')}`).join('\n\n')
             : '';
-        const messagesForApiContext = messages.filter((m) => !m.generationPlaceholder);
+        const messagesForApiContext = priorMessages.filter((m) => !m.generationPlaceholder);
         const conversationHistory = normalizeChatTurnsForApiMerge(
             messagesForApiContext.map((m) =>
                 toChatTurnWithPipelineExtras({
@@ -407,7 +419,7 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
         const baseWithFiles: Record<string, unknown> = {
             ...context,
             projectKnowledge: projectKnowledge || undefined,
-            project_files: analyzedFiles.map((f) => ({ name: f.name, type: f.type })),
+            project_files: filesForTurn.map((f) => ({ name: f.name, type: f.type })),
         };
         const contextWithFiles = await enrichChatContextRecordWithOptionalMultilayerStyleHint(
             coerceTrimmedString(promptInput, ''),
@@ -418,9 +430,23 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
 
         const mergeOpts = resolveMergeOptionsFromHistoryAndExplicit(conversationHistory, scenarioMergeOpts);
 
+        const { pipelineMerge, selfDevelopFlags } = buildComposerPipelineContextAppend({
+            trimmedInput: promptInput,
+            featureCtx: featureCtx as Record<string, unknown>,
+            composerResponseMode: 'balanced',
+            responseStyle: DEFAULT_CHAT_RESPONSE_STYLE,
+            conversationFileContent: projectKnowledge || undefined,
+            gensparkRouteAgentId: agentRouteId,
+            hasConversationThreadContext: conversationHistory.length > 0,
+        });
+
         const { quality, contextForBody } = mergeApiChatContextPayload(
             promptInput,
-            contextWithFiles,
+            {
+                ...contextWithFiles,
+                ...pipelineMerge,
+                ...selfDevelopFlags,
+            },
             conversationHistory.length > 0 ? conversationHistory : undefined,
             mergeOpts
         );
@@ -438,31 +464,9 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
             clearFileAnalysisNsPhases = () => {};
             const responseText = extractResponseContent({ data });
             const isSuccess = data.success !== false && responseText.length > 0;
-            const pipelineExtrasRaw = extractPipelineMessageExtrasFromChatResponse({ data });
-            const pipelineExtras = hasPipelineExtras(pipelineExtrasRaw)
-                ? pipelineExtrasRaw
-                : undefined;
             const suggestedFollowUps = extractPipelineFollowUpsFromChatResponse({ data });
+            const draftContent = isSuccess ? responseText : generateAIResponse(fromInput, filesForTurn);
 
-            const aiResponse: ChatMessage = {
-                id: placeholderAiId,
-                type: 'ai',
-                content: isSuccess ? responseText : generateAIResponse(fromInput, analyzedFiles),
-                timestamp: new Date(),
-                ...(pipelineExtras ? { pipelineExtras } : {}),
-                ...(suggestedFollowUps?.length ? { suggestedFollowUps } : {}),
-                analysis: {
-                    fileReferences: analyzedFiles.map(f => f.name),
-                    confidence: isSuccess ? 0.9 : 0.85,
-                    sources: analyzedFiles.map(f => f.name)
-                },
-                metadata: {
-                    model: 'gpt-4',
-                    tokens: 150,
-                    responseTime: 2000,
-                    fileAnalysisTime: 1000
-                }
-            };
             await runAssistantNonStreamPostResponsePhases((text) => {
                 setMessages((prev) =>
                     prev.map((m) =>
@@ -472,6 +476,62 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                     ),
                 );
             });
+
+            let finalContent = draftContent;
+            let pipelineExtras: PipelineMessageExtras | undefined;
+            if (isSuccess) {
+                const requestRefined = createPostChatRefinedAnswerFn({
+                    postChat: (body) => postChatJsonWithFallback(body),
+                    buildPayload: (outboundMessage, ctx) => ({
+                        ...chatPostBody,
+                        message: outboundMessage,
+                        ...(Object.keys(ctx).length > 0 ? { context: ctx } : {}),
+                    }),
+                });
+                const selfDevelopActive = isComposerSelfDevelopActiveForTurn({
+                    trimmedInput: promptInput,
+                    featureCtx: featureCtx as Record<string, unknown>,
+                    pipelineMerge,
+                });
+                const finalized = await finalizeAssistantNonStreamTurn({
+                    draft: draftContent,
+                    userInput: promptInput,
+                    requestContext: (contextForBody ?? {}) as Record<string, unknown>,
+                    sessionId: 'file_analysis_chat',
+                    selfDevelopActive,
+                    requestRefined,
+                    responseData: { data },
+                    onStatusText: (text) => {
+                        setMessages((prev) =>
+                            prev.map((m) =>
+                                m.id === placeholderAiId ? { ...m, content: text } : m,
+                            ),
+                        );
+                    },
+                });
+                finalContent = finalized.text;
+                pipelineExtras = finalized.pipelineExtras;
+            }
+
+            const aiResponse: ChatMessage = {
+                id: placeholderAiId,
+                type: 'ai',
+                content: finalContent,
+                timestamp: new Date(),
+                ...(pipelineExtras ? { pipelineExtras } : {}),
+                ...(suggestedFollowUps?.length ? { suggestedFollowUps } : {}),
+                analysis: {
+                    fileReferences: filesForTurn.map(f => f.name),
+                    confidence: isSuccess ? 0.9 : 0.85,
+                    sources: filesForTurn.map(f => f.name)
+                },
+                metadata: {
+                    model: 'gpt-4',
+                    tokens: 150,
+                    responseTime: 2000,
+                    fileAnalysisTime: 1000
+                }
+            };
             setMessages((prev) => prev.map((m) => (m.id === placeholderAiId ? aiResponse : m)));
         } catch (err) {
             clearFileAnalysisNsPhases();
@@ -483,12 +543,12 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
             const aiResponse: ChatMessage = {
                 id: placeholderAiId,
                 type: 'ai',
-                content: generateAIResponse(fromInput, analyzedFiles),
+                content: generateAIResponse(fromInput, filesForTurn),
                 timestamp: new Date(),
                 analysis: {
-                    fileReferences: analyzedFiles.map(f => f.name),
+                    fileReferences: filesForTurn.map(f => f.name),
                     confidence: 0.85,
-                    sources: analyzedFiles.map(f => f.name)
+                    sources: filesForTurn.map(f => f.name)
                 },
                 metadata: {
                     model: 'gpt-4',
@@ -502,8 +562,22 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
             clearFileAnalysisNsPhases();
             clearFileAnalysisNsPhases = () => {};
             setIsTyping(false);
-            onMessageSend?.(fromInput, analyzedFiles);
+            onMessageSend?.(fromInput, filesForTurn);
         }
+    };
+
+    const regenerateMessage = async (messageId: string) => {
+        if (isTyping) return;
+        const turn = resolveComposerRegenerateUserTurn(messages, messageId);
+        if (!turn) return;
+        const userMsg = messages[turn.truncateToIndex];
+        const kept = messages.slice(0, turn.truncateToIndex);
+        const filesSnapshot =
+            userMsg.files && userMsg.files.length > 0 ? userMsg.files : analyzedFiles;
+        await handleSendMessage(
+            turn.userText === '(파일만 업로드됨)' ? '' : turn.userText,
+            { baseMessages: kept, filesSnapshot },
+        );
     };
 
     const generateAIResponse = (question: string, files: AnalyzedFile[]): string => {
@@ -698,6 +772,17 @@ const FileAnalysisChatSystem: React.FC<FileAnalysisChatSystemProps> = ({
                                                             <button type="button" className="fac-action-btn" aria-label="도움됨"><ThumbsUp size={16} aria-hidden /></button>
                                                             <button type="button" className="fac-action-btn" aria-label="도움 안됨"><ThumbsDown size={16} aria-hidden /></button>
                                                             <button type="button" className="fac-action-btn" aria-label="복사"><Copy size={16} aria-hidden /></button>
+                                                            {!message.generationPlaceholder && !isTyping && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="fac-action-btn"
+                                                                    data-testid={TEST_IDS.COMPOSER_REGENERATE_MESSAGE}
+                                                                    aria-label="답변 재생성"
+                                                                    onClick={() => void regenerateMessage(message.id)}
+                                                                >
+                                                                    <RotateCcw size={16} aria-hidden />
+                                                                </button>
+                                                            )}
                                                         </>
                                                     )}
                                                     <span className="fac-msg-meta">{message.timestamp.toLocaleTimeString()}</span>
