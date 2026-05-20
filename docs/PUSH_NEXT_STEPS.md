@@ -59,10 +59,13 @@ GRAPH_PATCH_END=HEAD npm run export:graph-answer-patches
 ## 검증 (이관·push 전)
 
 ```bash
-npm run verify:conversation-graph:unit
-npm run verify:handoff-artifacts
+npm run ship:preflight              # handoff + 관계도 유닛 + push 점검
+npm run verify:composer-pipeline    # 컴포저 147 tests
+npm run handoff:info                # bundle SHA·경로 요약
 # 서버 :3000 기동 후
 npm run test:e2e:conversation-graph:chromium
 ```
+
+**SSH**: 현재 `~/.ssh/kakao_frontend_ed25519` → `k2000kor-bot`. owner 계정 push는 Collaborator Write 또는 개인용 SSH 키 추가 필요.
 
 관련: [PR_COMPOSER_GRAPH_DRAFT.md](./PR_COMPOSER_GRAPH_DRAFT.md) · [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) · [CONVERSATION_GRAPH.md](./CONVERSATION_GRAPH.md)

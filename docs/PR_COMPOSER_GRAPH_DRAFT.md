@@ -63,4 +63,9 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 
 관계도 답변만 패치 이관: `npm run export:graph-answer-patches`
 
-**로컬 재검증 (2026-05-20)**: `verify:conversation-graph:unit` · E2E 13 passed (`test:e2e:conversation-graph:chromium`)
+**로컬 재검증 (2026-05-20)**
+
+- [x] `npm run ship:preflight` (handoff + 관계도 유닛)
+- [x] `verify:composer-pipeline` — 19 suites, 147 tests
+- [x] E2E 관계도 13 (`test:e2e:conversation-graph:chromium`)
+- [ ] push — `k2000kor-bot` Write 필요 ([Collaborator](https://github.com/k2000kor/kakao/settings/access))
