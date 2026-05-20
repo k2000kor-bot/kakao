@@ -13,6 +13,12 @@ bash scripts/generate-push-block-manifest.sh
 cat docs/PUSH_BLOCK_MANIFEST.md
 ```
 
+### Composer Council만 이관 (기능 2커밋)
+
+- 가이드: [COMPOSER_COUNCIL_HANDOFF.md](./COMPOSER_COUNCIL_HANDOFF.md)
+- 추출: `npm run export:composer-council-patches` → `patches-composer-council-only/`
+- 시리즈: `0031-feat-composer-Council-E2E.patch`, `0032-docs-PR-Council-E2E.patch`
+
 ### 생성된 이관 아티팩트 (최신: 컴포저·관계도 파이프라인)
 
 - Bundle: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle` (~1.1GB, 브랜치 `dev-continue-2026-01-20` 전체)

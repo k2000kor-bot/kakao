@@ -72,6 +72,7 @@
     "verify:pre-deploy": "bash scripts/pre-deploy-verify.sh",
     "push:dev-continue": "bash scripts/push-dev-continue-branch.sh",
     "pr:composer-graph-body": "cat docs/PR_COMPOSER_GRAPH_DRAFT.md",
+    "export:composer-council-patches": "bash scripts/export-composer-council-patches.sh",
     "check:push-ready": "bash scripts/check-github-push-ready.sh",
     "verify:full-stack-local": "bash scripts/verify-full-stack-local.sh",
     "test:e2e:pipelines:all": "npm run test:e2e:composer-pipeline:all && npm run test:e2e:conversation-graph:chromium",
