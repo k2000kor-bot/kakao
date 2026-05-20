@@ -24,8 +24,8 @@ npm run check:push-ready
 PUSH_REMOTE_URL=git@github.com:k2000kor/kakao.git npm run push:dev-continue
 ```
 
-4. PR: `npm run pr:composer-graph-url` → Compare 페이지에서 생성  
-5. 본문: `npm run pr:composer-graph-body`
+4. PR: `npm run pr:open-compare` (macOS 브라우저) 또는 `npm run pr:composer-graph-url`  
+5. 본문: `npm run pr:composer-graph-body` (클립보드: `npm run pr:composer-graph-body | pbcopy`)
 
 ## B. 새 저장소에 push
 

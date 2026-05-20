@@ -59,6 +59,8 @@ npm run refresh:handoff-artifacts   # 커밋 직후라면
 PUSH_REMOTE_URL=git@github.com:<owner>/<repo>.git npm run push:dev-continue
 ```
 
-PR 본문: `npm run pr:composer-graph-body` · Compare URL: `npm run pr:composer-graph-url`
+PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare` (macOS)
 
 관계도 답변만 패치 이관: `npm run export:graph-answer-patches`
+
+**로컬 재검증 (2026-05-20)**: `verify:conversation-graph:unit` · E2E 13 passed (`test:e2e:conversation-graph:chromium`)
