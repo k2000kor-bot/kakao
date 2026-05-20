@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-20 17:52:29 KST
+- generated_at: 2026-05-20 18:28:27 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `07b2714f2 chore: handoff manifest tip e00631024 동기화`
+- latest_commit: `8470241f2 test: 관계도 API 스모크에 chat 답변 검증·dev-check 뷰 타입 추가`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1157133732
-- bundle_sha256: `9b45ff67eeb8bbd85fd6ee209c026ad2241dc108144c110a1707a5b15918a24c`
+- bundle_size_bytes: 1157137099
+- bundle_sha256: `6fefdb5f227cd667f1725c730d4ae5bec1d227676030cf1b4565b895a67d7340`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 57
-- patch_series_expected: 57 (`bc4451251..HEAD`)
+- patch_series_count: 59
+- patch_series_expected: 59 (`bc4451251..HEAD`)
 
 ### Recent Commits
 
 ```
+8470241f2 test: 관계도 API 스모크에 chat 답변 검증·dev-check 뷰 타입 추가
+7bcf798b2 chore: push·release-check 전 handoff 자동 refresh로 bundle tip 불일치 방지
 07b2714f2 chore: handoff manifest tip e00631024 동기화
 e00631024 chore: handoff manifest를 3cb19adbb tip에 동기화
 3cb19adbb docs: PR 초안·handoff manifest 최신 HEAD(9fe4a4027) 반영
-9fe4a4027 chore: handoff bundle·manifest를 a5fb640b6 tip에 맞춤
-a5fb640b6 feat(graph-answer): 연속 질문·답변 기록, 한글 보고서 정리, IME Enter 수정
 ```
