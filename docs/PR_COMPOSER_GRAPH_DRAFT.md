@@ -8,6 +8,8 @@
 - 컴포저 다중 요청 UI(질문·요구·요청 칩, 입력 미리보기, 5단계 UI, 체크리스트)
 - 옵트인 순차 API(`REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST` / `..._STREAM`) — 전송·재생성·편집 공통
 - 옵트인 다단계 응답(`REACT_APP_COMPOSER_MULTI_STEP_MULTI_REQUEST`)
+- **Composer Oversight Council v2**·답변 **자가 개발** 루프(전송·재생성·편집 공통) — `03bf9a96e`
+- **재생성 E2E**: Ultimate(+Council)·`/agents` 스트림(ChatGPTInterface) — CI `composer-regenerate-e2e`
 - 대화 관계도 뷰·handoff·Jest/E2E·CI jobs (`composer-pipeline`, `conversation-graph`, E2E)
 
 ## Test plan
@@ -20,8 +22,11 @@
 - [x] `HANDOFF_REFRESH=1 npm run maintain:push-block` (사이드바·컴포저 회귀)
 - [x] `npm run verify:conversation-graph-api` (upload·relationship-graph)
 - [x] `npm run test:e2e:conversation-graph:chromium` (12 passed, `:3000`+`:5002` 기동)
-- [x] `npm run test:e2e:composer-pipeline:all` (3 passed)
-- [x] `npm run test:e2e:pipelines:all` (컴포저 3 + 관계도 12)
+- [x] `npm run verify:composer-pipeline` (19 suites, 147 tests)
+- [x] `npm run test:e2e:composer-regenerate:ci` (2 passed, 파일분석 skip)
+- [x] `npm run test:e2e:composer-pipeline:all` (에이전트·다중요청·재생성)
+- [x] `npm run test:e2e:pipelines:all` (컴포저 묶음 + 관계도 12)
+- [x] 백엔드 `pytest tests/test_composer_oversight_*.py tests/test_composer_self_develop_hint.py` (10 passed)
 - [x] `npm run verify:conversation-graph` (= unit + E2E)
 - [ ] 수동: `.env.local` 순차/multi-step 플래그 후 `1.\n2.` 전송·재생성·편집
 
@@ -31,6 +36,7 @@
 REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST=true
 REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST_STREAM=true
 REACT_APP_COMPOSER_MULTI_STEP_MULTI_REQUEST=true
+# REACT_APP_COMPOSER_ANSWER_SELF_DEVELOP=0   # 자가 개발 루프만 끄기 (Council 유지)
 ```
 
 ## Push (권한 있는 저장소에서)
