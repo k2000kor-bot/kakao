@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-20 11:16:13 KST
+- generated_at: 2026-05-20 11:31:15 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `820897aea docs: PR 초안에 Council·재생성 E2E 검증 항목 반영`
+- latest_commit: `bac7933e9 chore: handoff bundle·패치 시리즈를 Council 커밋 tip과 동기화`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1157049687
-- bundle_sha256: `426219809929cfb37e43f6fac610b3c152aad1fb7e4750914744cf4fe24f6f5d`
+- bundle_size_bytes: 1157050656
+- bundle_sha256: `e2b58ec140682aca9c9ab6918c2281c327ff23532a9674a77e5cfc9bf9c400d8`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 32
-- patch_series_expected: 32 (`bc4451251..HEAD`)
+- patch_series_count: 33
+- patch_series_expected: 33 (`bc4451251..HEAD`)
 
 ### Recent Commits
 
 ```
+bac7933e9 chore: handoff bundle·패치 시리즈를 Council 커밋 tip과 동기화
 820897aea docs: PR 초안에 Council·재생성 E2E 검증 항목 반영
 03bf9a96e feat(composer): Council·자가 개발 파이프라인 및 재생성 E2E
 15426d29b chore: sync handoff bundle SHA after manifest refresh
 94330e145 chore: refresh handoff manifest after route breadcrumb UI commit
-e02b29643 fix(ui): unify route breadcrumb to one line above input and chat routes
 ```
