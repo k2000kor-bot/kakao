@@ -47,7 +47,7 @@ PUSH_REMOTE_URL=git@github.com:<owner>/<new-repo>.git npm run push:dev-continue
 git clone /Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle kakao-import
 cd kakao-import && git checkout dev-continue-2026-01-20
 
-# 또는 패치 시리즈 (59개, `npm run handoff:info`로 확인)
+# 또는 패치 시리즈 (`npm run handoff:info`로 개수·경로 확인)
 bash scripts/apply-dev-continue-patches.sh /Users/a0/kakao-frontend/patches-dev-continue-2026-05-19
 
 # 관계도 답변 기능만 (1~4커밋)
