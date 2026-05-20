@@ -69,4 +69,6 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `verify:composer-pipeline` — 19 suites, 147 tests
 - [x] E2E 관계도 13 (`test:e2e:conversation-graph:chromium`)
 - [x] `npx tsc --noEmit` · `680071efd` TS 수정 (재생성 `messageIndex`, `agentRouteId`, `pipelineExtras`)
+- [x] `npm run verify:pre-deploy` (sidebar + composer 147 + 관계도 unit, 2026-05-20)
+- [x] `npm run pr:prepare` (preflight + PR 본문 export)
 - [ ] push — `k2000kor-bot` Write 필요 ([Collaborator](https://github.com/k2000kor/kakao/settings/access))

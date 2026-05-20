@@ -60,6 +60,7 @@ GRAPH_PATCH_END=HEAD npm run export:graph-answer-patches
 
 ```bash
 npm run ship:preflight              # handoff + 관계도 유닛 + push 점검
+npm run verify:pre-deploy           # sidebar + composer + 관계도 unit (~1분)
 npm run verify:composer-pipeline    # 컴포저 147 tests
 npm run handoff:info                # bundle SHA·경로 요약
 # 서버 :3000 기동 후
