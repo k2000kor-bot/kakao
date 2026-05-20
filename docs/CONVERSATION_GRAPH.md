@@ -76,6 +76,11 @@ REACT_APP_GRAPH_ANSWER_SELF_IMPROVE=1
 REACT_APP_GRAPH_ANSWER_TWO_PASS=0
 ```
 
+## Push / 패치 이관
+
+- 브랜치 push·PR: [PUSH_NEXT_STEPS.md](./PUSH_NEXT_STEPS.md) · `npm run push:next-steps`
+- **관계도 답변만** 이관: `npm run export:graph-answer-patches` → `patches-graph-answer-only/` (기본 `ff911ff77` 1커밋; handoff·문서 포함 시 `GRAPH_PATCH_END=HEAD`)
+
 ## 관련 파일 (이 저장소)
 
 - 프론트: `src/views/ConversationGraphView.tsx`, `src/services/conversationGraphService.ts`, `src/config/api.ts` (경로·필드명 상수)

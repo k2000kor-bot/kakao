@@ -49,7 +49,9 @@ REACT_APP_GRAPH_ANSWER_SELF_IMPROVE=1
 REACT_APP_GRAPH_ANSWER_TWO_PASS=0
 ```
 
-## Push (권한 있는 저장소에서)
+## Push / PR
+
+단계별 안내: [PUSH_NEXT_STEPS.md](./PUSH_NEXT_STEPS.md) · `npm run push:next-steps`
 
 ```bash
 npm run check:push-ready
@@ -58,3 +60,5 @@ PUSH_REMOTE_URL=git@github.com:<owner>/<repo>.git npm run push:dev-continue
 ```
 
 PR 본문: `npm run pr:composer-graph-body` · Compare URL: `npm run pr:composer-graph-url`
+
+관계도 답변만 패치 이관: `npm run export:graph-answer-patches`
