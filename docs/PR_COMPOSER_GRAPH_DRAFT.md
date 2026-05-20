@@ -17,6 +17,9 @@
 - **재생성 E2E**: Ultimate(+Council)·`/agents` 스트림(ChatGPTInterface) — CI `composer-regenerate-e2e`
 - 대화 관계도 뷰·handoff·Jest/E2E·CI jobs (`composer-pipeline`, `conversation-graph`, E2E)
 - **관계도 정리된 생성 답변**: 결정론적 표·Mermaid + LLM 해석 합성, 로컬 학습 힌트, 2-pass(개요→보고서), 패널 UI 토글
+- **관계도 연속 질문·답변**: 스크롤 기록·이전 맥락 API 전달 (`a5fb640b6`)
+- **한글 보고서 prose**: 글 유형 지시·시스템 태그 제거 후처리
+- **IME Enter**: 채팅·관계도 입력창 한글 조합 중 Enter 잔여 글자 수정
 
 ## Test plan
 
@@ -74,4 +77,6 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `npm run verify:pre-deploy` (sidebar + composer 147 + 관계도 unit, 2026-05-20)
 - [x] `npm run build` — 프로덕션 빌드 성공 (TS·번들)
 - [x] `npm run pr:prepare` (preflight + PR 본문 export)
+- [x] `npm run local:verify` · `npm run ship:preflight` (HEAD `9fe4a4027`)
+- [x] 관계도 답변 연속 턴·IME 단위 테스트
 - [ ] push — `k2000kor-bot` Write 필요 ([Collaborator](https://github.com/k2000kor/kakao/settings/access))
