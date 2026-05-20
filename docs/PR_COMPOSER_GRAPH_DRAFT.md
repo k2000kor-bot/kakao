@@ -1,7 +1,12 @@
 # PR 초안 — composer multi-request + conversation graph
 
 **브랜치**: `dev-continue-2026-01-20`  
-**베이스**: `main` (또는 팀 기본 브랜치)
+**HEAD**: `git rev-parse --short HEAD` · `npm run pr:composer-graph-url` (push 직전 `npm run refresh:handoff-artifacts`)  
+**베이스**: `main` (또는 팀 기본 브랜치)  
+**제목 제안**: `feat: 컴포저 순차 생성·관계도 정리 답변(합성·2-pass)·handoff`
+
+**Compare URL** (push 후):  
+`https://github.com/k2000kor/kakao/compare/main...dev-continue-2026-01-20?expand=1`
 
 ## Summary
 
@@ -52,4 +57,4 @@ npm run refresh:handoff-artifacts   # 커밋 직후라면
 PUSH_REMOTE_URL=git@github.com:<owner>/<repo>.git npm run push:dev-continue
 ```
 
-PR 본문 출력: `npm run pr:composer-graph-body` (또는 이 파일을 GitHub PR에 붙여넣기).
+PR 본문: `npm run pr:composer-graph-body` · Compare URL: `npm run pr:composer-graph-url`

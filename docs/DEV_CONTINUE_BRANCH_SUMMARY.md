@@ -7,18 +7,21 @@
 - **컴포저**: 질문·요구·요청 칩, 입력 미리보기, 5단계 UI, 다중 요청 체크리스트
 - **순차 API** (옵트인): `REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST` (+ `..._STREAM`)
 - **다단계** (옵트인): `REACT_APP_COMPOSER_MULTI_STEP_MULTI_REQUEST`
-- **관계도**: `ConversationGraphView`, handoff, Jest 169+, E2E 12, 백엔드 API
+- **관계도**: `ConversationGraphView`, handoff, **정리된 답변 합성**(표·Mermaid+LLM), 2-pass·학습, Jest 200+, E2E 13, 백엔드 15
+- **Composer Council**·자가 개발·재생성 E2E (별도 env)
 
 ## 검증 (로컬, 2026-05 통과)
 
 ```bash
-npm run verify:pre-deploy          # Jest만
-npm run verify:final               # 빌드 + chat-pipeline + composer
-npm run verify:full-stack-local    # 서버 :3000 + :5002 기동 후 전체
-npm run test:e2e:pipelines:all     # 컴포저 3 + 관계도 12 (서버 기동 시)
+npm run verify:pre-deploy
+npm run verify:final
+npm run verify:conversation-graph:unit   # 관계도 Jest + 백엔드
+npm run verify:conversation-graph        # + E2E 13 (서버 :3000)
+npm run verify:handoff-artifacts
+npm run test:e2e:pipelines:all           # 컴포저 + 관계도 13
 ```
 
-최근 풀스택 E2E: 관계도 12 · 컴포저 3 · API 스모크 OK (`:3000` + `:5002`).
+최근: 관계도 E2E 13(합성·2-pass) · `verify:conversation-graph:unit` OK · bundle tip = `0eba17f56` (`npm run pr:composer-graph-url`).
 
 ## Push
 
