@@ -20,6 +20,8 @@ echo "bundle -> ${BUNDLE_PATH}"
 git bundle create "${BUNDLE_PATH}" "${BRANCH}"
 
 echo "patches -> ${PATCH_SERIES_DIR}"
+mkdir -p "${PATCH_SERIES_DIR}"
+rm -f "${PATCH_SERIES_DIR}"/*.patch
 git format-patch "${PATCH_SERIES_BASE}..HEAD" -o "${PATCH_SERIES_DIR}"
 
 bash scripts/generate-push-block-manifest.sh
