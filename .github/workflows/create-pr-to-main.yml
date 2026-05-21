@@ -1,15 +1,19 @@
-# dev-continue → main PR 자동 생성 (workflow_dispatch)
-# Settings → Actions → Allow GitHub Actions to create and approve pull requests
-# 또는 Secrets → KAKAO_BOT_PAT (k2000kor-bot PAT, repo scope)
+# dev-continue → main PR 자동 생성
+# Secrets: KAKAO_BOT_PAT (권장) · Settings → Actions → Allow GitHub Actions to create PRs
 name: Create PR to main
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - dev-continue-2026-01-20
+    paths-ignore:
+      - 'backend/**/*.db'
+      - '**/*.db'
 
 permissions:
   contents: read
   pull-requests: write
-  issues: write
 
 jobs:
   create-pr:
@@ -19,65 +23,52 @@ jobs:
         with:
           ref: dev-continue-2026-01-20
 
-      - name: Resolve GH token
-        id: token
-        run: |
-          if [[ -n "${{ secrets.KAKAO_BOT_PAT }}" ]]; then
-            echo "use=pat" >> "$GITHUB_OUTPUT"
-          else
-            echo "use=default" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Check existing PR
+      - name: Find open PR
         id: existing
-        env:
-          GH_TOKEN: ${{ secrets.KAKAO_BOT_PAT || github.token }}
-        run: |
-          set -euo pipefail
-          URL=$(gh pr list --repo "${{ github.repository }}" \
-            --base main --head dev-continue-2026-01-20 --state open \
-            --json url -q '.[0].url' 2>/dev/null || true)
-          echo "url=${URL}" >> "$GITHUB_OUTPUT"
-          if [[ -n "$URL" ]]; then
-            echo "## PR already open" >> "$GITHUB_STEP_SUMMARY"
-            echo "$URL" >> "$GITHUB_STEP_SUMMARY"
-          fi
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              base: 'main',
+              head: 'dev-continue-2026-01-20',
+            });
+            const url = data[0]?.html_url ?? '';
+            core.setOutput('url', url);
+            if (url) {
+              core.summary.addRaw(`## PR already open\n${url}`);
+            }
 
       - name: Create pull request
         if: steps.existing.outputs.url == ''
-        env:
-          GH_TOKEN: ${{ secrets.KAKAO_BOT_PAT || github.token }}
-        run: |
-          set -euxo pipefail
-          if ! gh pr create --repo "${{ github.repository }}" \
-            --base main \
-            --head dev-continue-2026-01-20 \
-            --title "feat: 컴포저 순차 생성·관계도 정리 답변(합성·2-pass)·handoff" \
-            --body-file docs/PR_COMPOSER_GRAPH_DRAFT.md 2> /tmp/pr-err.txt; then
-            ERR=$(cat /tmp/pr-err.txt)
-            {
-              echo "## PR create failed"
-              echo "token: ${{ steps.token.outputs.use }}"
-              echo ""
-              echo "Settings: https://github.com/${{ github.repository }}/settings/actions"
-              echo "- Read and write + Allow Actions to create PRs"
-              echo "- 또는 Secrets → KAKAO_BOT_PAT"
-              echo ""
-              echo '```'
-              echo "$ERR"
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-            {
-              echo "$ERR"
-              echo ""
-              echo "Manual PR: https://github.com/${{ github.repository }}/pull/new?base=main&head=dev-continue-2026-01-20"
-            } > /tmp/issue-body.txt
-            gh issue create --repo "${{ github.repository }}" \
-              --title "chore: PR create failed (Actions)" \
-              --body-file /tmp/issue-body.txt \
-              || true
-            exit 1
-          fi
-          echo "## Created PR" >> "$GITHUB_STEP_SUMMARY"
-          gh pr view --repo "${{ github.repository }}" --json url,number -q '"\(.url) (#\(.number))"' \
-            >> "$GITHUB_STEP_SUMMARY"
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.KAKAO_BOT_PAT || github.token }}
+          script: |
+            const fs = require('fs');
+            const path = 'docs/PR_COMPOSER_GRAPH_DRAFT.md';
+            let body = fs.readFileSync(path, 'utf8');
+            if (body.length > 62000) {
+              body = body.slice(0, 62000) + '\n\n…(truncated; see branch docs/PR_COMPOSER_GRAPH_DRAFT.md)';
+            }
+            const title =
+              'feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff';
+            try {
+              const { data } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                head: 'dev-continue-2026-01-20',
+                base: 'main',
+                body,
+              });
+              core.summary.addRaw(`## Created PR\n${data.html_url} (#${data.number})`);
+            } catch (e) {
+              const msg = e.message || String(e);
+              core.summary.addRaw(
+                `## PR create failed\n\`\`\`\n${msg}\n\`\`\`\n\nManual: https://github.com/${context.repo.owner}/${context.repo.repo}/pull/new?base=main&head=dev-continue-2026-01-20`,
+              );
+              core.setFailed(msg);
+            }

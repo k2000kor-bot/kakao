@@ -10,7 +10,14 @@
    (또는 터미널: `npm run pr:composer-graph-body | pbcopy`)
 4. **Create pull request** 클릭
 
-## 2. API로 PR 생성 (토큰 있을 때)
+## 2. GitHub Actions로 PR 생성 (권장)
+
+저장소 **Secrets → `KAKAO_BOT_PAT`** 설정 후:
+
+1. https://github.com/k2000kor-bot/kakao/actions/workflows/create-pr-to-main.yml
+2. **Run workflow** (또는 `dev-continue-2026-01-20` push 시 자동 시도)
+
+## 3. 로컬 API (토큰 있을 때)
 
 ```bash
 export GITHUB_TOKEN=<repo scope PAT>
@@ -18,7 +25,7 @@ cd kakao-frontend
 PR_TITLE='feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff' npm run pr:create
 ```
 
-## 3. default branch → `main` (선택)
+## 4. default branch → `main` (선택)
 
 현재 default: `dev-continue-2026-01-20`
 
@@ -27,7 +34,7 @@ KAKAO_BOT_PAT=<admin PAT> npm run repo:set-default-main
 # 또는 수동: https://github.com/k2000kor-bot/kakao/settings/branches
 ```
 
-## 4. merge 후 로컬
+## 5. merge 후 로컬
 
 ```bash
 git checkout main && git pull origin main
