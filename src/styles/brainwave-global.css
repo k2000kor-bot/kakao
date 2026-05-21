@@ -637,7 +637,6 @@
 }
 
 .bw-tool-view > .bw-detail-header-left {
-  flex-shrink: 0;
   padding: var(--spacing-lg);
   border-bottom: var(--border-width) solid var(--border-color);
   margin-bottom: 0;
@@ -718,6 +717,20 @@
 .bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) [role="img"] {
   width: 100%;
   max-width: 100%;
+}
+
+/* 도구 상세(*/-view): 버튼·액션 행 — 좁은 화면에서 줄바꿈·말줄임 */
+.bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) .bw-btn-primary,
+.bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) .bw-btn-secondary {
+  font-size: var(--font-size-sm);
+  padding: 4px 10px;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) .bw-features-card .bw-mt-sm,
+.bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) .bw-features-card fieldset {
+  min-width: 0;
 }
 
 .bw-detail-meta-row {

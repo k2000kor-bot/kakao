@@ -20,6 +20,7 @@
 - **관계도 연속 질문·답변**: 스크롤 기록·이전 맥락 API 전달 (`a5fb640b6`)
 - **한글 보고서 prose**: 글 유형 지시·시스템 태그 제거 후처리
 - **IME Enter**: 채팅·관계도 입력창 한글 조합 중 Enter 잔여 글자 수정
+- **UI 간결화**: 관계도·채팅/프로젝트 상세 버튼 라벨·`bw-tool-view` 상세 레이아웃(툴바 wrap·패널 너비)
 
 ## Test plan
 
@@ -79,4 +80,5 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `npm run pr:prepare` (preflight + PR 본문 export)
 - [x] `npm run local:verify` · `npm run ship:preflight` (HEAD `9fe4a4027`)
 - [x] 관계도 답변 연속 턴·IME 단위 테스트
+- [x] `npm run local:verify` · 관계도/채팅 UI 간결화 (`74fdc9b60`, `01d2b15d9`)
 - [ ] push — `k2000kor-bot` Write 필요 ([Collaborator](https://github.com/k2000kor/kakao/settings/access))
