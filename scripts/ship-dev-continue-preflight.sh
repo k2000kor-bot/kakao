@@ -34,4 +34,7 @@ npm run pr:composer-graph-url
 echo "  본문: npm run pr:composer-graph-body"
 echo "  macOS Compare: npm run pr:open-compare"
 echo "  본문 복사: npm run pr:copy-body"
-exit "${PUSH_OK:-0}"
+if [[ "${PUSH_OK:-0}" -eq 1 ]]; then
+  exit 0
+fi
+exit 1
