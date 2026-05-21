@@ -83,4 +83,5 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] 관계도 답변 연속 턴·IME 단위 테스트
 - [x] `npm run local:verify` · 관계도/채팅 UI 간결화 (`74fdc9b60`, `01d2b15d9`)
 - [x] push — `k2000kor-bot/kakao` (`5edeecfe6`, 대용량 blob 히스토리 정리 후 push)
-- [ ] PR — Settings에서 Actions PR 권한 켠 뒤 Run workflow, 또는 `npm run pr:open-new` ([PR_CREATE_NOW.md](./PR_CREATE_NOW.md), [Issue #1](https://github.com/k2000kor-bot/kakao/issues/1))
+- [x] `main` 동기화 — `npm run promote:main` (`db99e5633`, PR 없이 `main` ← `dev-continue-2026-01-20`)
+- [ ] PR (선택) — 리뷰 기록용으로만 필요 시 `npm run pr:open-new`
