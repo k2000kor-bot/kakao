@@ -1795,7 +1795,7 @@ describe('ChatGPTInterface', () => {
         expect(manageMenu).toHaveAttribute('open');
       });
       expect(
-        within(manageMenu).getByRole('button', { name: '메시지 전체 삭제' }),
+        within(manageMenu).getByRole('button', { name: '메시지 삭제' }),
       ).toBeInTheDocument();
     });
 
@@ -1806,7 +1806,7 @@ describe('ChatGPTInterface', () => {
       await waitFor(() => {
         expect(manageMenu).toHaveAttribute('open');
       });
-      fireEvent.click(within(manageMenu).getByRole('button', { name: '메시지 전체 삭제' }));
+      fireEvent.click(within(manageMenu).getByRole('button', { name: '메시지 삭제' }));
       const dialog = await screen.findByRole('dialog', { name: '메시지 전체 삭제 확인' });
       expect(dialog).toBeInTheDocument();
       expect(
@@ -1863,7 +1863,7 @@ describe('ChatGPTInterface', () => {
         await waitFor(() => {
           expect(manageMenu).toHaveAttribute('open');
         });
-        fireEvent.click(within(manageMenu).getByRole('button', { name: '메시지 전체 삭제' }));
+        fireEvent.click(within(manageMenu).getByRole('button', { name: '메시지 삭제' }));
         const dialog = await screen.findByRole('dialog', { name: '메시지 전체 삭제 확인' });
         fireEvent.click(
           within(dialog).getByRole('button', { name: '메시지 전체 삭제 확인' }),
@@ -1884,7 +1884,7 @@ describe('ChatGPTInterface', () => {
           expect(manageMenu).toHaveAttribute('open');
         });
         expect(
-          within(manageMenu).queryByRole('button', { name: '메시지 전체 삭제' }),
+          within(manageMenu).queryByRole('button', { name: '메시지 삭제' }),
         ).not.toBeInTheDocument();
         expect(within(manageMenu).getByRole('button', { name: '복제' })).toBeDisabled();
       } finally {
