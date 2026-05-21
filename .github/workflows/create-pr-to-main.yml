@@ -67,11 +67,14 @@ jobs:
               echo "$ERR"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo "$ERR"
+              echo ""
+              echo "Manual PR: https://github.com/${{ github.repository }}/pull/new?base=main&head=dev-continue-2026-01-20"
+            } > /tmp/issue-body.txt
             gh issue create --repo "${{ github.repository }}" \
-              --title "chore: PR 생성 실패 (Actions)" \
-              --body "$ERR
-
-수동 PR: https://github.com/${{ github.repository }}/pull/new?base=main&head=dev-continue-2026-01-20" \
+              --title "chore: PR create failed (Actions)" \
+              --body-file /tmp/issue-body.txt \
               || true
             exit 1
           fi
