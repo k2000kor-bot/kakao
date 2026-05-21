@@ -60,7 +60,8 @@ REACT_APP_GRAPH_ANSWER_TWO_PASS=0
 ```bash
 npm run check:push-ready
 npm run refresh:handoff-artifacts   # 커밋 직후라면
-PUSH_REMOTE_URL=git@github.com:<owner>/<repo>.git npm run push:dev-continue
+npm run push:dev-continue           # 기본: k2000kor-bot/kakao
+npm run pr:create                   # PR 폼 열기 (quick_pull)
 ```
 
 PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare` (macOS)
@@ -81,5 +82,5 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `npm run local:verify` · `npm run ship:preflight` (HEAD `88378ad1a`)
 - [x] 관계도 답변 연속 턴·IME 단위 테스트
 - [x] `npm run local:verify` · 관계도/채팅 UI 간결화 (`74fdc9b60`, `01d2b15d9`)
-- [x] push — `k2000kor-bot/kakao` (`51644fbfb`, 대용량 blob 히스토리 정리 후 push)
-- [ ] PR — https://github.com/k2000kor-bot/kakao/compare/main...dev-continue-2026-01-20?expand=1
+- [x] push — `k2000kor-bot/kakao` (`5edeecfe6`, 대용량 blob 히스토리 정리 후 push)
+- [ ] PR — `npm run pr:create` (제목·본문 pre-fill → Create pull request 클릭)

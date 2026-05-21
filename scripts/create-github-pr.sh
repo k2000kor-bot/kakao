@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# k2000kor-bot/kakao PR 생성 (GITHUB_TOKEN 있으면 API, 없으면 Compare URL)
+# k2000kor-bot/kakao PR 생성 (GITHUB_TOKEN/gh → API, 없으면 quick_pull URL)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,22 +18,55 @@ if [[ ! -f "$BODY_FILE" ]]; then
   exit 1
 fi
 
-if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-  echo "GITHUB_TOKEN 없음 — 브라우저에서 PR 생성: $COMPARE"
+resolve_token() {
+  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    echo "$GITHUB_TOKEN"
+    return
+  fi
+  if command -v gh >/dev/null 2>&1; then
+    gh auth token 2>/dev/null || true
+  fi
+}
+
+open_quick_pull() {
+  local url
+  url="$(python3 - "$COMPARE" "$TITLE" "$BODY_FILE" <<'PY'
+import sys, urllib.parse
+compare, title, body_path = sys.argv[1:4]
+body = open(body_path, encoding="utf-8").read()
+# GitHub compare URL 길이 제한 — 본문은 앞부분만 pre-fill
+if len(body) > 5500:
+    body = body[:5500] + "\n\n…(전체 본문: docs/PR_COMPOSER_GRAPH_DRAFT.md)"
+q = urllib.parse.urlencode({
+    "quick_pull": "1",
+    "title": title,
+    "body": body,
+})
+sep = "&" if "?" in compare else "?"
+print(f"{compare}{sep}{q}")
+PY
+)"
+  echo "PR 미리 채우기: $url"
   if command -v open >/dev/null 2>&1; then
-    open "$COMPARE"
+    open "$url"
   fi
   if command -v pbcopy >/dev/null 2>&1; then
     pbcopy < "$BODY_FILE"
-    echo "PR 본문 클립보드에 복사됨"
+    echo "PR 본문 전체 클립보드에 복사됨"
   fi
+}
+
+TOKEN="$(resolve_token || true)"
+if [[ -z "$TOKEN" ]]; then
+  echo "GITHUB_TOKEN/gh 없음 — quick_pull로 PR 폼 열기"
+  open_quick_pull
   exit 0
 fi
 
 BODY_JSON="$(python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' < "$BODY_FILE")"
 HTTP="$(curl -sS -o /tmp/gh-pr.json -w "%{http_code}" \
   -X POST \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "Authorization: Bearer ${TOKEN}" \
   -H "Accept: application/vnd.github+json" \
   "https://api.github.com/repos/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/pulls" \
   -d "{\"title\":$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$TITLE"),\"head\":\"${HEAD}\",\"base\":\"${BASE}\",\"body\":${BODY_JSON}}")"
@@ -43,8 +76,7 @@ if [[ "$HTTP" == "201" ]]; then
   exit 0
 fi
 
-echo "FAIL: HTTP $HTTP"
+echo "API FAIL: HTTP $HTTP — quick_pull로 대체"
 cat /tmp/gh-pr.json 2>/dev/null || true
-echo ""
-echo "수동: $COMPARE"
-exit 2
+open_quick_pull
+exit 0
