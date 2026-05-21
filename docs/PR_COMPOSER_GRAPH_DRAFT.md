@@ -78,7 +78,7 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `npm run verify:pre-deploy` (sidebar + composer 147 + 관계도 unit, 2026-05-20)
 - [x] `npm run build` — 프로덕션 빌드 성공 (TS·번들)
 - [x] `npm run pr:prepare` (preflight + PR 본문 export)
-- [x] `npm run local:verify` · `npm run ship:preflight` (HEAD `9fe4a4027`)
+- [x] `npm run local:verify` · `npm run ship:preflight` (HEAD `88378ad1a`)
 - [x] 관계도 답변 연속 턴·IME 단위 테스트
 - [x] `npm run local:verify` · 관계도/채팅 UI 간결화 (`74fdc9b60`, `01d2b15d9`)
 - [ ] push — `k2000kor-bot` Write 필요 ([Collaborator](https://github.com/k2000kor/kakao/settings/access))
