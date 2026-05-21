@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-20 18:42:07 KST
+- generated_at: 2026-05-21 09:15:52 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `ddaa24a81 docs: PUSH_NEXT_STEPS 패치 시리즈 개수(59) 갱신`
+- latest_commit: `74fdc9b60 ui: 관계도 버튼 문구 간결화·상세 레이아웃 반응형 정리`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1157138225
-- bundle_sha256: `96e2a08f15078b41aaedb08c111b1a3db6b5872587cac5390ce62c8dcfa6b819`
+- bundle_size_bytes: 1157142937
+- bundle_sha256: `2df5151d9b75f60ac1ae34dc48cd844d71a1455452f44cb933397ccd22421657`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 61
-- patch_series_expected: 61 (`bc4451251..HEAD`)
+- patch_series_count: 64
+- patch_series_expected: 64 (`bc4451251..HEAD`)
 
 ### Recent Commits
 
 ```
+74fdc9b60 ui: 관계도 버튼 문구 간결화·상세 레이아웃 반응형 정리
+1e51ae51a docs: PUSH_NEXT_STEPS 패치 개수를 handoff:info 참조로 정리
+53c2dc947 chore: handoff manifest를 ddaa24a81 tip에 동기화
 ddaa24a81 docs: PUSH_NEXT_STEPS 패치 시리즈 개수(59) 갱신
 81af723b4 chore: handoff manifest를 8470241f2 tip에 동기화
-8470241f2 test: 관계도 API 스모크에 chat 답변 검증·dev-check 뷰 타입 추가
-7bcf798b2 chore: push·release-check 전 handoff 자동 refresh로 bundle tip 불일치 방지
-07b2714f2 chore: handoff manifest tip e00631024 동기화
 ```
