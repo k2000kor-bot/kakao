@@ -6,7 +6,7 @@
 **제목 제안**: `feat: 컴포저 순차 생성·관계도 정리 답변(합성·2-pass)·handoff`
 
 **Compare URL** (push 후):  
-`https://github.com/k2000kor/kakao/compare/main...dev-continue-2026-01-20?expand=1`
+`https://github.com/k2000kor-bot/kakao/compare/main...dev-continue-2026-01-20?expand=1`
 
 ## Summary
 
@@ -81,4 +81,5 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `npm run local:verify` · `npm run ship:preflight` (HEAD `88378ad1a`)
 - [x] 관계도 답변 연속 턴·IME 단위 테스트
 - [x] `npm run local:verify` · 관계도/채팅 UI 간결화 (`74fdc9b60`, `01d2b15d9`)
-- [ ] push — `k2000kor-bot` Write 필요 ([Collaborator](https://github.com/k2000kor/kakao/settings/access))
+- [x] push — `k2000kor-bot/kakao` (`51644fbfb`, 대용량 blob 히스토리 정리 후 push)
+- [ ] PR — https://github.com/k2000kor-bot/kakao/compare/main...dev-continue-2026-01-20?expand=1

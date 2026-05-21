@@ -5,8 +5,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-OWNER="${GITHUB_OWNER:-k2000kor}"
-REPO="${GITHUB_REPO:-kakao}"
+# shellcheck source=push-remote-default.sh
+source "$ROOT/scripts/push-remote-default.sh"
+OWNER="${GITHUB_OWNER:-$PUSH_GITHUB_OWNER}"
+case "$OWNER" in k2000kor) OWNER="$PUSH_GITHUB_OWNER" ;; esac
+REPO="${GITHUB_REPO:-$PUSH_GITHUB_REPO}"
 BASE="${PR_BASE_BRANCH:-main}"
 HEAD="${PR_HEAD_BRANCH:-dev-continue-2026-01-20}"
 URL="https://github.com/${OWNER}/${REPO}/compare/${BASE}...${HEAD}?expand=1"

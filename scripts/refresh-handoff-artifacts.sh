@@ -7,6 +7,10 @@ cd "${PROJECT_ROOT}"
 
 BRANCH="${HANDOFF_BRANCH:-dev-continue-2026-01-20}"
 PATCH_SERIES_BASE="${PATCH_SERIES_BASE:-bc4451251}"
+if ! git rev-parse "${PATCH_SERIES_BASE}" >/dev/null 2>&1; then
+  PATCH_SERIES_BASE="$(git merge-base main HEAD 2>/dev/null || echo main)"
+  echo "patch base → ${PATCH_SERIES_BASE} (bc4451251 없음 — filter-repo 후 merge-base)"
+fi
 BUNDLE_PATH="/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle"
 PATCH_SERIES_DIR="/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19"
 

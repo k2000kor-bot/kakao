@@ -10,6 +10,9 @@ PATCH_PATH="/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipel
 PATCH_PATH_2="/Users/a0/kakao-frontend/0002-feat-backend-conversation-graph-API-and-pytest-for-C.patch"
 PATCH_SERIES_DIR="/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19"
 PATCH_SERIES_BASE="${PATCH_SERIES_BASE:-bc4451251}"
+if ! git -C "${PROJECT_ROOT}" rev-parse "${PATCH_SERIES_BASE}" >/dev/null 2>&1; then
+  PATCH_SERIES_BASE="$(git -C "${PROJECT_ROOT}" merge-base main HEAD 2>/dev/null || echo main)"
+fi
 
 branch="$(git -C "${PROJECT_ROOT}" rev-parse --abbrev-ref HEAD)"
 latest_commit="$(git -C "${PROJECT_ROOT}" log -1 --oneline)"

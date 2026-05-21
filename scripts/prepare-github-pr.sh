@@ -30,4 +30,4 @@ if command -v pbcopy >/dev/null 2>&1; then
 fi
 
 echo ""
-echo "다음: Collaborator Write 후 push → npm run pr:open-compare → GitHub에 본문 붙여넣기"
+echo "다음: npm run pr:open-compare → GitHub에 본문 붙여넣기 (또는 npm run pr:create)"

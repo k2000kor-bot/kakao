@@ -5,6 +5,9 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PATCH_SERIES_BASE="${PATCH_SERIES_BASE:-bc4451251}"
 HANDOFF_BRANCH="${HANDOFF_BRANCH:-dev-continue-2026-01-20}"
+if ! git -C "${PROJECT_ROOT}" rev-parse "${PATCH_SERIES_BASE}" >/dev/null 2>&1; then
+  PATCH_SERIES_BASE="$(git -C "${PROJECT_ROOT}" merge-base main HEAD 2>/dev/null || echo main)"
+fi
 
 BUNDLE_PATH="/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle"
 PATCH_PATH="/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch"

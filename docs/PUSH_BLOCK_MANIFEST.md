@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-21 09:49:34 KST
+- generated_at: 2026-05-21 10:45:27 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `ed03918ee docs: PR 초안 로컬 검증 HEAD를 88378ad1a로 갱신`
+- latest_commit: `51644fbfb chore: handoff manifest를 5f98e3564 tip에 동기화`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 1157155173
-- bundle_sha256: `852942b2206b78ed97a7b409cb6c8a786a938872152ba02ca936acba8dc379a4`
+- bundle_size_bytes: 787831553
+- bundle_sha256: `10a1d93bf69c2f8c7c904dc415356076c9f6afc33ff45b0ae255541bd1687552`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 70
-- patch_series_expected: 70 (`bc4451251..HEAD`)
+- patch_series_count: 175
+- patch_series_expected: 175 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
 
 ### Recent Commits
 
 ```
-ed03918ee docs: PR 초안 로컬 검증 HEAD를 88378ad1a로 갱신
-88378ad1a chore: handoff manifest를 2a243441a tip에 동기화
-2a243441a ui: 도구 상세 페이지 공통 버튼·카드 min-width 정리
-1216a1e97 chore: handoff manifest를 01d2b15d9 tip에 동기화
-01d2b15d9 ui: 채팅·프로젝트 상세 버튼 간결화·상세 레이아웃 정리
+51644fbfb chore: handoff manifest를 5f98e3564 tip에 동기화
+5f98e3564 docs: PR 초안 로컬 검증 HEAD를 2a6d62f91로 갱신
+2a6d62f91 chore: handoff manifest를 9088bb1f4 tip에 동기화
+9088bb1f4 ui: 도구 상세 페이지 공통 버튼·카드 min-width 정리
+b86b5db0d chore: handoff manifest를 f0629aa07 tip에 동기화
 ```
