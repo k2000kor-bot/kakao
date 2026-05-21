@@ -83,4 +83,4 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] 관계도 답변 연속 턴·IME 단위 테스트
 - [x] `npm run local:verify` · 관계도/채팅 UI 간결화 (`74fdc9b60`, `01d2b15d9`)
 - [x] push — `k2000kor-bot/kakao` (`5edeecfe6`, 대용량 blob 히스토리 정리 후 push)
-- [ ] PR — `npm run pr:create` (제목·본문 pre-fill → Create pull request 클릭)
+- [ ] PR — [PR_CREATE_NOW.md](./PR_CREATE_NOW.md) · `npm run pr:create` → **Create pull request** 클릭
