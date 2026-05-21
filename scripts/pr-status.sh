@@ -19,11 +19,11 @@ if command -v curl >/dev/null 2>&1; then
   PRS=$(curl -sS "https://api.github.com/repos/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/pulls?state=open" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d)); [print(' ',p['html_url']) for p in d]" 2>/dev/null || echo "?")
   echo "open PRs: $PRS"
   echo ""
-  echo "다음 (택1):"
-  echo "  1) Settings → Allow Actions to create PRs → Run workflow"
-  echo "     https://github.com/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/settings/actions"
-  echo "  2) npm run pr:open-new  (수동 PR)"
-  echo "  3) CONFIRM=1 npm run promote:main  (PR 없이 main 동기화)"
-  echo ""
-  echo "Issue: https://github.com/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/issues/1"
+  echo "다음:"
+  echo "  npm run repo:open-default-branch  (default → main 권장)"
+  echo "  npm run verify:handoff-artifacts"
+  echo "  npm run verify:pre-deploy  (서버 :3000 후 E2E)"
+  if [[ "$M" != "$D" ]] 2>/dev/null; then
+    echo "  CONFIRM=1 npm run promote:main"
+  fi
 fi
