@@ -12,10 +12,17 @@
 
 ## 2. GitHub Actions로 PR 생성 (권장)
 
-저장소 **Secrets → `KAKAO_BOT_PAT`** 설정 후:
+**필수 설정 (한 번만):**
+
+1. https://github.com/k2000kor-bot/kakao/settings/secrets/actions → **`KAKAO_BOT_PAT`** (repo 권한 PAT)
+2. https://github.com/k2000kor-bot/kakao/settings/actions → Workflow permissions **Read and write** + **Allow GitHub Actions to create and approve pull requests** 체크
+
+**실행:**
 
 1. https://github.com/k2000kor-bot/kakao/actions/workflows/create-pr-to-main.yml
 2. **Run workflow** (또는 `dev-continue-2026-01-20` push 시 자동 시도)
+
+> 최근 Actions 실행이 실패하면 위 1·2가 빠진 경우가 많습니다. 로그: Actions → Create PR to main.
 
 ## 3. 로컬 API (토큰 있을 때)
 

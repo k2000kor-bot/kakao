@@ -67,8 +67,21 @@ jobs:
               core.summary.addRaw(`## Created PR\n${data.html_url} (#${data.number})`);
             } catch (e) {
               const msg = e.message || String(e);
+              const manual = `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/new?base=main&head=dev-continue-2026-01-20`;
               core.summary.addRaw(
-                `## PR create failed\n\`\`\`\n${msg}\n\`\`\`\n\nManual: https://github.com/${context.repo.owner}/${context.repo.repo}/pull/new?base=main&head=dev-continue-2026-01-20`,
+                [
+                  '## PR create failed (Actions token)',
+                  '```',
+                  msg,
+                  '```',
+                  '',
+                  '**Fix (one of):**',
+                  '1. Repo **Settings → Secrets → Actions** → `KAKAO_BOT_PAT` (repo scope PAT)',
+                  '2. **Settings → Actions → General** → Workflow permissions **Read and write**',
+                  '   + check **Allow GitHub Actions to create and approve pull requests**',
+                  '',
+                  `**Manual PR:** ${manual}`,
+                ].join('\n'),
               );
               core.setFailed(msg);
             }
