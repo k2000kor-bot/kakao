@@ -5,9 +5,6 @@ name: Create PR to main
 
 on:
   workflow_dispatch:
-  push:
-    branches: [dev-continue-2026-01-20]
-    paths: [.github/workflows/create-pr-to-main.yml]
 
 permissions:
   contents: read

@@ -5,9 +5,13 @@
 
 ## A. GitHub Actions (클릭 1번, PAT 불필요)
 
-**저장소 설정 (한 번만):**  
-Settings → Actions → General → Workflow permissions → **Read and write**  
-→ ✅ **Allow GitHub Actions to create and approve pull requests**
+**저장소 설정 (필수 — 없으면 Actions PR 생성 불가):**  
+https://github.com/k2000kor-bot/kakao/settings/actions  
+
+- Workflow permissions → **Read and write permissions**  
+- ✅ **Allow GitHub Actions to create and approve pull requests** → **Save**
+
+(미설정 시 에러: `GitHub Actions is not permitted to create or approve pull requests` — [Issue #1](https://github.com/k2000kor-bot/kakao/issues/1))
 
 1. https://github.com/k2000kor-bot/kakao/actions/workflows/create-pr-to-main.yml
 2. **Run workflow** → **Run workflow** (브랜치 `dev-continue-2026-01-20`)
