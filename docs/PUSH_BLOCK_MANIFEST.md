@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-21 12:40:17 KST
+- generated_at: 2026-05-21 12:51:09 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `2591598e8 docs: handoff manifest cf710e93d 및 default branch main 설정 안내`
+- latest_commit: `9ae459681 fix: views typecheck·관계도 API 쿼리·Lazy Chat 데모 복구`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 787867271
-- bundle_sha256: `aa4c3a6f40b3d30d3c1e9d03416d03bc2cf156600b1277eb647d96aaed523d23`
+- bundle_size_bytes: 787872007
+- bundle_sha256: `a42106937a0e70f2b55de679cae7ab4ffa9ac30ec1b0042d207ab55560ac91fc`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 194
-- patch_series_expected: 194 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
+- patch_series_count: 195
+- patch_series_expected: 195 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
 
 ### Recent Commits
 
 ```
+9ae459681 fix: views typecheck·관계도 API 쿼리·Lazy Chat 데모 복구
 2591598e8 docs: handoff manifest cf710e93d 및 default branch main 설정 안내
 cf710e93d feat(conversation-graph): 카카오 CSV 업로드 유틸 및 채팅 handoff state 키
 671aaabd7 chore: pr:status 완료 후 다음 단계 안내
 2a40c2619 docs: push 완료·main 동기화 상태 정리 및 repo 설정 스크립트
-89de23f68 docs: main 동기화 완료 (promote:main db99e5633)
 ```
