@@ -3,10 +3,16 @@
 저장소: **https://github.com/k2000kor-bot/kakao**  
 브랜치: `dev-continue-2026-01-20` → `main` (177 commits, histories diverged — PR은 생성 가능)
 
-## 자동 (macOS)
+## A. GitHub Actions (클릭 1번, PAT 불필요)
+
+1. https://github.com/k2000kor-bot/kakao/actions/workflows/create-pr-to-main.yml
+2. **Run workflow** → **Run workflow** (브랜치 `dev-continue-2026-01-20`)
+3. 완료 후 Actions 로그에 PR URL 표시
+
+## B. 브라우저 수동 (macOS)
 
 ```bash
-npm run pr:open-new    # PR 새로 만들기 (base=main, head=dev-continue) — 권장
+npm run pr:open-new    # PR 새로 만들기 (base=main, head=dev-continue)
 npm run pr:create      # 위 + 제목·본문 pre-fill(compare URL)
 npm run pr:copy-body   # 본문만 클립보드
 ```
