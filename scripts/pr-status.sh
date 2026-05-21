@@ -4,9 +4,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT/scripts/push-remote-default.sh"
 
-echo "=== PR status (${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}) ==="
+echo "=== repo status (${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}) ==="
 echo "local HEAD: $(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo '?')"
 echo "branch: $(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+if git -C "$ROOT" rev-parse origin/main origin/dev-continue-2026-01-20 >/dev/null 2>&1; then
+  M=$(git -C "$ROOT" rev-parse --short origin/main)
+  D=$(git -C "$ROOT" rev-parse --short origin/dev-continue-2026-01-20)
+  echo "origin/main: $M  origin/dev-continue: $D"
+  [[ "$M" == "$D" ]] && echo "main 동기화: OK" || echo "main 동기화: 다름 → CONFIRM=1 npm run promote:main"
+fi
 echo ""
 
 if command -v curl >/dev/null 2>&1; then
