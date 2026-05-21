@@ -1248,7 +1248,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 data-testid={TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_OPEN}
                 onClick={() => void openConversationGraphHandoff()}
             >
-                관계도 화면에서 만들기
+                관계도 열기
             </button>
         </div>
     ) : null;

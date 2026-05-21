@@ -258,7 +258,7 @@ describe('ConversationGraphView', () => {
     await screen.findByText(/업로드된 대화가 없습니다/);
 
     fireEvent.change(screen.getByLabelText('대화 텍스트 붙여넣기'), { target: { value: '2026.5.10 오후 1:00, 홍길동, 안녕\n' } });
-    fireEvent.click(screen.getByRole('button', { name: '붙여넣기 분석' }));
+    fireEvent.click(screen.getByRole('button', { name: '붙여넣기' }));
 
     await waitFor(() =>
       expect(mockFetchRelationshipGraph).toHaveBeenCalledWith('u-new', expectGraphFetchOpts()),
@@ -384,7 +384,7 @@ describe('ConversationGraphView', () => {
     expect(await screen.findByTestId('kakao-upload-preview')).toBeInTheDocument();
     expect(screen.getByText(/카카오톡 CSV 분석 결과/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '업로드 후 관계도 보기' }));
+    fireEvent.click(screen.getByRole('button', { name: '관계도 보기' }));
 
     await waitFor(() => expect(mockUploadConversation).toHaveBeenCalled());
     const uploaded = mockUploadConversation.mock.calls[0][0] as File;
@@ -487,7 +487,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       const s = screen.getByTestId('conversation-graph-status');
@@ -531,7 +531,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await screen.findByTestId('conversation-graph-answer-panel');
 
     fireEvent.click(screen.getByTestId('conversation-graph-full-report-download'));
@@ -571,7 +571,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>,
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(
       () => {
@@ -615,7 +615,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>,
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await screen.findByTestId('conversation-graph-answer-panel');
 
     fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
@@ -655,7 +655,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await screen.findByTestId('conversation-graph-answer-panel');
 
     fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
@@ -703,7 +703,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>,
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await screen.findByTestId('conversation-graph-answer-panel');
 
     fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
@@ -745,7 +745,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await screen.findByTestId('conversation-graph-answer-panel');
     fireEvent.click(screen.getByTestId('conversation-graph-participant-p1'));
     expect(screen.getByTestId('conversation-graph-answer-preset-participant')).toBeInTheDocument();
@@ -774,7 +774,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await screen.findByTestId('conversation-graph-answer-panel');
 
     fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
@@ -815,7 +815,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>,
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await screen.findByTestId('conversation-graph-answer-panel');
 
     fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-create-graph'));
@@ -854,7 +854,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>,
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await screen.findByTestId('conversation-graph-answer-panel');
 
     fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
@@ -901,7 +901,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await screen.findByTestId('conversation-graph-ai-panel');
     fireEvent.click(screen.getByTestId('conversation-graph-ai-chip-동조'));
@@ -943,7 +943,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-participant-list')).toBeInTheDocument();
@@ -983,7 +983,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플 대화/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-download-svg')).toBeInTheDocument();
@@ -1023,7 +1023,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-filter-summary')).toHaveTextContent(/표시 중 2명/);
@@ -1067,7 +1067,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-stats-panel')).toBeInTheDocument();
@@ -1101,7 +1101,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await waitFor(() => screen.getByTestId('conversation-graph-participant-p1'));
     fireEvent.click(screen.getByTestId('conversation-graph-participant-p1'));
     await waitFor(() => screen.getByTestId('conversation-graph-edge-link-p2'));
@@ -1139,7 +1139,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await waitFor(() => screen.getByTestId('conversation-graph-participant-p1'));
     fireEvent.click(screen.getByTestId('conversation-graph-participant-p1'));
 
@@ -1176,7 +1176,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await waitFor(() => screen.getByTestId('conversation-graph-stats-panel'));
     fireEvent.click(screen.getByTestId('conversation-graph-participant-p1'));
 
@@ -1214,7 +1214,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플 대화/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await waitFor(() => screen.getByTestId('conversation-graph-download-csv'));
     fireEvent.click(screen.getByTestId('conversation-graph-download-csv'));
 
@@ -1256,7 +1256,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await waitFor(() => screen.getByTestId('conversation-graph-preset-동조'));
     fireEvent.click(screen.getByTestId('conversation-graph-preset-동조'));
 
@@ -1289,7 +1289,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await waitFor(() => screen.getByTestId('conversation-graph-participant-p1'));
     fireEvent.click(screen.getByTestId('conversation-graph-participant-p1'));
     expect(screen.getByTestId('conversation-graph-participant-p1')).toHaveAttribute('aria-pressed', 'true');
@@ -1324,7 +1324,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await waitFor(() => screen.getByTestId('conversation-graph-download-png'));
     fireEvent.click(screen.getByTestId('conversation-graph-download-png'));
 
@@ -1365,7 +1365,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-filter-summary')).toHaveTextContent(/연결 2개/);
@@ -1401,7 +1401,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-reset-zoom')).toBeEnabled();
@@ -1431,7 +1431,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-status')).toHaveTextContent(/파싱된 참여자가 없습니다/);
@@ -1464,7 +1464,7 @@ describe('ConversationGraphView', () => {
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
     fireEvent.change(screen.getByLabelText('시작 날짜'), { target: { value: '2026-01-01' } });
     fireEvent.change(screen.getByLabelText('끝 날짜'), { target: { value: '2026-01-31' } });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(mockFetchRelationshipGraph).toHaveBeenCalledWith(
@@ -1522,10 +1522,10 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await waitFor(() => expect(screen.getByRole('img', { name: '대화 관계도 그래프' })).toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-status')).toHaveTextContent(/생성하는 중/);
     });
@@ -1562,7 +1562,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-status')).toHaveTextContent(/파싱된 참여자가 없습니다/);
@@ -1612,7 +1612,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>,
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await screen.findByTestId('conversation-graph-legend');
 
     fireEvent.click(screen.getByTestId('conversation-graph-view-matrix'));
@@ -1653,7 +1653,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>,
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(jest.mocked(mountConversationGraphForceLayout)).toHaveBeenCalled();
@@ -1684,7 +1684,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>,
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(jest.mocked(mountConversationGraphForceLayout)).toHaveBeenCalled();
@@ -1731,7 +1731,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>,
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
     await screen.findByTestId('conversation-graph-expert-layers');
     expect(screen.getByTestId('conversation-graph-timeline-seg-0')).toHaveTextContent('초반');
 
@@ -1760,7 +1760,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     await screen.findByRole('radio', { name: /대화 선택: 샘플/ });
-    fireEvent.click(screen.getByRole('button', { name: '관계도 검색' }));
+    fireEvent.click(screen.getByRole('button', { name: '검색' }));
 
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-status')).toHaveTextContent(/네트워크 오류/);

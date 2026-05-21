@@ -342,12 +342,11 @@ export function ConversationGraphAnswerPanel({
 
   return (
     <div
-      className="bw-mt-md bw-features-card"
+      className="bw-mt-md bw-features-card conversation-graph-answer-panel"
       data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_PANEL}
       role="region"
       aria-label="관계도 답변 생성"
       aria-busy={loading}
-      style={{ padding: 12 }}
     >
       <p className="bw-label-block" style={{ margin: 0 }}>
         답변 생성
@@ -365,8 +364,7 @@ export function ConversationGraphAnswerPanel({
       ) : null}
 
       <div
-        className="bw-mt-sm"
-        style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
+        className="bw-mt-sm conversation-graph-answer-panel__presets"
         data-testid="conversation-graph-answer-presets"
       >
         {promptPresets.map((preset) => (
@@ -376,6 +374,7 @@ export function ConversationGraphAnswerPanel({
             className="bw-btn-secondary"
             style={{ fontSize: 12 }}
             data-testid={`conversation-graph-answer-preset-${preset.id}`}
+            title={preset.prompt.slice(0, 120)}
             onClick={() => setPrompt(preset.prompt)}
           >
             {preset.label}
@@ -384,11 +383,11 @@ export function ConversationGraphAnswerPanel({
       </div>
 
       <label className="bw-label-block bw-mt-sm" htmlFor="conversation-graph-answer-prompt">
-        생성할 내용 (질문·지시)
+        질문·지시
       </label>
       <textarea
         id="conversation-graph-answer-prompt"
-        className="bw-input"
+        className="bw-input conversation-graph-answer-panel__prompt"
         rows={3}
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
@@ -410,17 +409,17 @@ export function ConversationGraphAnswerPanel({
             }
           }
         }}
-        placeholder="예: 관계도를 만들어 주세요 / 참여자별 역할과 갈등 축 보고서 (Ctrl+Enter로 생성)"
-        style={{ width: '100%', maxWidth: 560, marginTop: 6 }}
+        placeholder="예: 관계도 작성 / 갈등 요약 (Ctrl+Enter)"
         data-testid="conversation-graph-answer-prompt"
       />
 
-      <div className="bw-mt-sm" style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+      <div className="bw-mt-sm conversation-graph-answer-panel__options">
         {isStreamingSupported() ? (
           <label
             className="bw-detail-meta-text"
             style={{ display: 'flex', gap: 8, alignItems: 'center' }}
             data-testid="conversation-graph-answer-stream-label"
+            title="생성 중 답변을 실시간으로 표시"
           >
             <input
               type="checkbox"
@@ -428,7 +427,7 @@ export function ConversationGraphAnswerPanel({
               onChange={(e) => onUseStreamAnswerChange?.(e.target.checked)}
               data-testid="conversation-graph-answer-stream"
             />
-            스트리밍으로 실시간 표시
+            스트리밍
           </label>
         ) : null}
         {onUseTwoPassAnswerChange ? (
@@ -436,6 +435,7 @@ export function ConversationGraphAnswerPanel({
             className="bw-detail-meta-text"
             style={{ display: 'flex', gap: 8, alignItems: 'center' }}
             data-testid="conversation-graph-answer-two-pass-label"
+            title="개요 단계 후 보고서로 2단계 생성"
           >
             <input
               type="checkbox"
@@ -443,7 +443,7 @@ export function ConversationGraphAnswerPanel({
               onChange={(e) => onUseTwoPassAnswerChange(e.target.checked)}
               data-testid="conversation-graph-answer-two-pass"
             />
-            2-pass 생성(개요 → 보고서)
+            2단계
           </label>
         ) : null}
         {onAutoGenerateAnswerChange ? (
@@ -451,6 +451,7 @@ export function ConversationGraphAnswerPanel({
             className="bw-detail-meta-text"
             style={{ display: 'flex', gap: 8, alignItems: 'center' }}
             data-testid="conversation-graph-answer-auto-label"
+            title="관계도 생성 직후 보고서 답변 자동 생성"
           >
             <input
               type="checkbox"
@@ -458,7 +459,7 @@ export function ConversationGraphAnswerPanel({
               onChange={(e) => onAutoGenerateAnswerChange(e.target.checked)}
               data-testid="conversation-graph-answer-auto"
             />
-            관계도 생성 후 보고서 답변 자동 생성
+            자동 생성
           </label>
         ) : null}
         <button
@@ -466,12 +467,13 @@ export function ConversationGraphAnswerPanel({
           className="bw-btn-secondary"
           style={{ fontSize: 12 }}
           data-testid="conversation-graph-answer-clear-lessons"
+          title="로컬에 저장된 관계도 답변 학습 힌트 삭제"
           onClick={() => {
             clearGraphAnswerLessons();
             showToast('저장된 관계도 답변 학습 기록을 지웠습니다.', 'info');
           }}
         >
-          답변 학습 초기화
+          학습 초기화
         </button>
         {turns.length > 0 ? (
           <button
@@ -484,12 +486,12 @@ export function ConversationGraphAnswerPanel({
               showToast('질문·답변 기록을 지웠습니다.', 'info');
             }}
           >
-            질문·답변 기록 지우기
+            기록 지우기
           </button>
         ) : null}
       </div>
 
-      <div className="bw-mt-sm" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      <div className="bw-mt-sm conversation-graph-answer-panel__actions">
         <button
           type="button"
           className="bw-btn-primary"
@@ -497,7 +499,7 @@ export function ConversationGraphAnswerPanel({
           disabled={loading || !coerceTrimmedString(prompt, '')}
           data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_GENERATE}
         >
-          {loading ? '답변 생성 중…' : '답변 생성'}
+          {loading ? '생성 중…' : '생성'}
         </button>
         {loading ? (
           <button
@@ -516,7 +518,7 @@ export function ConversationGraphAnswerPanel({
           disabled={loading}
           data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_OPEN_CHAT}
         >
-          대화에서 답변 생성
+          채팅에서 생성
         </button>
         <button
           type="button"
@@ -525,7 +527,7 @@ export function ConversationGraphAnswerPanel({
           disabled={loading || (!coerceTrimmedString(prompt, '') && !promptPresets[0])}
           data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_OPEN_CHAT_SEND}
         >
-          대화에서 바로 전송
+          채팅 전송
         </button>
         <button
           type="button"
@@ -546,7 +548,7 @@ export function ConversationGraphAnswerPanel({
           }}
           data-testid="conversation-graph-full-report-download"
         >
-          통합 리포트 저장
+          리포트 저장
         </button>
       </div>
 
@@ -562,9 +564,9 @@ export function ConversationGraphAnswerPanel({
 
       {turns.length > 0 ? (
         <div className="bw-mt-md" data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_RESULT}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+          <div className="conversation-graph-answer-panel__result-actions">
             <p className="bw-label-block" style={{ fontSize: 13, margin: 0 }}>
-              질문·답변 기록 ({turns.length}건)
+              기록 ({turns.length})
             </p>
             {latestCompleteTurn ? (
               <>
@@ -579,7 +581,7 @@ export function ConversationGraphAnswerPanel({
                     });
                   }}
                 >
-                  마지막 답변 복사
+                  복사
                 </button>
                 <button
                   type="button"
@@ -617,18 +619,9 @@ export function ConversationGraphAnswerPanel({
           </p>
           <div
             ref={turnsScrollRef}
+            className="conversation-graph-answer-turns"
             data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_TURNS}
             aria-label="질문·답변 기록"
-            style={{
-              maxHeight: 'min(52vh, 520px)',
-              overflowY: 'auto',
-              overflowX: 'hidden',
-              padding: '4px 2px 8px',
-              marginTop: 4,
-              border: '1px solid var(--bw-border-subtle, #e5e7eb)',
-              borderRadius: 8,
-              background: 'var(--bw-surface-muted, #f8f9fb)',
-            }}
           >
             {turns.map((turn, index) => (
               <GraphAnswerTurnBlock key={turn.id} turn={turn} index={index} total={turns.length} />

@@ -109,7 +109,7 @@ export interface GraphAnswerPromptPreset {
 export function buildParticipantAnswerPreset(insight: ParticipantAiInsight): GraphAnswerPromptPreset {
   return {
     id: 'participant',
-    label: `${insight.label} 분석`,
+    label: insight.label,
     prompt: [
       `선택된 참여자 「${insight.label}」를 중심으로 관계도·성향 분석을 해석해 주세요.`,
       `우세 입장: ${insight.dominantStance}, 주고받기 역할: ${insight.exchangeRole}.`,
@@ -127,13 +127,13 @@ export const GRAPH_ANSWER_PROMPT_PRESETS: GraphAnswerPromptPreset[] = [
   },
   {
     id: 'report',
-    label: '관계도 보고서',
+    label: '보고서',
     prompt:
       '아래 대화 관계도·AI 성향 분석을 바탕으로, 참여자 간 동조·반대·주고받기(주도/응답) 구조를 정리한 보고서를 작성해 주세요. 수치에 없는 내용은 추측하지 마세요.',
   },
   {
     id: 'conflict',
-    label: '갈등·긴장 요약',
+    label: '갈등 요약',
     prompt:
       '관계도에서 반대·대립 연결이 두드러지는 구간과 그에 관여하는 참여자를 중심으로, 갈등 축과 완화 가능 지점을 요약해 주세요.',
   },
