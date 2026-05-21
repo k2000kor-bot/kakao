@@ -62,14 +62,36 @@ export async function stubGraphAnswerChatStream(page: Page, llmNarrative: string
   await page.route('**/api/unified/chat/stream**', streamStub);
 }
 
+/** dev 오버레이·레이아웃 시프트를 피해 testid 클릭 (React onClick 보장) */
+export async function clickConversationGraphTestId(page: Page, testId: string): Promise<void> {
+  await dismissWebpackDevOverlay(page);
+  const el = page.getByTestId(testId);
+  await expect(el).toBeVisible({ timeout: 15_000 });
+  await el.scrollIntoViewIfNeeded();
+  await el.evaluate((node) => {
+    (node as HTMLElement).click();
+  });
+  await dismissWebpackDevOverlay(page);
+}
+
 export async function clickConversationGraphSearch(page: Page): Promise<void> {
-  const form = page.locator('form[aria-label="기간 지정 및 관계도 검색"]');
-  const searchBtn = form.getByRole('button', { name: '관계도 검색' });
+  await dismissWebpackDevOverlay(page);
+  const searchBtn = page.getByTestId('conversation-graph-search-submit');
   await expect(searchBtn).toBeEnabled({ timeout: 15_000 });
+  const form = page.locator('form[aria-label="기간 지정 및 관계도 검색"]');
   await form.evaluate((el) => {
     if (el instanceof HTMLFormElement) {
       el.requestSubmit();
     }
   });
   await dismissWebpackDevOverlay(page);
+  await expect(page.getByTestId('conversation-graph-stats-panel')).toBeVisible({ timeout: 20_000 });
+}
+
+/** D3 렌더 후 참여자 칩이 붙을 때까지 대기 */
+export async function waitForConversationGraphParticipants(page: Page): Promise<void> {
+  await expect(page.getByTestId('conversation-graph-stats-panel')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('[data-testid^="conversation-graph-participant-"]').first()).toBeVisible({
+    timeout: 15_000,
+  });
 }

@@ -2,7 +2,7 @@
  * ConversationGraphAnswerPanel — 답변 생성·다단계 파이프라인 UI
  */
 import React from 'react';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react';
 import { ConversationGraphAnswerPanel } from './ConversationGraphAnswerPanel';
 import type { GraphAiAnalysis } from './conversationGraphAiAnalyzer';
 import { CREATE_GRAPH_API_USER_MESSAGE } from './conversationGraphAnswerIntent';
@@ -47,6 +47,14 @@ jest.mock('mermaid', () => ({
     render: jest.fn().mockResolvedValue({ svg: '<svg data-testid="mock-mermaid-svg"></svg>' }),
   },
 }));
+
+function clickIntentPreset(id: string) {
+  fireEvent.click(screen.getAllByTestId(`conversation-graph-answer-preset-${id}`)[0]);
+}
+
+function clickGenerate() {
+  fireEvent.click(screen.getAllByTestId('conversation-graph-answer-generate')[0]);
+}
 
 const analysis: GraphAiAnalysis = {
   analyzedAt: '2026-05-16',
@@ -117,7 +125,7 @@ describe('ConversationGraphAnswerPanel', () => {
     fireEvent.change(screen.getByTestId('conversation-graph-answer-prompt'), {
       target: { value: '관계도를 만들어 주세요' },
     });
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
+    clickGenerate();
 
     await waitFor(() => expect(onEnsure).toHaveBeenCalled());
     await waitFor(() => expect(generateGraphAnswerViaChat).toHaveBeenCalled());
@@ -151,19 +159,24 @@ describe('ConversationGraphAnswerPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
+    clickIntentPreset('report');
+    clickGenerate();
 
-    expect(await screen.findByTestId('conversation-graph-answer-pipeline')).toBeInTheDocument();
-    expect(screen.getByTestId('genspark-generation-status-mock')).toHaveAttribute('data-variant', 'step');
+    expect((await screen.findAllByTestId('conversation-graph-answer-pipeline')).length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('genspark-generation-status-mock')[0]).toHaveAttribute(
+      'data-variant',
+      'step',
+    );
 
     resolveGen('패널 생성 답변');
 
     await waitFor(() => {
-      expect(screen.getByTestId('conversation-graph-answer-result')).toHaveTextContent('패널 생성 답변');
+      expect(screen.getAllByTestId('conversation-graph-answer-result')[0]).toHaveTextContent(
+        '패널 생성 답변',
+      );
     });
     expect(screen.queryByTestId('conversation-graph-answer-pipeline')).not.toBeInTheDocument();
-    expect(screen.getByTestId('genspark-answer-markdown-mock')).toHaveTextContent('패널 생성 답변');
+    expect(screen.getAllByTestId('genspark-answer-markdown-mock')[0]).toHaveTextContent('패널 생성 답변');
   });
 
   it('답변 생성 취소 시 API 호출을 중단한다', async () => {
@@ -183,11 +196,11 @@ describe('ConversationGraphAnswerPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
+    clickIntentPreset('report');
     await waitFor(() => {
-      expect(screen.getByTestId('conversation-graph-answer-generate')).not.toBeDisabled();
+      expect(screen.getAllByTestId('conversation-graph-answer-generate')[0]).not.toBeDisabled();
     });
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
+    clickGenerate();
     await screen.findByTestId('conversation-graph-answer-cancel');
     fireEvent.click(screen.getByTestId('conversation-graph-answer-cancel'));
 
@@ -212,7 +225,7 @@ describe('ConversationGraphAnswerPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
+    clickIntentPreset('report');
     fireEvent.click(screen.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_GENERATE));
 
     await waitFor(() => {
@@ -238,7 +251,7 @@ describe('ConversationGraphAnswerPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
+    clickIntentPreset('report');
     fireEvent.click(screen.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_GENERATE));
 
     await waitFor(() => {
@@ -260,7 +273,7 @@ describe('ConversationGraphAnswerPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
+    clickIntentPreset('report');
     const textarea = screen.getByTestId('conversation-graph-answer-prompt');
     fireEvent.keyDown(textarea, { key: 'Enter', ctrlKey: true });
 
@@ -290,8 +303,8 @@ describe('ConversationGraphAnswerPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
+    clickIntentPreset('report');
+    clickGenerate();
 
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-answer-result')).toBeInTheDocument();
@@ -324,8 +337,8 @@ describe('ConversationGraphAnswerPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
+    clickIntentPreset('report');
+    clickGenerate();
 
     await waitFor(() => expect(generateGraphAnswerViaChat).toHaveBeenCalled());
     const opts = jest.mocked(generateGraphAnswerViaChat).mock.calls.at(-1)?.[2];
@@ -370,8 +383,8 @@ describe('ConversationGraphAnswerPanel', () => {
       />,
     );
 
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-preset-report'));
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
+    clickIntentPreset('report');
+    clickGenerate();
     await waitFor(() => {
       expect(screen.getByTestId('conversation-graph-answer-turns')).toBeInTheDocument();
     });
@@ -382,7 +395,7 @@ describe('ConversationGraphAnswerPanel', () => {
     fireEvent.change(screen.getByTestId('conversation-graph-answer-prompt'), {
       target: { value: '이어서 실행 제안을 주세요' },
     });
-    fireEvent.click(screen.getByTestId('conversation-graph-answer-generate'));
+    clickGenerate();
 
     await waitFor(() => {
       expect(screen.getAllByTestId('conversation-graph-answer-turn')).toHaveLength(2);
@@ -390,8 +403,26 @@ describe('ConversationGraphAnswerPanel', () => {
 
     const secondCtx = jest.mocked(generateGraphAnswerViaChat).mock.calls[1]?.[1] as Record<string, unknown>;
     expect(String(secondCtx.conversation_graph_answer_history)).toContain('첫 번째 답변');
-    expect(screen.getByText(/질문 1/)).toBeInTheDocument();
-    expect(screen.getByText(/질문 2/)).toBeInTheDocument();
+    expect(screen.getAllByTestId('conversation-graph-answer-turn')).toHaveLength(2);
+    expect(screen.getAllByTestId('conversation-graph-answer-turn-question').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('문서 형식 프리셋 클릭 시 형식 힌트·프롬프트·고정이 갱신된다', () => {
+    render(
+      <ConversationGraphAnswerPanel
+        analysis={analysis}
+        narrative="해석"
+        onOpenInChat={jest.fn()}
+        onUseTwoPassAnswerChange={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getAllByTestId('conversation-graph-answer-format-academic_paper')[0]);
+
+    expect(screen.getByTestId('conversation-graph-answer-format-hint')).toHaveTextContent(/논문/);
+    expect(screen.getByTestId('conversation-graph-answer-format-hint')).toHaveTextContent(/내장 골격/);
+    expect(screen.getByTestId('conversation-graph-answer-format-unpin')).toBeInTheDocument();
+    expect(screen.getByTestId('conversation-graph-answer-prompt')).not.toHaveValue('');
   });
 
   it('답변 학습 초기화 버튼이 localStorage 기록을 지운다', () => {

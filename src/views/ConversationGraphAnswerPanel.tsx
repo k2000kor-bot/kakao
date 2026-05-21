@@ -26,12 +26,22 @@ import type { ExpertLayerId } from './conversationGraphExpertLayers';
 import { GensparkGenerationStatus } from '../components/genspark/GensparkGenerationStatus';
 import { TEST_IDS } from '../constants/testIds';
 import { CREATE_GRAPH_ANSWER_PRESET } from './conversationGraphAnswerIntent';
-import { clearGraphAnswerLessons } from './conversationGraphAnswerLearning';
+import {
+  clearGraphAnswerLessons,
+  countGraphAnswerLessonsForFormat,
+} from './conversationGraphAnswerLearning';
 import {
   createGraphAnswerTurnId,
   type GraphAnswerTurn,
 } from './conversationGraphAnswerTurns';
 import { GraphAnswerTurnBlock } from './GraphAnswerTurnBlock';
+import {
+  getGraphAnswerDocumentFormatDef,
+  GRAPH_ANSWER_DOCUMENT_FORMAT_PRESETS,
+  inferGraphAnswerDocumentFormat,
+  type GraphAnswerDocumentFormatId,
+} from './conversationGraphAnswerDocumentFormats';
+import { inferGraphAnswerWritingStyle } from './conversationGraphAnswerProse';
 
 export type GraphAnswerEnsureGraphResult = {
   graph: RelationshipGraphData;
@@ -91,6 +101,9 @@ export function ConversationGraphAnswerPanel({
   onOpenInChat,
 }: ConversationGraphAnswerPanelProps) {
   const [prompt, setPrompt] = useState('');
+  /** 문서 형식 프리셋 클릭 시 생성에 고정할 형식 */
+  const [pinnedDocumentFormatId, setPinnedDocumentFormatId] =
+    useState<GraphAnswerDocumentFormatId | null>(null);
   const [turns, setTurns] = useState<GraphAnswerTurn[]>([]);
   const [loading, setLoading] = useState(false);
   const [generationPhase, setGenerationPhase] = useState<AssistantGenerationPhase | null>(null);
@@ -113,7 +126,12 @@ export function ConversationGraphAnswerPanel({
     if (selectedInsight) {
       base.unshift(buildParticipantAnswerPreset(selectedInsight));
     }
-    return base;
+    const seen = new Set<string>();
+    return base.filter((p) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
   }, [selectedInsight]);
 
   const buildContextForMessage = useCallback(
@@ -160,6 +178,22 @@ export function ConversationGraphAnswerPanel({
       ''
     );
   }, [selectedInsight]);
+
+  const activeDocumentFormatId = useMemo((): GraphAnswerDocumentFormatId => {
+    if (pinnedDocumentFormatId) return pinnedDocumentFormatId;
+    const msg = coerceTrimmedString(prompt, '') || defaultPresetPrompt;
+    return inferGraphAnswerDocumentFormat(msg, inferGraphAnswerWritingStyle(msg));
+  }, [prompt, defaultPresetPrompt, pinnedDocumentFormatId]);
+
+  const detectedFormatLabel = useMemo(
+    () => getGraphAnswerDocumentFormatDef(activeDocumentFormatId).labelKo,
+    [activeDocumentFormatId],
+  );
+
+  const formatLessonCount = useMemo(
+    () => countGraphAnswerLessonsForFormat(activeDocumentFormatId),
+    [activeDocumentFormatId],
+  );
 
   useEffect(() => {
     return () => {
@@ -352,9 +386,34 @@ export function ConversationGraphAnswerPanel({
         답변 생성
       </p>
       <p className="bw-detail-meta-text bw-mt-sm">
-        관계도·AI 성향 분석을 통합 대화 API 맥락에 담아 보고서·요약·제안 문장을 생성합니다.
-        「관계도를 만들어줘」처럼 요청하면 붙여넣은 대화로 서버 관계도를 만든 뒤, 참여자·연결 표와 Mermaid
-        다이어그램을 답변으로 작성합니다.
+        관계도·AI 성향 분석을 통합 대화 API 맥락에 담아 생성합니다. 질문·요청에 맞는 문서 형식(분석 보고서·사업
+        보고서·엔티티 프로필·논문·문학·회의록·FAQ 등)으로 구조화된 답변이 출력되며, 성공 패턴은 로컬에 학습됩니다.
+        「관계도를 만들어줘」 요청 시 붙여넣은 대화로 관계도를 만든 뒤 표·Mermaid를 포함합니다.
+      </p>
+      <p
+        className="bw-detail-meta-text bw-mt-sm"
+        data-testid="conversation-graph-answer-format-hint"
+      >
+        인식된 출력 형식: <strong>{detectedFormatLabel}</strong>
+        {formatLessonCount > 0 ? (
+          <span className="bw-detail-meta-text"> (학습 {formatLessonCount}건)</span>
+        ) : (
+          <span className="bw-detail-meta-text"> (내장 골격 적용)</span>
+        )}
+        {pinnedDocumentFormatId ? (
+          <>
+            {' '}
+            <button
+              type="button"
+              className="bw-btn-secondary"
+              style={{ fontSize: 11, marginLeft: 4, padding: '2px 6px' }}
+              data-testid="conversation-graph-answer-format-unpin"
+              onClick={() => setPinnedDocumentFormatId(null)}
+            >
+              형식 고정 해제
+            </button>
+          </>
+        ) : null}
       </p>
       {selectedInsight ? (
         <p className="bw-detail-meta-text bw-mt-sm" data-testid="conversation-graph-answer-selected-hint">
@@ -376,6 +435,31 @@ export function ConversationGraphAnswerPanel({
             data-testid={`conversation-graph-answer-preset-${preset.id}`}
             title={preset.prompt.slice(0, 120)}
             onClick={() => setPrompt(preset.prompt)}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+
+      <p className="bw-label-block bw-mt-sm" style={{ fontSize: 12, marginBottom: 4 }}>
+        문서 형식
+      </p>
+      <div
+        className="bw-mt-sm conversation-graph-answer-panel__presets"
+        data-testid="conversation-graph-answer-format-presets"
+      >
+        {GRAPH_ANSWER_DOCUMENT_FORMAT_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className="bw-btn-secondary"
+            style={{ fontSize: 12 }}
+            data-testid={`conversation-graph-answer-format-${preset.id}`}
+            title={preset.prompt.slice(0, 140)}
+            onClick={() => {
+              setPinnedDocumentFormatId(preset.id);
+              setPrompt(preset.prompt);
+            }}
           >
             {preset.label}
           </button>
@@ -470,7 +554,7 @@ export function ConversationGraphAnswerPanel({
           title="로컬에 저장된 관계도 답변 학습 힌트 삭제"
           onClick={() => {
             clearGraphAnswerLessons();
-            showToast('저장된 관계도 답변 학습 기록을 지웠습니다.', 'info');
+            showToast('저장된 관계도 답변·문서 형식 구조 학습을 지웠습니다.', 'info');
           }}
         >
           학습 초기화

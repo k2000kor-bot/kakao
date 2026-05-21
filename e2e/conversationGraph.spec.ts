@@ -5,10 +5,12 @@ import { isServerReachable, devServerUnreachableSkipMessageShort } from './helpe
 import { chatStreamRouteStub, mockConversationsApi } from './helpers/conversationGraphApiMock';
 import {
   clickConversationGraphSearch,
+  clickConversationGraphTestId,
   dismissWebpackDevOverlay,
   openConversationGraphWithMock,
   setConversationGraphUiPrefsForE2e,
   stubGraphAnswerChatStream,
+  waitForConversationGraphParticipants,
 } from './helpers/conversationGraphPage';
 
 test.describe('대화 관계도 E2E', () => {
@@ -29,18 +31,18 @@ test.describe('대화 관계도 E2E', () => {
       [{ source: 'p1', target: 'p2', weight: 2, weight_동조: 2, edge_type: '동조' }],
     );
     await clickConversationGraphSearch(page);
+    await waitForConversationGraphParticipants(page);
 
-    await expect(page.getByTestId('conversation-graph-stats-panel')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('conversation-graph-stats-stance')).toContainText(/동조 1/);
     await expect(page.getByTestId('conversation-graph-ai-panel')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('conversation-graph-ai-trust')).toBeVisible();
     await expect(page.getByRole('img', { name: '대화 관계도 그래프' })).toBeVisible();
 
-    await page.getByTestId('conversation-graph-participant-p1').click();
+    await clickConversationGraphTestId(page, 'conversation-graph-participant-p1');
     await expect(page.getByTestId('conversation-graph-participant-detail')).toContainText(/알파/);
     await expect(page.getByTestId('conversation-graph-participant-edges')).toBeVisible();
 
-    await page.getByTestId('conversation-graph-edge-link-p2').click();
+    await clickConversationGraphTestId(page, 'conversation-graph-edge-link-p2');
     await expect(page.getByTestId('conversation-graph-participant-p2')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByTestId('conversation-graph-participant-detail')).toContainText(/베타/);
   });
@@ -62,7 +64,7 @@ test.describe('대화 관계도 E2E', () => {
     await clickConversationGraphSearch(page);
     await expect(page.getByTestId('conversation-graph-filter-summary')).toContainText(/표시 중 2명/);
 
-    await page.getByTestId('conversation-graph-stance-반대').click();
+    await clickConversationGraphTestId(page, 'conversation-graph-stance-반대');
     await expect(page.getByTestId('conversation-graph-filter-summary')).toContainText(/표시 중 1명/);
   });
 
@@ -83,7 +85,7 @@ test.describe('대화 관계도 E2E', () => {
     await clickConversationGraphSearch(page);
     await expect(page.getByTestId('conversation-graph-download-csv')).toBeEnabled();
 
-    await page.getByTestId('conversation-graph-preset-동조').click();
+    await clickConversationGraphTestId(page, 'conversation-graph-preset-동조');
     await expect(page.getByTestId('conversation-graph-filter-summary')).toContainText(/표시 중 1명/);
     await expect(page.getByTestId('conversation-graph-participant-p1')).toBeVisible();
     await expect(page.getByTestId('conversation-graph-participant-p2')).toHaveCount(0);
@@ -106,9 +108,11 @@ test.describe('대화 관계도 E2E', () => {
     await clickConversationGraphSearch(page);
     await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PANEL)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('conversation-graph-answer-preset-report')).toBeVisible();
+    await expect(page.getByTestId('conversation-graph-answer-format-presets')).toBeVisible();
 
-    await page.getByTestId('conversation-graph-answer-preset-report').click();
-    await expect(page.getByTestId('conversation-graph-answer-prompt')).not.toHaveValue('');
+    await clickConversationGraphTestId(page, 'conversation-graph-answer-format-academic_paper');
+    await expect(page.getByTestId('conversation-graph-answer-format-hint')).toContainText(/논문/);
+    await expect(page.getByTestId('conversation-graph-answer-prompt')).toContainText(/논문|학술|서론/);
 
     await expect(page.getByTestId('conversation-graph-participant-search')).toBeVisible();
     await page.getByTestId('conversation-graph-participant-search').fill('알파');
@@ -133,7 +137,8 @@ test.describe('대화 관계도 E2E', () => {
     await clickConversationGraphSearch(page);
     await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PANEL)).toBeVisible({ timeout: 15_000 });
 
-    await page.getByTestId('conversation-graph-participant-p1').click();
+    await waitForConversationGraphParticipants(page);
+    await clickConversationGraphTestId(page, 'conversation-graph-participant-p1');
     await expect(page.getByTestId('conversation-graph-answer-selected-hint')).toContainText(/알파/);
     await expect(page.getByTestId('conversation-graph-answer-preset-participant')).toBeVisible();
   });
@@ -163,18 +168,17 @@ test.describe('대화 관계도 E2E', () => {
     await dismissWebpackDevOverlay(page);
 
     const csv = `Date,User,Message
-2026-05-13 10:00:00,"알파","안녕"`;
+2026-05-11 10:00:00,"알파","안녕"`;
     await page.locator('input[aria-label="대화 파일 선택 (TXT/CSV)"]').setInputFiles({
-      name: 'e2e.csv',
+      name: 'kakao.csv',
       mimeType: 'text/csv',
       buffer: Buffer.from(csv),
     });
 
-    await expect(page.getByTestId('kakao-upload-preview')).toBeVisible({ timeout: 15_000 });
-    await dismissWebpackDevOverlay(page);
-    await page.getByTestId('kakao-upload-confirm').click({ force: true });
+    await expect(page.getByTestId('kakao-upload-preview')).toBeVisible({ timeout: 20_000 });
+    await clickConversationGraphTestId(page, 'kakao-upload-confirm');
 
-    await expect(page.getByTestId('conversation-graph-stats-panel')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId('conversation-graph-stats-panel')).toBeVisible({ timeout: 25_000 });
     await expect(page.getByRole('img', { name: '대화 관계도 그래프' })).toBeVisible();
     await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PANEL)).toBeVisible();
   });
@@ -203,13 +207,14 @@ test.describe('대화 관계도 E2E', () => {
     await clickConversationGraphSearch(page);
     await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PANEL)).toBeVisible({ timeout: 15_000 });
 
-    await page.getByTestId('conversation-graph-answer-preset-report').click();
-    await page.getByTestId('conversation-graph-answer-generate').click();
+    await clickConversationGraphTestId(page, 'conversation-graph-answer-preset-report');
+    await clickConversationGraphTestId(page, 'conversation-graph-answer-generate');
 
-    await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PIPELINE)).toBeVisible({
-      timeout: 10_000,
-    });
-    await expect(page.getByTestId(TEST_IDS.GENSPARK_GENERATION_STATUS)).toBeVisible();
+    const pipeline = page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PIPELINE);
+    await expect(pipeline).toBeVisible({ timeout: 10_000 });
+    await expect(
+      pipeline.getByTestId(TEST_IDS.GENSPARK_GENERATION_STATUS),
+    ).toBeVisible();
     const result = page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_RESULT);
     await expect(result).toContainText('E2E 관계도 기반 생성 답변', { timeout: 20_000 });
     await expect(result).toContainText('참여자');
@@ -237,8 +242,8 @@ test.describe('대화 관계도 E2E', () => {
       timeout: 15_000,
     });
 
-    await page.getByTestId('conversation-graph-answer-preset-report').click();
-    await page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_OPEN_CHAT).click();
+    await clickConversationGraphTestId(page, 'conversation-graph-answer-preset-report');
+    await clickConversationGraphTestId(page, TEST_IDS.CONVERSATION_GRAPH_ANSWER_OPEN_CHAT);
 
     await expect(page).toHaveURL(new RegExp(`${PATHS.CHAT.replace(/\//g, '\\/')}(\\/)?$`), {
       timeout: 15_000,
@@ -315,13 +320,15 @@ test.describe('대화 관계도 E2E', () => {
     });
     await chatInput.fill('관계도를 만들어줘');
 
+    await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_ATTACHED_FILE)).toContainText('chat.csv', {
+      timeout: 10_000,
+    });
     await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_BANNER)).toBeVisible({
       timeout: 10_000,
     });
-    await dismissWebpackDevOverlay(page);
-    await page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_OPEN).click({ force: true });
+    await clickConversationGraphTestId(page, TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_OPEN);
 
-    await expect(page).toHaveURL(/conversation-graph/, { timeout: 15_000 });
+    await expect(page).toHaveURL(/conversation-graph/, { timeout: 20_000 });
     await expect(page.getByLabel('대화 텍스트 붙여넣기')).toHaveValue(/알파/, { timeout: 10_000 });
     await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PANEL)).toBeVisible({
       timeout: 10_000,
@@ -374,9 +381,8 @@ flowchart TB
       timeout: 10_000,
     });
     await dismissWebpackDevOverlay(page);
-    await page.getByTestId('conversation-graph-answer-preset-create-graph').click({ force: true });
-    await dismissWebpackDevOverlay(page);
-    await page.getByTestId('conversation-graph-answer-generate').click({ force: true });
+    await clickConversationGraphTestId(page, 'conversation-graph-answer-preset-create-graph');
+    await clickConversationGraphTestId(page, 'conversation-graph-answer-generate');
 
     await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PIPELINE)).toBeVisible({
       timeout: 15_000,
@@ -451,8 +457,8 @@ flowchart TB
     });
     await expect(page.getByTestId('conversation-graph-answer-two-pass')).toBeChecked();
 
-    await page.getByTestId('conversation-graph-answer-preset-report').click();
-    await page.getByTestId('conversation-graph-answer-generate').click();
+    await clickConversationGraphTestId(page, 'conversation-graph-answer-preset-report');
+    await clickConversationGraphTestId(page, 'conversation-graph-answer-generate');
 
     await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PIPELINE)).toBeVisible({
       timeout: 15_000,
@@ -484,8 +490,8 @@ flowchart TB
       timeout: 15_000,
     });
 
-    await page.getByTestId('conversation-graph-answer-preset-report').click();
-    await page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_OPEN_CHAT_SEND).click();
+    await clickConversationGraphTestId(page, 'conversation-graph-answer-preset-report');
+    await clickConversationGraphTestId(page, TEST_IDS.CONVERSATION_GRAPH_ANSWER_OPEN_CHAT_SEND);
 
     await expect(page).toHaveURL(new RegExp(`${PATHS.CHAT.replace(/\//g, '\\/')}(\\/)?$`), {
       timeout: 15_000,

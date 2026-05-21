@@ -8,7 +8,11 @@ import {
   isCreateGraphAnswerRequest,
   prepareGraphAnswerGenerationMessage,
 } from './conversationGraphAnswerGeneration';
-import { coerceTrimmedString, type AssistantGenerationPhase } from '../utils/chatInputUtils';
+import {
+  coerceTrimmedString,
+  isKeyboardEventImeComposing,
+  type AssistantGenerationPhase,
+} from '../utils/chatInputUtils';
 import { showToast } from '../utils/toast';
 import {
   copyGraphAnswerToClipboard,
@@ -20,12 +24,24 @@ import { isStreamingSupported } from '../utils/streamingClient';
 import type { RelationshipGraphData } from '../services/conversationGraphService';
 import type { ExpertLayerId } from './conversationGraphExpertLayers';
 import { GensparkGenerationStatus } from '../components/genspark/GensparkGenerationStatus';
-import { GensparkAnswerMarkdown } from '../components/genspark/gensparkAnswerMarkdown';
 import { TEST_IDS } from '../constants/testIds';
 import { CREATE_GRAPH_ANSWER_PRESET } from './conversationGraphAnswerIntent';
-import { clearGraphAnswerLessons } from './conversationGraphAnswerLearning';
-import { extractMermaidBlocksFromAnswer } from './conversationGraphMermaidExtract';
-import { ConversationGraphMermaidBlock } from './ConversationGraphMermaidBlock';
+import {
+  clearGraphAnswerLessons,
+  countGraphAnswerLessonsForFormat,
+} from './conversationGraphAnswerLearning';
+import {
+  createGraphAnswerTurnId,
+  type GraphAnswerTurn,
+} from './conversationGraphAnswerTurns';
+import { GraphAnswerTurnBlock } from './GraphAnswerTurnBlock';
+import {
+  getGraphAnswerDocumentFormatDef,
+  GRAPH_ANSWER_DOCUMENT_FORMAT_PRESETS,
+  inferGraphAnswerDocumentFormat,
+  type GraphAnswerDocumentFormatId,
+} from './conversationGraphAnswerDocumentFormats';
+import { inferGraphAnswerWritingStyle } from './conversationGraphAnswerProse';
 
 export type GraphAnswerEnsureGraphResult = {
   graph: RelationshipGraphData;
@@ -85,19 +101,37 @@ export function ConversationGraphAnswerPanel({
   onOpenInChat,
 }: ConversationGraphAnswerPanelProps) {
   const [prompt, setPrompt] = useState('');
-  const [generatedAnswer, setGeneratedAnswer] = useState('');
+  /** 문서 형식 프리셋 클릭 시 생성에 고정할 형식 */
+  const [pinnedDocumentFormatId, setPinnedDocumentFormatId] =
+    useState<GraphAnswerDocumentFormatId | null>(null);
+  const [turns, setTurns] = useState<GraphAnswerTurn[]>([]);
   const [loading, setLoading] = useState(false);
   const [generationPhase, setGenerationPhase] = useState<AssistantGenerationPhase | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const activeTurnIdRef = useRef<string | null>(null);
+  const turnsScrollRef = useRef<HTMLDivElement | null>(null);
+  const turnsEndRef = useRef<HTMLDivElement | null>(null);
   const lastAutoTriggerRef = useRef(0);
   const lastHandoffAutoCreateRef = useRef(0);
+  const imeComposingRef = useRef(false);
+
+  const latestCompleteTurn = useMemo(
+    () => [...turns].reverse().find((t) => t.status === 'complete'),
+    [turns],
+  );
+  const generatedAnswer = latestCompleteTurn?.answer ?? '';
 
   const promptPresets = useMemo(() => {
     const base = [...GRAPH_ANSWER_PROMPT_PRESETS];
     if (selectedInsight) {
       base.unshift(buildParticipantAnswerPreset(selectedInsight));
     }
-    return base;
+    const seen = new Set<string>();
+    return base.filter((p) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
   }, [selectedInsight]);
 
   const buildContextForMessage = useCallback(
@@ -107,6 +141,7 @@ export function ConversationGraphAnswerPanel({
         analysis: GraphAiAnalysis;
         narrative: string;
         graph: RelationshipGraphData | null;
+        previousTurns: GraphAnswerTurn[];
       }>,
     ) =>
       buildGraphAnswerChatContext({
@@ -119,6 +154,7 @@ export function ConversationGraphAnswerPanel({
         userMessage,
         expertLayer,
         rawConversationText,
+        previousTurns: overrides?.previousTurns,
       }),
     [
       analysis,
@@ -143,15 +179,41 @@ export function ConversationGraphAnswerPanel({
     );
   }, [selectedInsight]);
 
+  const activeDocumentFormatId = useMemo((): GraphAnswerDocumentFormatId => {
+    if (pinnedDocumentFormatId) return pinnedDocumentFormatId;
+    const msg = coerceTrimmedString(prompt, '') || defaultPresetPrompt;
+    return inferGraphAnswerDocumentFormat(msg, inferGraphAnswerWritingStyle(msg));
+  }, [prompt, defaultPresetPrompt, pinnedDocumentFormatId]);
+
+  const detectedFormatLabel = useMemo(
+    () => getGraphAnswerDocumentFormatDef(activeDocumentFormatId).labelKo,
+    [activeDocumentFormatId],
+  );
+
+  const formatLessonCount = useMemo(
+    () => countGraphAnswerLessonsForFormat(activeDocumentFormatId),
+    [activeDocumentFormatId],
+  );
+
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
     };
   }, []);
 
+  useEffect(() => {
+    if (turns.length === 0) return;
+    turnsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [turns, loading]);
+
   const cancelGenerate = useCallback(() => {
+    const activeId = activeTurnIdRef.current;
     abortRef.current?.abort();
     abortRef.current = null;
+    activeTurnIdRef.current = null;
+    if (activeId) {
+      setTurns((prev) => prev.filter((t) => t.id !== activeId || t.answer.trim().length > 0));
+    }
     setLoading(false);
     setGenerationPhase(null);
   }, []);
@@ -164,8 +226,21 @@ export function ConversationGraphAnswerPanel({
       const controller = new AbortController();
       abortRef.current = controller;
       setLoading(true);
-      setGeneratedAnswer('');
       setGenerationPhase(null);
+
+      const previousComplete = turns.filter((t) => t.status === 'complete');
+      const turnId = createGraphAnswerTurnId();
+      activeTurnIdRef.current = turnId;
+      setTurns((prev) => [
+        ...prev,
+        {
+          id: turnId,
+          question: trimmed,
+          answer: '',
+          createdAt: Date.now(),
+          status: 'streaming',
+        },
+      ]);
 
       let activeAnalysis = analysis;
       let activeNarrative = narrative;
@@ -197,6 +272,7 @@ export function ConversationGraphAnswerPanel({
         analysis: activeAnalysis,
         narrative: activeNarrative,
         graph: activeGraph,
+        previousTurns: previousComplete,
       });
       let generationSucceeded = false;
       try {
@@ -210,24 +286,38 @@ export function ConversationGraphAnswerPanel({
             showToast('품질 검토 후 답변을 한 번 더 다듬는 중입니다.', 'info');
           },
           onChunk: (_accumulated, displayText) => {
-            if (displayText) setGeneratedAnswer(displayText);
+            if (!displayText) return;
+            setTurns((prev) =>
+              prev.map((t) =>
+                t.id === turnId ? { ...t, answer: displayText, status: 'streaming' } : t,
+              ),
+            );
           },
         });
         if (controller.signal.aborted) return;
         if (text) {
           generationSucceeded = true;
-          setGeneratedAnswer(text);
+          setTurns((prev) =>
+            prev.map((t) =>
+              t.id === turnId ? { ...t, answer: text, status: 'complete' } : t,
+            ),
+          );
           setGenerationPhase('verify');
           showToast('답변을 생성했습니다.', 'success');
           return;
         }
-        setGeneratedAnswer(
-          '답변을 생성하지 못했습니다. 백엔드 연결 후 다시 시도하거나 「대화에서 답변 생성」을 이용해 주세요.',
+        const failMsg =
+          '답변을 생성하지 못했습니다. 백엔드 연결 후 다시 시도하거나 「대화에서 답변 생성」을 이용해 주세요.';
+        setTurns((prev) =>
+          prev.map((t) =>
+            t.id === turnId ? { ...t, answer: failMsg, status: 'error' } : t,
+          ),
         );
       } finally {
         if (abortRef.current === controller) {
           abortRef.current = null;
         }
+        activeTurnIdRef.current = null;
         setLoading(false);
         if (!generationSucceeded) {
           setGenerationPhase(null);
@@ -238,6 +328,7 @@ export function ConversationGraphAnswerPanel({
       analysis,
       narrative,
       graph,
+      turns,
       buildContextForMessage,
       onEnsureGraphBeforeAnswer,
       useStreamAnswer,
@@ -279,32 +370,50 @@ export function ConversationGraphAnswerPanel({
     void runGenerate(CREATE_GRAPH_ANSWER_PRESET.prompt);
   }, [handoffAutoCreateTrigger, runGenerate]);
 
-  const parsedAnswer = useMemo(
-    () => (generatedAnswer ? extractMermaidBlocksFromAnswer(generatedAnswer) : { body: '', diagrams: [] }),
-    [generatedAnswer],
-  );
-
   const showPipelineStatus = loading;
-  const isGenerationFailureMessage = generatedAnswer.startsWith('답변을 생성하지 못했습니다');
-  const showStreamingPartial =
-    loading && !!generatedAnswer && !isGenerationFailureMessage;
+  const streamingTurn = useMemo(() => turns.find((t) => t.status === 'streaming'), [turns]);
+  const showStreamingPartial = loading && !!streamingTurn?.answer;
 
   return (
     <div
-      className="bw-mt-md bw-features-card"
+      className="bw-mt-md bw-features-card conversation-graph-answer-panel"
       data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_PANEL}
       role="region"
       aria-label="관계도 답변 생성"
       aria-busy={loading}
-      style={{ padding: 12 }}
     >
       <p className="bw-label-block" style={{ margin: 0 }}>
         답변 생성
       </p>
       <p className="bw-detail-meta-text bw-mt-sm">
-        관계도·AI 성향 분석을 통합 대화 API 맥락에 담아 보고서·요약·제안 문장을 생성합니다.
-        「관계도를 만들어줘」처럼 요청하면 붙여넣은 대화로 서버 관계도를 만든 뒤, 참여자·연결 표와 Mermaid
-        다이어그램을 답변으로 작성합니다.
+        관계도·AI 성향 분석을 통합 대화 API 맥락에 담아 생성합니다. 질문·요청에 맞는 문서 형식(분석 보고서·사업
+        보고서·엔티티 프로필·논문·문학·회의록·FAQ 등)으로 구조화된 답변이 출력되며, 성공 패턴은 로컬에 학습됩니다.
+        「관계도를 만들어줘」 요청 시 붙여넣은 대화로 관계도를 만든 뒤 표·Mermaid를 포함합니다.
+      </p>
+      <p
+        className="bw-detail-meta-text bw-mt-sm"
+        data-testid="conversation-graph-answer-format-hint"
+      >
+        인식된 출력 형식: <strong>{detectedFormatLabel}</strong>
+        {formatLessonCount > 0 ? (
+          <span className="bw-detail-meta-text"> (학습 {formatLessonCount}건)</span>
+        ) : (
+          <span className="bw-detail-meta-text"> (내장 골격 적용)</span>
+        )}
+        {pinnedDocumentFormatId ? (
+          <>
+            {' '}
+            <button
+              type="button"
+              className="bw-btn-secondary"
+              style={{ fontSize: 11, marginLeft: 4, padding: '2px 6px' }}
+              data-testid="conversation-graph-answer-format-unpin"
+              onClick={() => setPinnedDocumentFormatId(null)}
+            >
+              형식 고정 해제
+            </button>
+          </>
+        ) : null}
       </p>
       {selectedInsight ? (
         <p className="bw-detail-meta-text bw-mt-sm" data-testid="conversation-graph-answer-selected-hint">
@@ -314,8 +423,7 @@ export function ConversationGraphAnswerPanel({
       ) : null}
 
       <div
-        className="bw-mt-sm"
-        style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
+        className="bw-mt-sm conversation-graph-answer-panel__presets"
         data-testid="conversation-graph-answer-presets"
       >
         {promptPresets.map((preset) => (
@@ -325,6 +433,7 @@ export function ConversationGraphAnswerPanel({
             className="bw-btn-secondary"
             style={{ fontSize: 12 }}
             data-testid={`conversation-graph-answer-preset-${preset.id}`}
+            title={preset.prompt.slice(0, 120)}
             onClick={() => setPrompt(preset.prompt)}
           >
             {preset.label}
@@ -332,34 +441,69 @@ export function ConversationGraphAnswerPanel({
         ))}
       </div>
 
+      <p className="bw-label-block bw-mt-sm" style={{ fontSize: 12, marginBottom: 4 }}>
+        문서 형식
+      </p>
+      <div
+        className="bw-mt-sm conversation-graph-answer-panel__presets"
+        data-testid="conversation-graph-answer-format-presets"
+      >
+        {GRAPH_ANSWER_DOCUMENT_FORMAT_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            className="bw-btn-secondary"
+            style={{ fontSize: 12 }}
+            data-testid={`conversation-graph-answer-format-${preset.id}`}
+            title={preset.prompt.slice(0, 140)}
+            onClick={() => {
+              setPinnedDocumentFormatId(preset.id);
+              setPrompt(preset.prompt);
+            }}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+
       <label className="bw-label-block bw-mt-sm" htmlFor="conversation-graph-answer-prompt">
-        생성할 내용 (질문·지시)
+        질문·지시
       </label>
       <textarea
         id="conversation-graph-answer-prompt"
-        className="bw-input"
+        className="bw-input conversation-graph-answer-panel__prompt"
         rows={3}
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
+        onCompositionStart={() => {
+          imeComposingRef.current = true;
+        }}
+        onCompositionEnd={(e) => {
+          imeComposingRef.current = false;
+          setPrompt(e.currentTarget.value);
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            if (isKeyboardEventImeComposing(e, imeComposingRef.current)) return;
             e.preventDefault();
-            if (!loading && coerceTrimmedString(prompt, '')) {
+            const next = e.currentTarget.value;
+            if (next !== prompt) setPrompt(next);
+            if (!loading && coerceTrimmedString(next, '')) {
               void handleGenerate();
             }
           }
         }}
-        placeholder="예: 관계도를 만들어 주세요 / 참여자별 역할과 갈등 축 보고서 (Ctrl+Enter로 생성)"
-        style={{ width: '100%', maxWidth: 560, marginTop: 6 }}
+        placeholder="예: 관계도 작성 / 갈등 요약 (Ctrl+Enter)"
         data-testid="conversation-graph-answer-prompt"
       />
 
-      <div className="bw-mt-sm" style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+      <div className="bw-mt-sm conversation-graph-answer-panel__options">
         {isStreamingSupported() ? (
           <label
             className="bw-detail-meta-text"
             style={{ display: 'flex', gap: 8, alignItems: 'center' }}
             data-testid="conversation-graph-answer-stream-label"
+            title="생성 중 답변을 실시간으로 표시"
           >
             <input
               type="checkbox"
@@ -367,7 +511,7 @@ export function ConversationGraphAnswerPanel({
               onChange={(e) => onUseStreamAnswerChange?.(e.target.checked)}
               data-testid="conversation-graph-answer-stream"
             />
-            스트리밍으로 실시간 표시
+            스트리밍
           </label>
         ) : null}
         {onUseTwoPassAnswerChange ? (
@@ -375,6 +519,7 @@ export function ConversationGraphAnswerPanel({
             className="bw-detail-meta-text"
             style={{ display: 'flex', gap: 8, alignItems: 'center' }}
             data-testid="conversation-graph-answer-two-pass-label"
+            title="개요 단계 후 보고서로 2단계 생성"
           >
             <input
               type="checkbox"
@@ -382,7 +527,7 @@ export function ConversationGraphAnswerPanel({
               onChange={(e) => onUseTwoPassAnswerChange(e.target.checked)}
               data-testid="conversation-graph-answer-two-pass"
             />
-            2-pass 생성(개요 → 보고서)
+            2단계
           </label>
         ) : null}
         {onAutoGenerateAnswerChange ? (
@@ -390,6 +535,7 @@ export function ConversationGraphAnswerPanel({
             className="bw-detail-meta-text"
             style={{ display: 'flex', gap: 8, alignItems: 'center' }}
             data-testid="conversation-graph-answer-auto-label"
+            title="관계도 생성 직후 보고서 답변 자동 생성"
           >
             <input
               type="checkbox"
@@ -397,7 +543,7 @@ export function ConversationGraphAnswerPanel({
               onChange={(e) => onAutoGenerateAnswerChange(e.target.checked)}
               data-testid="conversation-graph-answer-auto"
             />
-            관계도 생성 후 보고서 답변 자동 생성
+            자동 생성
           </label>
         ) : null}
         <button
@@ -405,16 +551,31 @@ export function ConversationGraphAnswerPanel({
           className="bw-btn-secondary"
           style={{ fontSize: 12 }}
           data-testid="conversation-graph-answer-clear-lessons"
+          title="로컬에 저장된 관계도 답변 학습 힌트 삭제"
           onClick={() => {
             clearGraphAnswerLessons();
-            showToast('저장된 관계도 답변 학습 기록을 지웠습니다.', 'info');
+            showToast('저장된 관계도 답변·문서 형식 구조 학습을 지웠습니다.', 'info');
           }}
         >
-          답변 학습 초기화
+          학습 초기화
         </button>
+        {turns.length > 0 ? (
+          <button
+            type="button"
+            className="bw-btn-secondary"
+            style={{ fontSize: 12 }}
+            data-testid="conversation-graph-answer-clear-turns"
+            onClick={() => {
+              setTurns([]);
+              showToast('질문·답변 기록을 지웠습니다.', 'info');
+            }}
+          >
+            기록 지우기
+          </button>
+        ) : null}
       </div>
 
-      <div className="bw-mt-sm" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      <div className="bw-mt-sm conversation-graph-answer-panel__actions">
         <button
           type="button"
           className="bw-btn-primary"
@@ -422,7 +583,7 @@ export function ConversationGraphAnswerPanel({
           disabled={loading || !coerceTrimmedString(prompt, '')}
           data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_GENERATE}
         >
-          {loading ? '답변 생성 중…' : '답변 생성'}
+          {loading ? '생성 중…' : '생성'}
         </button>
         {loading ? (
           <button
@@ -441,7 +602,7 @@ export function ConversationGraphAnswerPanel({
           disabled={loading}
           data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_OPEN_CHAT}
         >
-          대화에서 답변 생성
+          채팅에서 생성
         </button>
         <button
           type="button"
@@ -450,7 +611,7 @@ export function ConversationGraphAnswerPanel({
           disabled={loading || (!coerceTrimmedString(prompt, '') && !promptPresets[0])}
           data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_OPEN_CHAT_SEND}
         >
-          대화에서 바로 전송
+          채팅 전송
         </button>
         <button
           type="button"
@@ -471,7 +632,7 @@ export function ConversationGraphAnswerPanel({
           }}
           data-testid="conversation-graph-full-report-download"
         >
-          통합 리포트 저장
+          리포트 저장
         </button>
       </div>
 
@@ -485,86 +646,82 @@ export function ConversationGraphAnswerPanel({
         </div>
       ) : null}
 
-      {generatedAnswer ? (
-        <div
-          className="bw-mt-md"
-          data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_RESULT}
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+      {turns.length > 0 ? (
+        <div className="bw-mt-md" data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_RESULT}>
+          <div className="conversation-graph-answer-panel__result-actions">
             <p className="bw-label-block" style={{ fontSize: 13, margin: 0 }}>
-              생성된 답변
+              기록 ({turns.length})
             </p>
-            <button
-              type="button"
-              className="bw-btn-secondary"
-              style={{ fontSize: 12 }}
-              data-testid="conversation-graph-answer-copy"
-              onClick={() => {
-                void copyGraphAnswerToClipboard(generatedAnswer).then((ok) => {
-                  showToast(ok ? '답변을 복사했습니다.' : '복사에 실패했습니다.', ok ? 'success' : 'error');
-                });
-              }}
-            >
-              복사
-            </button>
-            <button
-              type="button"
-              className="bw-btn-secondary"
-              style={{ fontSize: 12 }}
-              data-testid="conversation-graph-answer-download"
-              onClick={() => {
-                downloadGraphAnswerText(generatedAnswer, 'conversation-graph-answer.txt');
-                showToast('답변 TXT를 저장했습니다.', 'success');
-              }}
-            >
-              TXT 저장
-            </button>
-            <button
-              type="button"
-              className="bw-btn-secondary"
-              style={{ fontSize: 12 }}
-              data-testid="conversation-graph-answer-download-md"
-              onClick={() => {
-                downloadGraphAnswerMarkdown(generatedAnswer, {
-                  title: conversationTitle,
-                  period: periodLabel,
-                });
-                showToast('답변 Markdown을 저장했습니다.', 'success');
-              }}
-            >
-              MD 저장
-            </button>
+            {latestCompleteTurn ? (
+              <>
+                <button
+                  type="button"
+                  className="bw-btn-secondary"
+                  style={{ fontSize: 12 }}
+                  data-testid="conversation-graph-answer-copy"
+                  onClick={() => {
+                    void copyGraphAnswerToClipboard(latestCompleteTurn.answer).then((ok) => {
+                      showToast(ok ? '마지막 답변을 복사했습니다.' : '복사에 실패했습니다.', ok ? 'success' : 'error');
+                    });
+                  }}
+                >
+                  복사
+                </button>
+                <button
+                  type="button"
+                  className="bw-btn-secondary"
+                  style={{ fontSize: 12 }}
+                  data-testid="conversation-graph-answer-download"
+                  onClick={() => {
+                    downloadGraphAnswerText(latestCompleteTurn.answer, 'conversation-graph-answer.txt');
+                    showToast('답변 TXT를 저장했습니다.', 'success');
+                  }}
+                >
+                  TXT 저장
+                </button>
+                <button
+                  type="button"
+                  className="bw-btn-secondary"
+                  style={{ fontSize: 12 }}
+                  data-testid="conversation-graph-answer-download-md"
+                  onClick={() => {
+                    downloadGraphAnswerMarkdown(latestCompleteTurn.answer, {
+                      title: conversationTitle,
+                      period: periodLabel,
+                    });
+                    showToast('답변 Markdown을 저장했습니다.', 'success');
+                  }}
+                >
+                  MD 저장
+                </button>
+              </>
+            ) : null}
+          </div>
+          <p className="bw-detail-meta-text bw-mt-sm" style={{ marginBottom: 8 }}>
+            여러 질문을 이어 생성하면 위·아래로 스크롤해 이전 질문과 답변을 확인할 수 있습니다. 새 답변은
+            이전 맥락을 반영합니다.
+          </p>
+          <div
+            ref={turnsScrollRef}
+            className="conversation-graph-answer-turns"
+            data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_TURNS}
+            aria-label="질문·답변 기록"
+          >
+            {turns.map((turn, index) => (
+              <GraphAnswerTurnBlock key={turn.id} turn={turn} index={index} total={turns.length} />
+            ))}
+            <div ref={turnsEndRef} aria-hidden style={{ height: 1 }} />
           </div>
           {showStreamingPartial ? (
             <p
               className="bw-detail-meta-text bw-mt-sm"
               role="status"
+              aria-live="polite"
               data-testid={TEST_IDS.CONVERSATION_GRAPH_ANSWER_STREAMING}
             >
-              답변을 이어서 생성하는 중…
+              답변을 이어서 생성하는 중… (스크롤하여 위 질문·답변을 확인할 수 있습니다)
             </p>
           ) : null}
-          {isGenerationFailureMessage ? (
-            <p
-              className="bw-detail-meta-text"
-              style={{ marginTop: 6, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}
-            >
-              {generatedAnswer}
-            </p>
-          ) : (
-            <>
-              {parsedAnswer.diagrams.map((diagram, index) => (
-                <ConversationGraphMermaidBlock key={`mermaid-${index}`} source={diagram} />
-              ))}
-              <GensparkAnswerMarkdown
-                text={parsedAnswer.body || generatedAnswer}
-                className="genspark-md-body bw-text-primary bw-mt-sm"
-                enhancedCodeBlocks
-              />
-            </>
-          )}
         </div>
       ) : null}
     </div>

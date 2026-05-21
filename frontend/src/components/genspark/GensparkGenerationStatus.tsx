@@ -51,6 +51,7 @@ export const GensparkGenerationStatus: React.FC<GensparkGenerationStatusProps> =
 
   return (
     <div
+      data-testid="genspark-generation-status"
       className={`genspark-generation-status${embedded ? ' genspark-generation-status--embedded' : ''}`}
       role="status"
       aria-live="polite"

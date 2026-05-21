@@ -39,7 +39,7 @@ export function buildGraphAnswerOutlineContext(context: Record<string, unknown>)
     answer_quality_instruction: [
       prev,
       '[1차 개요 — 표·Mermaid는 시스템이 이후에 붙입니다]',
-      '## 한 줄 요약, ## 해석, ## 갈등 축, ## 실행 제안만 각 2~4문장으로 작성하세요. 마크다운 표·```mermaid 블록·[다중 요청] 문구는 출력하지 마세요.',
+      '## 한 줄 요약, ## 해석, ## 갈등 축, ## 실행 제안만 각 2~4문장(경어체·정돈된 한국어)으로 작성하세요. 마크다운 표·```mermaid 블록·[다중 요청] 문구는 출력하지 마세요.',
     ]
       .filter(Boolean)
       .join(' '),

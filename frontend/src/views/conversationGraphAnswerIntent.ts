@@ -35,7 +35,7 @@ const CREATE_GRAPH_PROMPT_BODY = [
 
 export const CREATE_GRAPH_ANSWER_PRESET = {
   id: 'create-graph',
-  label: '관계도 만들기',
+  label: '관계도',
   prompt: CREATE_GRAPH_PROMPT_BODY,
 } as const;
 

@@ -1319,6 +1319,7 @@ function ConversationGraphView() {
               <button
                 type="submit"
                 className="bw-btn-primary"
+                data-testid="conversation-graph-search-submit"
                 disabled={loadingGraph || !selectedId}
                 aria-busy={loadingGraph}
               >

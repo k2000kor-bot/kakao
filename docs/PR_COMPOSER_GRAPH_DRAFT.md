@@ -16,7 +16,8 @@
 - **Composer Oversight Council v2**·답변 **자가 개발** 루프(전송·재생성·편집 공통) — `03bf9a96e`
 - **재생성 E2E**: Ultimate(+Council)·`/agents` 스트림(ChatGPTInterface) — CI `composer-regenerate-e2e`
 - 대화 관계도 뷰·handoff·Jest/E2E·CI jobs (`composer-pipeline`, `conversation-graph`, E2E)
-- **관계도 정리된 생성 답변**: 결정론적 표·Mermaid + LLM 해석 합성, 로컬 학습 힌트, 2-pass(개요→보고서), 패널 UI 토글
+- **관계도 정리된 생성 답변**: 결정론적 표·Mermaid + LLM 해석 합성, 2-pass(개요→보고서), 패널 UI 토글
+- **문서 형식별 답변**: 보고서·엔티티·인텔리전스·논문·문학·회의록·FAQ·백서 등 형식 추론·고정·내장 골격·로컬 학습·형식별 후처리 — [CONVERSATION_GRAPH_ANSWER_FORMATS.md](./CONVERSATION_GRAPH_ANSWER_FORMATS.md)
 - **관계도 연속 질문·답변**: 스크롤 기록·이전 맥락 API 전달 (`a5fb640b6`)
 - **한글 보고서 prose**: 글 유형 지시·시스템 태그 제거 후처리
 - **IME Enter**: 채팅·관계도 입력창 한글 조합 중 Enter 잔여 글자 수정
@@ -32,13 +33,13 @@
 - [x] `npm run verify:handoff-artifacts` (bundle tip = 브랜치 HEAD; push 직전 `npm run refresh:handoff-artifacts`)
 - [x] `HANDOFF_REFRESH=1 npm run maintain:push-block` (사이드바·컴포저 회귀)
 - [x] `npm run verify:conversation-graph-api` (upload·relationship-graph·`conversation_graph_analysis` chat 스모크)
-- [x] `npm run test:e2e:conversation-graph:chromium` (13 passed, 합성·2-pass 포함)
+- [x] `npm run test:e2e:conversation-graph:chromium` (13 passed, 문서 형식·E2E 클릭 안정화 포함)
 - [x] `npm run verify:composer-pipeline` (19 suites, 147 tests)
 - [x] `npm run test:e2e:composer-regenerate:ci` (2 passed, 1 skip, 2026-05-20 재확인)
 - [x] `npm run test:e2e:composer-pipeline:all` (에이전트·다중요청·재생성)
 - [x] `npm run test:e2e:pipelines:all` (컴포저 묶음 + 관계도 13)
 - [x] 백엔드 `pytest tests/test_composer_oversight_*.py tests/test_composer_self_develop_hint.py` (10 passed)
-- [x] `npm run verify:conversation-graph` (= unit + E2E)
+- [x] `npm run verify:conversation-graph` (= unit + E2E, 2026-05-21 재확인 13 passed)
 - [ ] 수동: `.env.local` 순차/multi-step 플래그 후 `1.\n2.` 전송·재생성·편집
 
 ## Env (선택)

@@ -23,4 +23,12 @@ describe('mergeGraphAnswerWithDeterministicSections', () => {
     expect(merged).toContain('## 해석');
     expect(merged).toContain('알파와 베타');
   });
+
+  it('LLM 본문이 짧아도 핵심 포인트·실행 제안 골격을 붙인다', () => {
+    const llm = '알파와 베타 사이 갈등이 두드러집니다.';
+    const merged = mergeGraphAnswerWithDeterministicSections(llm, structured);
+    expect(merged).toContain('### 핵심 포인트');
+    expect(merged).toContain('## 참여자 표');
+    expect(merged).toContain('실행 제안');
+  });
 });

@@ -93,7 +93,8 @@ REACT_APP_GRAPH_ANSWER_TWO_PASS=0
 ## UI·접근성 (프론트)
 
 - **재검색**: 「관계도 검색」을 다시 누르면 로딩 구간에서 **이전 그래프가 즉시 비워지고**(`setGraph(null)`), 응답 후 새 데이터로 D3를 다시 그립니다.
-- **키보드**: 기간 입력란과 검색 버튼은 **`aria-label="기간 지정 및 관계도 검색"`** 인 `<form>`으로 묶여 있어, 날짜 필드에서 **Enter**로도 제출(검색)할 수 있습니다.
+- **키보드**: 기간 입력란과 검색 버튼(`data-testid="conversation-graph-search-submit"`, 라벨 **검색**)은 **`aria-label="기간 지정 및 관계도 검색"`** 인 `<form>`으로 묶여 있어, 날짜 필드에서 **Enter**로도 제출(검색)할 수 있습니다.
+- **문서 형식별 답변**: [CONVERSATION_GRAPH_ANSWER_FORMATS.md](./CONVERSATION_GRAPH_ANSWER_FORMATS.md) — 보고서·엔티티·인텔리전스·논문·문학 등 14종, 내장 골격·로컬 학습.
 - **스크린 리더**: `data-testid="conversation-graph-status"` · `aria-live="polite"`(스크린 리더 전용 영역)로 로딩·성공·빈 결과·실패 문구를 안내합니다. 검색 버튼·그래프 카드·**답변 생성 패널**(`role="region"`, `aria-busy`)에 `aria-busy`가 연동됩니다.
 - **스크롤**: 노드가 있는 관계도가 도착하면 「대화 관계도」 섹션으로 `scrollIntoView`합니다. 채팅 handoff로 대화를 불러오면 **답변 생성 패널**(없으면 붙여넣기란)로 스크롤합니다. **`prefers-reduced-motion: reduce`** 이면 `behavior: 'auto'`로 애니메이션을 줄입니다.
 - **보기**: **관계도 / 매트릭스** 토글, **전문가 레이어**(영향력·갈등·주고받기·시공사·족보), **시간 흐름**(초반/중반/후반) 기간 점프.

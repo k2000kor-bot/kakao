@@ -1,4 +1,9 @@
 import { coerceTrimmedString } from '../utils/chatInputUtils';
+import {
+  getGraphAnswerDocumentFormatDef,
+  graphAnswerDraftMatchesFormat,
+  type GraphAnswerDocumentFormatId,
+} from './conversationGraphAnswerDocumentFormats';
 import { isCreateGraphAnswerRequest } from './conversationGraphAnswerIntent';
 
 export type GraphAnswerVerifyResult = {
@@ -111,6 +116,18 @@ export function verifyGraphAnswerAgainstContext(
   if (!snap && !coerceTrimmedString(String(ctx.conversation_graph_raw_conversation ?? ''), '')) {
     if (createGraph && !text.includes('데이터') && !text.includes('붙여넣')) {
       issues.push('관계도 데이터가 부족할 때는 필요한 입력 안내를 포함하세요.');
+    }
+  }
+
+  const formatRaw = coerceTrimmedString(String(ctx.conversation_graph_document_format ?? ''), '');
+  if (formatRaw && !createGraph) {
+    const formatId = formatRaw as GraphAnswerDocumentFormatId;
+    const def = getGraphAnswerDocumentFormatDef(formatId);
+    const { ok, missing } = graphAnswerDraftMatchesFormat(text, formatId);
+    if (!ok && missing.length > 0) {
+      issues.push(
+        `요청 문서 형식(${def.labelKo})에 맞는 제목·섹션이 부족합니다. 다음 키워드를 포함하세요: ${missing.slice(0, 4).join(', ')}.`,
+      );
     }
   }
 

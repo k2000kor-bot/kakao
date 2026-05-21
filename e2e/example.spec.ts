@@ -117,7 +117,7 @@ test.describe('기본 앱 기능', () => {
     await page.goto(PATHS.CONVERSATION_GRAPH, { waitUntil: 'domcontentloaded', timeout: 30_000 });
     await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_VIEW)).toBeAttached({ timeout: 15_000 });
     await expect(page.getByRole('radio', { name: /대화 선택: E2E 대화/ })).toBeVisible({ timeout: 15_000 });
-    await page.getByRole('button', { name: '관계도 검색' }).click();
+    await page.getByTestId('conversation-graph-search-submit').click();
     await expect(page.getByRole('img', { name: '대화 관계도 그래프' })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('conversation-graph-status')).toContainText(/참여자 1명/);
     await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_PANEL)).toBeVisible();
