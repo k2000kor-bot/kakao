@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-21 12:04:57 KST
+- generated_at: 2026-05-21 12:36:12 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `89de23f68 docs: main 동기화 완료 (promote:main db99e5633)`
+- latest_commit: `cf710e93d feat(conversation-graph): 카카오 CSV 업로드 유틸 및 채팅 handoff state 키`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 787849436
-- bundle_sha256: `78d4a4f99ecf2d7f45128de59a4e28323dc03469ffd32bfbb5bc413dae6f669f`
+- bundle_size_bytes: 787864501
+- bundle_sha256: `beb207ae22d06871fad9652212f06092f8b0c6b2962eb30a2419fa5ca1a8f550`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 190
-- patch_series_expected: 190 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
+- patch_series_count: 193
+- patch_series_expected: 193 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
 
 ### Recent Commits
 
 ```
+cf710e93d feat(conversation-graph): 카카오 CSV 업로드 유틸 및 채팅 handoff state 키
+671aaabd7 chore: pr:status 완료 후 다음 단계 안내
+2a40c2619 docs: push 완료·main 동기화 상태 정리 및 repo 설정 스크립트
 89de23f68 docs: main 동기화 완료 (promote:main db99e5633)
 db99e5633 chore: npm run pr:status PR 상태 요약
-b6bd4ef38 docs: Actions PR 권한 필수 안내 (Issue #1 원인)
-e46aa2322 ci: PR 워크플로 push 시 자동 실행 (workflow 파일 변경)
-99348f063 fix(ci): create-pr-to-main 워크플로 YAML 문법 오류 수정
 ```

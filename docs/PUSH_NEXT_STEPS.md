@@ -10,13 +10,20 @@
 | SSH | **k2000kor-bot** |
 | `dev-continue-2026-01-20` push | ✅ |
 | `main` 동기화 | ✅ `npm run promote:main` (`main` = `dev-continue` tip) |
-| Handoff | `npm run verify:handoff-artifacts` |
+| Handoff | `npm run verify:handoff-artifacts` (bundle tip `cf710e93d`, 193 patches) |
+| 카카오 CSV 유틸 | `cf710e93d` — `main`·`dev-continue` 동기화됨 |
 
 ## GitHub default branch (권장)
 
-현재 default가 `dev-continue-2026-01-20`이면:
+현재 API 기준 default: **`dev-continue-2026-01-20`** → **`main`** 권장:
 
-https://github.com/k2000kor-bot/kakao/settings/branches → Default branch → **`main`**
+```bash
+npm run repo:open-default-branch
+# 또는 PAT 있을 때
+KAKAO_BOT_PAT=... npm run repo:set-default-main
+```
+
+수동: https://github.com/k2000kor-bot/kakao/settings/branches → Default branch → **`main`**
 
 ## 로컬 검증
 

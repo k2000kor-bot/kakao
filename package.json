@@ -79,6 +79,7 @@
     "pr:open-actions": "bash scripts/open-github-pr-actions.sh",
     "pr:status": "bash scripts/pr-status.sh",
     "repo:open-default-branch": "bash scripts/open-github-default-branch-settings.sh",
+    "repo:set-default-main": "bash scripts/set-github-default-branch-main.sh",
     "promote:main": "bash scripts/promote-dev-continue-to-main.sh",
     "pr:create": "bash scripts/create-github-pr.sh",
     "pr:copy-body": "bash scripts/pr-copy-body.sh",

@@ -21,13 +21,14 @@
 - **한글 보고서 prose**: 글 유형 지시·시스템 태그 제거 후처리
 - **IME Enter**: 채팅·관계도 입력창 한글 조합 중 Enter 잔여 글자 수정
 - **UI 간결화**: 관계도·채팅/프로젝트 상세 버튼 라벨·`bw-tool-view` 상세 레이아웃(툴바 wrap·패널 너비)
+- **카카오톡 CSV 업로드**: 정규화 TXT·미리보기·대용량 샘플링·`/chat` handoff state 키 (`cf710e93d`)
 
 ## Test plan
 
 - [x] `npm run verify:pre-deploy`
 - [x] `npm run verify:final`
 - [x] `npm run verify:conversation-graph:unit` (관계도 Jest + 백엔드 pytest)
-- [x] `ConversationGraphView.test.tsx` (43 tests)
+- [x] `ConversationGraphView.test.tsx` · `npm run test:conversation-graph` (205 tests, 카카오 CSV 업로드 포함)
 - [x] `npm run verify:handoff-artifacts` (bundle tip = 브랜치 HEAD; push 직전 `npm run refresh:handoff-artifacts`)
 - [x] `HANDOFF_REFRESH=1 npm run maintain:push-block` (사이드바·컴포저 회귀)
 - [x] `npm run verify:conversation-graph-api` (upload·relationship-graph·`conversation_graph_analysis` chat 스모크)
@@ -83,5 +84,7 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] 관계도 답변 연속 턴·IME 단위 테스트
 - [x] `npm run local:verify` · 관계도/채팅 UI 간결화 (`74fdc9b60`, `01d2b15d9`)
 - [x] push — `k2000kor-bot/kakao` (`5edeecfe6`, 대용량 blob 히스토리 정리 후 push)
-- [x] `main` 동기화 — `npm run promote:main` (`db99e5633`, PR 없이 `main` ← `dev-continue-2026-01-20`)
-- [ ] PR (선택) — 리뷰 기록용으로만 필요 시 `npm run pr:open-new`
+- [x] `main` 동기화 — `npm run promote:main` (`cf710e93d`, 카카오 CSV 유틸·handoff state 키)
+- [x] handoff — `npm run refresh:handoff-artifacts` (193 patches, bundle tip `cf710e93d`)
+- [ ] default branch → `main` — `npm run repo:open-default-branch` 또는 `KAKAO_BOT_PAT=... npm run repo:set-default-main` (현재: `dev-continue-2026-01-20`)
+- [ ] PR (선택) — `main`과 동기화됐으면 diff 없음 · 리뷰 기록용 `npm run pr:open-new`
