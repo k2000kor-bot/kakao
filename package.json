@@ -75,6 +75,7 @@
     "pr:composer-graph-url": "bash scripts/print-github-pr-url.sh",
     "push:next-steps": "cat docs/PUSH_NEXT_STEPS.md",
     "pr:open-compare": "bash scripts/open-github-pr-compare.sh",
+    "pr:open-new": "bash scripts/open-github-pr-new.sh",
     "pr:create": "bash scripts/create-github-pr.sh",
     "pr:copy-body": "bash scripts/pr-copy-body.sh",
     "ship:preflight": "bash scripts/ship-dev-continue-preflight.sh",

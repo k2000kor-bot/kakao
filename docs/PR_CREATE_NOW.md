@@ -6,14 +6,19 @@
 ## 자동 (macOS)
 
 ```bash
-npm run pr:create
+npm run pr:open-new    # PR 새로 만들기 (base=main, head=dev-continue) — 권장
+npm run pr:create      # 위 + 제목·본문 pre-fill(compare URL)
+npm run pr:copy-body   # 본문만 클립보드
 ```
 
-브라우저에 **제목·본문이 채워진** PR 폼이 열립니다 → **Create pull request** 클릭.
+1. 열린 페이지에서 **base: `main`** · **compare: `dev-continue-2026-01-20`** 확인  
+2. 제목·본문 붙여넣기 (`docs/PR_COMPOSER_GRAPH_DRAFT.md`)  
+3. **Create pull request** 클릭
 
 직접 링크:
 
-https://github.com/k2000kor-bot/kakao/compare/main...dev-continue-2026-01-20?expand=1&quick_pull=1
+- https://github.com/k2000kor-bot/kakao/pull/new?base=main&head=dev-continue-2026-01-20
+- https://github.com/k2000kor-bot/kakao/compare/main...dev-continue-2026-01-20?expand=1&quick_pull=1
 
 ## 설정 참고
 

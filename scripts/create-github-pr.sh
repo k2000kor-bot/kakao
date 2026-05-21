@@ -28,6 +28,8 @@ resolve_token() {
   fi
 }
 
+PR_NEW_URL="https://github.com/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/pull/new?base=${BASE}&head=${HEAD}"
+
 open_quick_pull() {
   local url
   url="$(python3 - "$COMPARE" "$TITLE" "$BODY_FILE" <<'PY'
@@ -46,9 +48,10 @@ sep = "&" if "?" in compare else "?"
 print(f"{compare}{sep}{q}")
 PY
 )"
-  echo "PR 미리 채우기: $url"
+  echo "PR (권장): $PR_NEW_URL"
+  echo "Compare+pre-fill: $url"
   if command -v open >/dev/null 2>&1; then
-    open "$url"
+    open "$PR_NEW_URL"
   fi
   if command -v pbcopy >/dev/null 2>&1; then
     pbcopy < "$BODY_FILE"
