@@ -84,7 +84,8 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] 관계도 답변 연속 턴·IME 단위 테스트
 - [x] `npm run local:verify` · 관계도/채팅 UI 간결화 (`74fdc9b60`, `01d2b15d9`)
 - [x] push — `k2000kor-bot/kakao` (`5edeecfe6`, 대용량 blob 히스토리 정리 후 push)
-- [x] `main` 동기화 — `npm run promote:main` (`cf710e93d`, 카카오 CSV 유틸·handoff state 키)
-- [x] handoff — `npm run refresh:handoff-artifacts` (193 patches, bundle tip `cf710e93d`)
+- [x] `main` 동기화 — `npm run promote:main` (`9ae459681`, typecheck·Lazy Chat·API `analysis_mode`)
+- [x] handoff — `npm run refresh:handoff-artifacts` (195 patches, bundle tip `9ae459681`)
+- [x] `npm run verify:conversation-graph:unit` — Jest 205 + pytest 16 (2026-05-21)
 - [ ] default branch → `main` — `npm run repo:open-default-branch` 또는 `KAKAO_BOT_PAT=... npm run repo:set-default-main` (현재: `dev-continue-2026-01-20`)
 - [ ] PR (선택) — `main`과 동기화됐으면 diff 없음 · 리뷰 기록용 `npm run pr:open-new`
