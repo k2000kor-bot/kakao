@@ -1,9 +1,9 @@
 # PR 초안 — composer multi-request + conversation graph
 
 **브랜치**: `dev-continue-2026-01-20`  
-**HEAD**: `git rev-parse --short HEAD` · `npm run pr:composer-graph-url` (push 직전 `npm run refresh:handoff-artifacts`)  
+**HEAD**: `d19c66377` · `npm run pr:composer-graph-url` (push 직전 `npm run refresh:handoff-artifacts`)  
 **베이스**: `main` (또는 팀 기본 브랜치)  
-**제목 제안**: `feat: 컴포저 순차 생성·관계도 정리 답변(합성·2-pass)·handoff`
+**제목 제안**: `feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff`
 
 **Compare URL** (push 후):  
 `https://github.com/k2000kor-bot/kakao/compare/main...dev-continue-2026-01-20?expand=1`
@@ -89,4 +89,5 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] handoff — `npm run refresh:handoff-artifacts` (195 patches, bundle tip `9ae459681`)
 - [x] `npm run verify:conversation-graph:unit` — Jest 205 + pytest 16 (2026-05-21)
 - [ ] default branch → `main` — `npm run repo:open-default-branch` 또는 `KAKAO_BOT_PAT=... npm run repo:set-default-main` (현재: `dev-continue-2026-01-20`)
-- [ ] PR (선택) — `main`과 동기화됐으면 diff 없음 · 리뷰 기록용 `npm run pr:open-new`
+- [x] push — `d19c66377` feat(graph-answer) 문서 형식별 답변 (2026-05-21)
+- [ ] PR (선택) — `npm run pr:open-compare` · `npm run pr:create`
