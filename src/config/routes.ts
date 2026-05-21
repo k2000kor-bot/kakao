@@ -24,6 +24,13 @@ export const AUTOMATION_PATH = '/automation';
 export const COMMUNITY_PATH = '/community';
 export const PIPELINE_TUNING_PATH = '/pipeline-tuning';
 export const CONVERSATION_GRAPH_PATH = '/conversation-graph';
+/** React Router `location.state` — 다른 화면→관계도 붙여넣기 handoff */
+export const CONVERSATION_GRAPH_PASTE_STATE_KEY = 'corbu.conversationGraph.pasteText';
+export const CONVERSATION_GRAPH_AUTO_CREATE_STATE_KEY = 'corbu.conversationGraph.autoCreateGraph';
+/** React Router `location.state` — 관계도→`/chat` 초안·맥락·자동 전송 */
+export const CONVERSATION_GRAPH_CHAT_CONTEXT_STATE_KEY = 'corbu.conversationGraph.chatContext';
+export const CONVERSATION_GRAPH_CHAT_DRAFT_STATE_KEY = 'corbu.conversationGraph.chatDraft';
+export const CONVERSATION_GRAPH_CHAT_AUTOSEND_STATE_KEY = 'corbu.conversationGraph.chatAutosend';
 export const BACKUP_PATH = '/backup';
 /** 개발 현황 (지금까지 반영된 기능·변경 사항) — 프론트에서 확인용 */
 export const DEV_STATUS_PATH = '/dev-status';

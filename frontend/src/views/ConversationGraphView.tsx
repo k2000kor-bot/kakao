@@ -560,11 +560,27 @@ function ConversationGraphView() {
       .finally(() => setLoadingUpload(false));
   }, [pendingOriginalFile, uploadPreview?.source, excludeSystemMessages, kakaoSamplePreset]);
 
+  const kakaoFilterPrefsRef = useRef({
+    excludeSystemMessages,
+    kakaoSamplePreset,
+  });
   useEffect(() => {
+    const prev = kakaoFilterPrefsRef.current;
+    const filtersChanged =
+      prev.excludeSystemMessages !== excludeSystemMessages ||
+      prev.kakaoSamplePreset !== kakaoSamplePreset;
+    kakaoFilterPrefsRef.current = { excludeSystemMessages, kakaoSamplePreset };
+    if (!filtersChanged) return;
     if (pendingOriginalFile && uploadPreview?.source === 'kakao_csv') {
       reparsePendingKakaoFile();
     }
-  }, [excludeSystemMessages, kakaoSamplePreset]); // eslint-disable-line react-hooks/exhaustive-deps -- 원본 CSV만 필터·샘플 재적용
+  }, [
+    excludeSystemMessages,
+    kakaoSamplePreset,
+    pendingOriginalFile,
+    uploadPreview?.source,
+    reparsePendingKakaoFile,
+  ]);
 
   useEffect(() => {
     const trimmed = coerceTrimmedString(pasteText, '');
@@ -1051,7 +1067,7 @@ function ConversationGraphView() {
                 onChange={(e) => setExcludeSystemMessages(e.target.checked)}
                 aria-label="시스템·미디어 메시지 제외"
               />
-              입퇴장·초대·사진만 등 시스템 메시지 제외 (카카오톡 CSV)
+              시스템 메시지 제외
             </label>
             <div className="conversation-graph-upload-toolbar bw-mt-sm">
               <label className="bw-btn-primary conversation-graph-upload-file" style={{ cursor: 'pointer' }}>
@@ -1080,7 +1096,7 @@ function ConversationGraphView() {
                 onClick={() => void handlePasteUpload()}
                 disabled={loadingUpload || !coerceTrimmedString(pasteText, '')}
               >
-                붙여넣기 분석
+                붙여넣기
               </button>
             </div>
             {uploadPreview?.source === 'kakao_csv' && (
@@ -1162,7 +1178,7 @@ function ConversationGraphView() {
                     disabled={loadingUpload}
                     data-testid="kakao-upload-confirm"
                   >
-                    {loadingUpload ? '업로드·관계도 생성 중…' : '업로드 후 관계도 보기'}
+                    {loadingUpload ? '생성 중…' : '관계도 보기'}
                   </button>
                   <button
                     type="button"
@@ -1240,6 +1256,7 @@ function ConversationGraphView() {
             <label
               className="bw-detail-meta-text bw-mt-sm"
               style={{ display: 'flex', gap: 8, alignItems: 'center' }}
+              title="지원 시 동조·반대 분류 정밀도 향상"
             >
               <input
                 type="checkbox"
@@ -1247,7 +1264,7 @@ function ConversationGraphView() {
                 onChange={(e) => setUseServerAiAnalysis(e.target.checked)}
                 data-testid="conversation-graph-server-ai-analysis"
               />
-              서버 AI 심화 분석 모드 (지원 시 동조·반대 분류 정밀도 향상)
+              서버 AI 심화
             </label>
             {graphDateBounds ? (
               <div
@@ -1270,8 +1287,7 @@ function ConversationGraphView() {
               </div>
             ) : null}
             <form
-              className="bw-mt-sm"
-              style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}
+              className="bw-mt-sm conversation-graph-period-form"
               aria-label="기간 지정 및 관계도 검색"
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1306,7 +1322,7 @@ function ConversationGraphView() {
                 disabled={loadingGraph || !selectedId}
                 aria-busy={loadingGraph}
               >
-                {loadingGraph ? '검색 중…' : '관계도 검색'}
+                {loadingGraph ? '검색 중…' : '검색'}
               </button>
             </form>
           </div>
@@ -1337,18 +1353,16 @@ function ConversationGraphView() {
               </p>
             )}
             {graph && (graph.nodes ?? []).length > 0 && (
-              <div style={{ overflow: 'auto', maxWidth: '100%' }}>
-                <div
-                  className="bw-mt-sm"
-                  style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}
-                >
+              <div className="conversation-graph-graph-stage">
+                <div className="bw-mt-sm conversation-graph-graph-toolbar">
                   <button
                     type="button"
                     className="bw-btn-secondary"
                     onClick={() => handleDownloadSvg()}
                     data-testid="conversation-graph-download-svg"
+                    title="SVG 파일로 저장"
                   >
-                    SVG로 저장
+                    SVG
                   </button>
                   <button
                     type="button"
@@ -1356,8 +1370,9 @@ function ConversationGraphView() {
                     onClick={() => handleDownloadPng()}
                     disabled={downloadingPng || (filteredGraph?.nodes ?? []).length === 0}
                     data-testid="conversation-graph-download-png"
+                    title="PNG 이미지로 저장"
                   >
-                    {downloadingPng ? 'PNG 저장 중…' : 'PNG로 저장'}
+                    {downloadingPng ? 'PNG…' : 'PNG'}
                   </button>
                   <button
                     type="button"
@@ -1365,8 +1380,9 @@ function ConversationGraphView() {
                     onClick={() => handleDownloadCsv()}
                     disabled={(filteredGraph?.nodes ?? []).length === 0}
                     data-testid="conversation-graph-download-csv"
+                    title="CSV로 저장"
                   >
-                    CSV로 저장
+                    CSV
                   </button>
                   {selectedNodeId ? (
                     <button
@@ -1375,7 +1391,7 @@ function ConversationGraphView() {
                       onClick={() => setSelectedNodeId(null)}
                       data-testid="conversation-graph-clear-selection"
                     >
-                      선택 해제
+                      선택 취소
                     </button>
                   ) : null}
                   <button
@@ -1384,8 +1400,9 @@ function ConversationGraphView() {
                     onClick={() => handleResetZoom()}
                     disabled={(filteredGraph?.nodes ?? []).length === 0}
                     data-testid="conversation-graph-reset-zoom"
+                    title="그래프 확대·이동 초기화"
                   >
-                    확대 초기화
+                    줌 리셋
                   </button>
                   <div
                     className="conversation-graph-layout-toggle"
@@ -1509,11 +1526,10 @@ function ConversationGraphView() {
                 <ConversationGraphExpertLayerBar value={expertLayer} onChange={setExpertLayer} />
                 {timelineSegments.length > 0 ? (
                   <div
-                    className="bw-mt-sm"
+                    className="bw-mt-sm conversation-graph-timeline-chips"
                     data-testid="conversation-graph-timeline"
-                    style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}
                   >
-                    <span className="bw-detail-meta-text">시간 흐름:</span>
+                    <span className="bw-detail-meta-text">구간:</span>
                     {timelineSegments.map((seg) => (
                       <button
                         key={seg.id}
@@ -1521,6 +1537,7 @@ function ConversationGraphView() {
                         className="bw-btn-secondary"
                         style={{ fontSize: 12 }}
                         data-testid={`conversation-graph-timeline-${seg.id}`}
+                        title={`${seg.startDate} ~ ${seg.endDate}`}
                         onClick={() => {
                           setStartDate(seg.startDate);
                           setEndDate(seg.endDate);
@@ -1532,7 +1549,7 @@ function ConversationGraphView() {
                           }
                         }}
                       >
-                        {seg.label} ({seg.startDate}~{seg.endDate})
+                        {seg.label}
                       </button>
                     ))}
                   </div>
@@ -1652,17 +1669,15 @@ function ConversationGraphView() {
                 <div className="bw-mt-md" data-testid="conversation-graph-participant-list">
                   <p className="bw-label-block">참여자</p>
                   <div
-                    className="bw-mt-sm"
-                    style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}
+                    className="bw-mt-sm conversation-graph-participant-controls"
                     data-testid="conversation-graph-participant-controls"
                   >
                     <input
                       type="search"
                       className="bw-input"
-                      placeholder="이름·입장·역할 검색"
+                      placeholder="참여자 검색"
                       value={participantSearchQuery}
                       onChange={(e) => setParticipantSearchQuery(e.target.value)}
-                      style={{ minWidth: 160, maxWidth: 240 }}
                       aria-label="참여자 검색"
                       data-testid="conversation-graph-participant-search"
                     />
@@ -1690,7 +1705,7 @@ function ConversationGraphView() {
                       검색·필터 조건에 맞는 참여자가 없습니다.
                     </p>
                   ) : (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                    <div className="conversation-graph-participant-chips">
                       {participantListItems.map((p) => (
                         <button
                           key={p.id}
@@ -1702,7 +1717,6 @@ function ConversationGraphView() {
                           title={[p.dominantStance, p.exchangeRole].filter(Boolean).join(' · ')}
                         >
                           {p.label}
-                          {p.exchangeRole ? ` · ${p.exchangeRole}` : ''}
                         </button>
                       ))}
                     </div>
@@ -1751,7 +1765,7 @@ function ConversationGraphView() {
             )}
             {!graph && !loadingGraph && selectedId && (
               <p className="bw-label-block bw-detail-note">
-                이 대화의 관계도가 아직 없습니다. 기간을 지정한 뒤 &quot;관계도 검색&quot;을 누르거나, 대화 파일을 다시 업로드해 주세요.
+                이 대화의 관계도가 아직 없습니다. 기간을 지정한 뒤 &quot;검색&quot;을 누르거나, 대화 파일을 다시 업로드해 주세요.
               </p>
             )}
             {!graph && loadingGraph && selectedId && (

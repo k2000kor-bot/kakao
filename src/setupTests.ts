@@ -40,22 +40,31 @@ if (typeof global.TextEncoder === 'undefined') {
 }
 
 /** Node·Jest `testEnvironment: node` 등에서 `globalThis.File`만 있고 `global.File`·자유 식별자 `File`이 안 잡히는 경우 보강 */
-if (typeof globalThis.File !== 'function') {
+if (typeof globalThis.File !== 'function' && typeof globalThis.Blob === 'function') {
   (globalThis as unknown as { File: new (bits: BlobPart[], name: string, options?: FilePropertyBag) => File }).File =
-    class MockFile {
+    class MockFile extends Blob {
       readonly name: string;
-      readonly type: string;
       readonly lastModified: number;
       constructor(bits: BlobPart[], filename: string, options?: FilePropertyBag) {
+        super(bits, { type: options?.type ?? '' });
         this.name = filename;
-        this.type = options?.type ?? '';
         this.lastModified = options?.lastModified ?? Date.now();
-        void bits;
       }
     } as unknown as typeof File;
 }
 if (typeof global !== 'undefined' && typeof globalThis.File === 'function') {
   (global as unknown as { File: typeof File }).File = globalThis.File;
+}
+/** jsdom·구형 File에 `text()`가 없을 때 관계도 파일 업로드 테스트 보강 */
+if (typeof File !== 'undefined' && typeof File.prototype.text !== 'function') {
+  File.prototype.text = function text(this: File) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(reader.error ?? new Error('FileReader failed'));
+      reader.readAsText(this);
+    });
+  };
 }
 
 /** 일부 Jest/jsdom 조합에서 `FormData`가 없어 업로드 서비스 테스트가 실패함 — `append`만 제공해도 충분 */

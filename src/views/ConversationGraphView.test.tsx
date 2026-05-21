@@ -91,6 +91,7 @@ import { downloadConversationGraphCsv } from './conversationGraphCsvExport';
 import { downloadGraphFullReportMarkdown } from './conversationGraphFullReportExport';
 import { downloadConversationGraphPng, downloadConversationGraphSvg } from './conversationGraphExport';
 import { showToast } from '../utils/toast';
+import * as conversationUploadPrepare from '../utils/conversationUploadPrepare';
 
 const mockListConversations = jest.mocked(conversationGraphService.listConversations);
 const mockUploadConversationText = jest.mocked(conversationGraphService.uploadConversationText);
@@ -321,12 +322,23 @@ describe('ConversationGraphView', () => {
 
   it('대용량 카카오 CSV는 샘플링 옵션을 표시한다', async () => {
     mockListConversations.mockResolvedValue([]);
-    const rows = Array.from({ length: 10_001 }, (_, i) => {
-      const h = String(i % 24).padStart(2, '0');
-      return `2026-05-11 ${h}:00:00,"유저","m${i}"`;
+    const prepareSpy = jest.spyOn(conversationUploadPrepare, 'prepareConversationUpload').mockReturnValue({
+      source: 'kakao_csv',
+      file: new File(['2026-05-11 10:00:00, 유저 : hi'], 'big.txt', { type: 'text/plain' }),
+      displayName: 'big.csv',
+      summary: {
+        messageCount: 10_001,
+        participantCount: 1,
+        participants: ['유저'],
+        dateStart: '2026-05-11',
+        dateEnd: '2026-05-11',
+        systemMessageCount: 0,
+        multilineMessageCount: 0,
+      },
+      summaryLine: '메시지 10,001건 · 참여 1명',
+      warnings: [],
     });
-    const csv = `Date,User,Message\n${rows.join('\n')}`;
-    const file = new File([csv], 'big.csv', { type: 'text/csv' });
+    const file = new File(['Date,User,Message\n'], 'big.csv', { type: 'text/csv' });
 
     render(
       <MemoryRouter>
@@ -338,6 +350,7 @@ describe('ConversationGraphView', () => {
 
     expect(await screen.findByTestId('kakao-upload-sample-preset')).toBeInTheDocument();
     expect(screen.getByTestId('kakao-sample-preset-recent_20000')).toBeInTheDocument();
+    prepareSpy.mockRestore();
   });
 
   it('카카오톡 CSV는 미리보기 후 정규화 TXT로 업로드한다', async () => {

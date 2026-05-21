@@ -560,11 +560,27 @@ function ConversationGraphView() {
       .finally(() => setLoadingUpload(false));
   }, [pendingOriginalFile, uploadPreview?.source, excludeSystemMessages, kakaoSamplePreset]);
 
+  const kakaoFilterPrefsRef = useRef({
+    excludeSystemMessages,
+    kakaoSamplePreset,
+  });
   useEffect(() => {
+    const prev = kakaoFilterPrefsRef.current;
+    const filtersChanged =
+      prev.excludeSystemMessages !== excludeSystemMessages ||
+      prev.kakaoSamplePreset !== kakaoSamplePreset;
+    kakaoFilterPrefsRef.current = { excludeSystemMessages, kakaoSamplePreset };
+    if (!filtersChanged) return;
     if (pendingOriginalFile && uploadPreview?.source === 'kakao_csv') {
       reparsePendingKakaoFile();
     }
-  }, [excludeSystemMessages, kakaoSamplePreset]); // eslint-disable-line react-hooks/exhaustive-deps -- 원본 CSV만 필터·샘플 재적용
+  }, [
+    excludeSystemMessages,
+    kakaoSamplePreset,
+    pendingOriginalFile,
+    uploadPreview?.source,
+    reparsePendingKakaoFile,
+  ]);
 
   useEffect(() => {
     const trimmed = coerceTrimmedString(pasteText, '');
