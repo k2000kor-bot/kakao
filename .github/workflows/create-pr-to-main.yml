@@ -1,12 +1,9 @@
-# dev-continue → main PR 자동 생성
-# Settings → Actions → "Allow GitHub Actions to create and approve pull requests" 필요
+# dev-continue → main PR 자동 생성 (workflow_dispatch)
+# 필수: Settings → Actions → Allow GitHub Actions to create and approve pull requests
 name: Create PR to main
 
 on:
   workflow_dispatch:
-  push:
-    branches: [dev-continue-2026-01-20]
-    paths: [.github/workflows/create-pr-to-main.yml]
 
 permissions:
   contents: read
@@ -31,7 +28,8 @@ jobs:
             --json url -q '.[0].url' 2>/dev/null || true)
           echo "url=${URL}" >> "$GITHUB_OUTPUT"
           if [[ -n "$URL" ]]; then
-            echo "Open PR already exists: $URL" >> "$GITHUB_STEP_SUMMARY"
+            echo "## PR already open" >> "$GITHUB_STEP_SUMMARY"
+            echo "$URL" >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Create pull request
@@ -40,9 +38,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euxo pipefail
-          gh pr create --repo "${{ github.repository }}" \
+          if ! gh pr create --repo "${{ github.repository }}" \
             --base main \
             --head dev-continue-2026-01-20 \
             --title "feat: 컴포저 순차 생성·관계도 정리 답변(합성·2-pass)·handoff" \
-            --body-file docs/PR_COMPOSER_GRAPH_DRAFT.md
-          echo "Created PR: $(gh pr view --json url -q .url)" >> "$GITHUB_STEP_SUMMARY"
+            --body-file docs/PR_COMPOSER_GRAPH_DRAFT.md 2> /tmp/pr-err.txt; then
+            {
+              echo "## PR create failed"
+              echo ""
+              echo "저장소 설정 확인:"
+              echo "https://github.com/${{ github.repository }}/settings/actions"
+              echo ""
+              echo "- Workflow permissions: **Read and write**"
+              echo "- ✅ **Allow GitHub Actions to create and approve pull requests**"
+              echo ""
+              echo "### gh error"
+              echo '```'
+              cat /tmp/pr-err.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "## Created PR" >> "$GITHUB_STEP_SUMMARY"
+          gh pr view --repo "${{ github.repository }}" --json url,number -q '"\(.url) (#\(.number))"' \
+            >> "$GITHUB_STEP_SUMMARY"
