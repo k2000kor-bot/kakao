@@ -5,9 +5,17 @@
 
 ## A. GitHub Actions (클릭 1번, PAT 불필요)
 
+**저장소 설정 (한 번만):**  
+Settings → Actions → General → Workflow permissions → **Read and write**  
+→ ✅ **Allow GitHub Actions to create and approve pull requests**
+
 1. https://github.com/k2000kor-bot/kakao/actions/workflows/create-pr-to-main.yml
 2. **Run workflow** → **Run workflow** (브랜치 `dev-continue-2026-01-20`)
-3. 완료 후 Actions 로그에 PR URL 표시
+3. 완료 후 Summary 탭에 PR URL 표시 (실패 시 Settings 위 항목 확인)
+
+```bash
+npm run pr:open-actions
+```
 
 ## B. 브라우저 수동 (macOS)
 
