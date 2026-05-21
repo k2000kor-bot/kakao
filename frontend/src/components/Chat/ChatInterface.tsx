@@ -55,7 +55,7 @@ interface Message {
   };
 }
 
-interface ChatInterfaceProps {
+export interface ChatInterfaceProps {
   messages: Message[];
   onSendMessage: (message: string, attachments?: File[]) => void;
   onFileUpload?: (files: File[]) => void;

@@ -5,6 +5,8 @@ export interface TemplateLibraryItem {
   category: string;
   uses: number;
   favorited: boolean;
+  /** 미리보기·채팅 전송용 본문(없으면 title 사용) */
+  prompt?: string;
 }
 
 export interface TemplatesSummary {

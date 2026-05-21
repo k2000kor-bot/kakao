@@ -69,7 +69,8 @@ export function sidebarContextFilterLabel(filter: SidebarContextFilter): string 
 
 /** Accept only valid filter literals from event details. */
 export function coerceSidebarContextFilterDetail(value: unknown): SidebarContextFilter | undefined {
-  return isSidebarContextFilter(typeof value === 'string' ? value : undefined) ? value : undefined;
+  if (typeof value !== 'string' || !isSidebarContextFilter(value)) return undefined;
+  return value;
 }
 
 export function dispatchSidebarContextFilterUpdated(filter: SidebarContextFilter): void {

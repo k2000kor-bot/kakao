@@ -192,6 +192,8 @@ export const API_QUERY_PARAM_STATUS = 'status';
 /** 기간 필터 (`conversationGraphService` 관계도 등). */
 export const API_QUERY_PARAM_START_DATE = 'start_date';
 export const API_QUERY_PARAM_END_DATE = 'end_date';
+/** 관계도 분석 모드 (`conversationGraphService.fetchRelationshipGraph`). */
+export const API_QUERY_PARAM_ANALYSIS_MODE = 'analysis_mode';
 /** 알림 목록 필터 (`advancedMessageAPI.getNotifications`). */
 export const API_QUERY_PARAM_UNREAD_ONLY = 'unread_only';
 

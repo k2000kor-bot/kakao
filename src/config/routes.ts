@@ -31,6 +31,9 @@ export const CONVERSATION_GRAPH_AUTO_CREATE_STATE_KEY = 'corbu.conversationGraph
 export const CONVERSATION_GRAPH_CHAT_CONTEXT_STATE_KEY = 'corbu.conversationGraph.chatContext';
 export const CONVERSATION_GRAPH_CHAT_DRAFT_STATE_KEY = 'corbu.conversationGraph.chatDraft';
 export const CONVERSATION_GRAPH_CHAT_AUTOSEND_STATE_KEY = 'corbu.conversationGraph.chatAutosend';
+/** React Router `location.state` — 홈(/) → `/chat` 초안·자동 전송 */
+export const MARKETING_HOME_COMPOSER_DRAFT_STATE_KEY = 'corbu.marketingHome.composerDraft';
+export const MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY = 'corbu.marketingHome.composerAutosend';
 export const BACKUP_PATH = '/backup';
 /** 개발 현황 (지금까지 반영된 기능·변경 사항) — 프론트에서 확인용 */
 export const DEV_STATUS_PATH = '/dev-status';

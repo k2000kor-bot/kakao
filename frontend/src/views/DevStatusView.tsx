@@ -2,8 +2,9 @@
  * 개발 현황 뷰 — 지금까지 개발·반영된 기능을 프론트에서 확인
  * docs/FRONTEND_CHANGES.md, docs/WHAT_IS_THIS.md 내용을 화면에 출력
  */
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { ChatInterface, ChatView, type ChatInterfaceProps } from '../components/LazyComponents';
+import type ChatViewBase from '../components/Chat/ChatView';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { createMinimalChatViewProps } from '../components/Chat/chatViewDemoProps';
 import { UPDATE_NOTICE } from '../constants/updateNotice';
@@ -674,7 +675,7 @@ function DevStatusLazyChatViewDemo() {
           borderRadius: 8,
         }}
       >
-        <ChatView {...props} />
+        <ChatView {...(props as ComponentProps<typeof ChatViewBase>)} />
       </div>
     </ErrorBoundary>
   );

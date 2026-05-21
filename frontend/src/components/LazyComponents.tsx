@@ -157,3 +157,19 @@ export const ErrorRecovery = (props: ErrorRecoveryProps) => (
   </SuspenseWrapper>
 );
 
+export const LazyChatView = React.lazy(() => import('./Chat/ChatView'));
+export const LazyChatInterface = React.lazy(() => import('./Chat/ChatInterface'));
+export type { ChatInterfaceProps } from './Chat/ChatInterface';
+
+export const ChatView = (props: React.ComponentProps<typeof LazyChatView>) => (
+  <SuspenseWrapper>
+    <LazyChatView {...props} />
+  </SuspenseWrapper>
+);
+
+export const ChatInterface = (props: React.ComponentProps<typeof LazyChatInterface>) => (
+  <SuspenseWrapper>
+    <LazyChatInterface {...props} />
+  </SuspenseWrapper>
+);
+
