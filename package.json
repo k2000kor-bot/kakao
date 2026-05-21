@@ -77,6 +77,7 @@
     "pr:open-compare": "bash scripts/open-github-pr-compare.sh",
     "pr:open-new": "bash scripts/open-github-pr-new.sh",
     "pr:open-actions": "bash scripts/open-github-pr-actions.sh",
+    "promote:main": "bash scripts/promote-dev-continue-to-main.sh",
     "pr:create": "bash scripts/create-github-pr.sh",
     "pr:copy-body": "bash scripts/pr-copy-body.sh",
     "ship:preflight": "bash scripts/ship-dev-continue-preflight.sh",
