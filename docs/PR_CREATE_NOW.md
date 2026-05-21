@@ -38,7 +38,16 @@ npm run pr:copy-body   # 본문만 클립보드
 
 - GitHub **default branch**가 `dev-continue-2026-01-20`로 되어 있음 → PR은 여전히 **base: `main`**, **compare: `dev-continue-2026-01-20`** 로 만드세요.
 - merge 충돌은 PR 생성 **후** 해결해도 됩니다 (`main`과 히스토리가 갈라져 있음).
-- API 자동 생성: `export GITHUB_TOKEN=<k2000kor-bot PAT>` 후 `npm run pr:create`
+- 로컬 API: `export GITHUB_TOKEN=<k2000kor-bot PAT>` → `npm run pr:create`
+- Actions: Secrets → **`KAKAO_BOT_PAT`** (동일 PAT) 후 Run workflow
+
+## C. PR 없이 main 동기화 (주의)
+
+```bash
+CONFIRM=1 npm run promote:main
+```
+
+`main` ← `dev-continue-2026-01-20` tip (force-with-lease). PR·리뷰 없이 반영할 때만.
 
 ## PR 후
 
