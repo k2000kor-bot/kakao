@@ -2,6 +2,10 @@
 
 브랜치 `dev-continue-2026-01-20` · HEAD `9d4c6e7f3` · push 완료 · open PR 없음
 
+## 0. 로컬 서버
+
+`docs/LOCAL_SERVER_START.md` — `cd kakao-frontend/kakao-frontend` 후 `npm run start:dev`
+
 ## 1. PR 생성 (수동, 1분)
 
 ```bash

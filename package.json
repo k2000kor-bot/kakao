@@ -121,7 +121,7 @@
     "maintain:push-block": "bash scripts/run-push-block-maintenance.sh",
     "refresh:handoff-artifacts": "bash scripts/refresh-handoff-artifacts.sh",
     "verify:handoff-artifacts": "bash scripts/verify-push-block-artifacts.sh",
-    "sync:frontend-chat-input-utils": "node -e \"require('fs').copyFileSync('src/utils/chatInputUtils.ts','frontend/src/utils/chatInputUtils.ts'); console.log('synced src/utils/chatInputUtils.ts -> frontend/src/utils/chatInputUtils.ts');\" && npm run pretest",
+    "sync:frontend-chat-input-utils": "bash scripts/sync-frontend-chat-input-utils.sh",
     "sync:frontend-unified-chat": "bash scripts/sync-frontend-unified-chat.sh",
     "sync:frontend-src": "bash scripts/sync-frontend-src.sh",
     "test:dev:dual-pipeline": "npm run test:backend:pipeline-smoke && npm run test:frontend:chat-pipeline",
@@ -234,7 +234,6 @@
   "overrides": {
     "@types/d3-dispatch": "3.0.5"
   },
-  "main": ".eslintrc.js",
   "directories": {
     "doc": "docs"
   },
