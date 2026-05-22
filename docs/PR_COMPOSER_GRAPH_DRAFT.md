@@ -1,7 +1,7 @@
 # PR 초안 — composer multi-request + conversation graph
 
 **브랜치**: `dev-continue-2026-01-20`  
-**HEAD**: `08a35b227` · `npm run pr:composer-graph-url` (push·handoff 갱신 완료)  
+**HEAD**: `a5a4a3525` · `npm run pr:composer-graph-url` (push·handoff 갱신 완료)  
 **베이스**: `main` (또는 팀 기본 브랜치)  
 **제목 제안**: `feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff`
 
@@ -81,7 +81,7 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `npm run verify:pre-deploy` (sidebar + composer 147 + 관계도 unit, 2026-05-20)
 - [x] `npm run build` — 프로덕션 빌드 성공 (TS·번들)
 - [x] `npm run pr:prepare` (preflight + PR 본문 export)
-- [x] `npm run local:verify` · `npm run ship:preflight` (HEAD `88378ad1a`)
+- [x] `npm run local:verify` · `npm run ship:preflight` (HEAD `a5a4a3525`, exit 0 수정 포함)
 - [x] 관계도 답변 연속 턴·IME 단위 테스트
 - [x] `npm run local:verify` · 관계도/채팅 UI 간결화 (`74fdc9b60`, `01d2b15d9`)
 - [x] push — `k2000kor-bot/kakao` (`5edeecfe6`, 대용량 blob 히스토리 정리 후 push)
@@ -90,4 +90,4 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `npm run verify:conversation-graph:unit` — Jest 205 + pytest 16 (2026-05-21)
 - [ ] default branch → `main` — `npm run repo:open-default-branch` 또는 `KAKAO_BOT_PAT=... npm run repo:set-default-main` (현재: `dev-continue-2026-01-20`)
 - [x] push — `d19c66377` feat(graph-answer) 문서 형식별 답변 (2026-05-21)
-- [ ] PR 생성 — [PR_CREATE_NOW.md](./PR_CREATE_NOW.md) · [PR new](https://github.com/k2000kor-bot/kakao/pull/new?base=main&head=dev-continue-2026-01-20)
+- [ ] PR 생성 — [PR_CREATE_NOW.md](./PR_CREATE_NOW.md) · `npm run pr:create` · [PR new](https://github.com/k2000kor-bot/kakao/pull/new?base=main&head=dev-continue-2026-01-20) (open PR 0건, 2026-05-19 재확인)

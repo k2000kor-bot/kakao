@@ -16,8 +16,18 @@ fi
 echo ""
 
 if command -v curl >/dev/null 2>&1; then
-  PRS=$(curl -sS "https://api.github.com/repos/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/pulls?state=open" | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d)); [print(' ',p['html_url']) for p in d]" 2>/dev/null || echo "?")
-  echo "open PRs: $PRS"
+  PRS=$(curl -sS "https://api.github.com/repos/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/pulls?state=open&head=${PUSH_GITHUB_OWNER}:dev-continue-2026-01-20&base=main" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print(len(d))
+for p in d:
+    print(' ', p.get('html_url', ''))
+" 2>/dev/null || echo "?")
+  echo "open PR (main←dev-continue): $PRS"
+  if [[ "$PRS" == "0" ]] || [[ "$PRS" == $'\n0' ]]; then
+    echo "PR 없음 → npm run pr:create  또는 npm run pr:open-new"
+    echo "  docs/PR_CREATE_NOW.md"
+  fi
   echo ""
   echo "다음:"
   echo "  npm run repo:open-default-branch  (default → main 권장)"
