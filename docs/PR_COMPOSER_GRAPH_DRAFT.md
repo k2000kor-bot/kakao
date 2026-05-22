@@ -1,7 +1,7 @@
 # PR 초안 — composer multi-request + conversation graph
 
 **브랜치**: `dev-continue-2026-01-20`  
-**HEAD**: `44f943544` · `npm run pr:composer-graph-url` (push·handoff 갱신 완료)  
+**HEAD**: `9d4c6e7f3` · `npm run pr:composer-graph-url` (push·handoff 갱신 완료)  
 **베이스**: `main` (또는 팀 기본 브랜치)  
 **제목 제안**: `feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff`
 
@@ -79,7 +79,7 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `npm run verify:final` (빌드·API·integration·chat-pipeline·composer, 2026-05-20)
 - [x] `npm run test:e2e:pipelines:all` (컴포저 3 + 관계도 13, Council 스텁 수정 후)
 - [x] `npm run verify:pre-deploy` (sidebar + composer 147 + 관계도 unit, 2026-05-20)
-- [x] `npm run build` — 프로덕션 빌드 성공 (TS·번들)
+- [x] `npm run build` — 프로덕션 빌드 성공 (TS·번들, 2026-05-22 CSS 주석 수정 후 재확인)
 - [x] `npm run pr:prepare` (preflight + PR 본문 export)
 - [x] `npm run local:verify` · `npm run ship:preflight` (HEAD `a5a4a3525`, exit 0 수정 포함)
 - [x] 관계도 답변 연속 턴·IME 단위 테스트
