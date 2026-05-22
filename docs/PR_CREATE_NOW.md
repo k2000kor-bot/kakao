@@ -32,11 +32,17 @@ npm run pr:ready
 > → 위 1·2 중 하나 필요. 워크플로는 실패 시에도 Summary에 수동 PR 링크를 남깁니다.  
 > 로그: [Create PR to main](https://github.com/k2000kor-bot/kakao/actions/workflows/create-pr-to-main.yml)
 
-## 3. 로컬 API (토큰 있을 때)
+## 3. 로컬 API (토큰 또는 gh)
 
 ```bash
-export GITHUB_TOKEN=<repo scope PAT>
+# A) GitHub CLI (한 번만)
+gh auth login
 cd kakao-frontend
+npm run pr:create
+
+# B) PAT
+export GITHUB_TOKEN=<repo scope PAT>
+# 또는 export KAKAO_BOT_PAT=...
 PR_TITLE='feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff' npm run pr:create
 ```
 

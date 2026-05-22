@@ -19,6 +19,10 @@ if [[ ! -f "$BODY_FILE" ]]; then
 fi
 
 resolve_token() {
+  if [[ -n "${KAKAO_BOT_PAT:-}" ]]; then
+    echo "$KAKAO_BOT_PAT"
+    return
+  fi
   if [[ -n "${GITHUB_TOKEN:-}" ]]; then
     echo "$GITHUB_TOKEN"
     return
@@ -26,6 +30,20 @@ resolve_token() {
   if command -v gh >/dev/null 2>&1; then
     gh auth token 2>/dev/null || true
   fi
+}
+
+try_gh_pr_create() {
+  command -v gh >/dev/null 2>&1 || return 1
+  gh auth status >/dev/null 2>&1 || return 1
+  local url
+  url="$(gh pr create \
+    --repo "${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}" \
+    --base "$BASE" \
+    --head "$HEAD" \
+    --title "$TITLE" \
+    --body-file "$BODY_FILE" 2>&1)" || return 1
+  echo "$url"
+  return 0
 }
 
 PR_NEW_URL="https://github.com/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/pull/new?base=${BASE}&head=${HEAD}"
@@ -59,9 +77,14 @@ PY
   fi
 }
 
+if try_gh_pr_create; then
+  exit 0
+fi
+
 TOKEN="$(resolve_token || true)"
 if [[ -z "$TOKEN" ]]; then
-  echo "GITHUB_TOKEN/gh 없음 — quick_pull로 PR 폼 열기"
+  echo "GITHUB_TOKEN/KAKAO_BOT_PAT/gh login 없음 — quick_pull로 PR 폼 열기"
+  echo "  gh: gh auth login 후 npm run pr:create"
   open_quick_pull
   exit 0
 fi
