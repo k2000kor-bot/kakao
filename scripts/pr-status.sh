@@ -24,8 +24,10 @@ for p in d:
     print(' ', p.get('html_url', ''))
 " 2>/dev/null || echo "?")
   echo "open PR (main←dev-continue): $PRS"
+  CMP=$(curl -sS "https://api.github.com/repos/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/compare/main...dev-continue-2026-01-20" | python3 -c "import sys,json; c=json.load(sys.stdin); print(c.get('status','?'), 'ahead', c.get('ahead_by','?'), 'behind', c.get('behind_by','?'))" 2>/dev/null || echo "?")
+  echo "compare main...dev-continue: $CMP"
   if [[ "$PRS" == "0" ]] || [[ "$PRS" == $'\n0' ]]; then
-    echo "PR 없음 → npm run pr:create  또는 npm run pr:open-new"
+    echo "PR 없음 → npm run pr:ready"
     echo "  docs/PR_CREATE_NOW.md"
   fi
   echo ""

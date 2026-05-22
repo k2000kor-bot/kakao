@@ -1,6 +1,6 @@
 # PR 생성 — 지금 바로 (2026-05-21)
 
-브랜치 `dev-continue-2026-01-20` · HEAD `ca8d1602c` · push 완료 · open PR 없음
+브랜치 `dev-continue-2026-01-20` · HEAD `57c19285d` · push 완료 · open PR 없음 · main 대비 **12 commits ahead**
 
 ## 1. PR 생성 (수동, 1분)
 

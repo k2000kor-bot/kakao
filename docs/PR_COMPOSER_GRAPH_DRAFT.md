@@ -1,7 +1,7 @@
 # PR 초안 — composer multi-request + conversation graph
 
 **브랜치**: `dev-continue-2026-01-20`  
-**HEAD**: `fec92927c` · `npm run pr:composer-graph-url` (push·handoff 갱신 완료)  
+**HEAD**: `57c19285d` · `npm run pr:composer-graph-url` (push·handoff 갱신 완료)  
 **베이스**: `main` (또는 팀 기본 브랜치)  
 **제목 제안**: `feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff`
 
@@ -88,6 +88,7 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `main` 동기화 — `npm run promote:main` (`9ae459681`, typecheck·Lazy Chat·API `analysis_mode`)
 - [x] handoff — `npm run refresh:handoff-artifacts` (195 patches, bundle tip `9ae459681`)
 - [x] `npm run verify:conversation-graph:unit` — Jest 205 + pytest 16 (2026-05-21)
+- [x] `npm run test:conversation-graph` — 226 passed (2026-05-22 재확인)
 - [ ] default branch → `main` — `npm run repo:open-default-branch` 또는 `KAKAO_BOT_PAT=... npm run repo:set-default-main` (현재: `dev-continue-2026-01-20`)
 - [x] push — `d19c66377` feat(graph-answer) 문서 형식별 답변 (2026-05-21)
 - [ ] PR 생성 — `npm run pr:ready` · [PR_CREATE_NOW.md](./PR_CREATE_NOW.md) (open PR 0건; default branch=`dev-continue-2026-01-20`, base=`main`)
