@@ -1,6 +1,6 @@
 # PR 생성 — 지금 바로 (2026-05-21)
 
-브랜치 `dev-continue-2026-01-20` · HEAD `fac5cc8be` · push 완료 · open PR 없음
+브랜치 `dev-continue-2026-01-20` · HEAD `ca8d1602c` · push 완료 · open PR 없음
 
 ## 1. PR 생성 (수동, 1분)
 
@@ -22,7 +22,9 @@
 1. https://github.com/k2000kor-bot/kakao/actions/workflows/create-pr-to-main.yml
 2. **Run workflow** (또는 `dev-continue-2026-01-20` push 시 자동 시도)
 
-> 최근 Actions 실행이 실패하면 위 1·2가 빠진 경우가 많습니다. 로그: Actions → Create PR to main.
+> 최근 Actions 실패 원인(확인됨): **「GitHub Actions is not permitted to create or approve pull requests」**  
+> → 위 1·2 중 하나 필요. 워크플로는 실패 시에도 Summary에 수동 PR 링크를 남깁니다.  
+> 로그: [Create PR to main](https://github.com/k2000kor-bot/kakao/actions/workflows/create-pr-to-main.yml)
 
 ## 3. 로컬 API (토큰 있을 때)
 
