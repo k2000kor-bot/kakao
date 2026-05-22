@@ -4,10 +4,16 @@
 
 ## 1. PR 생성 (수동, 1분)
 
+```bash
+npm run pr:ready
+```
+
+또는 수동:
+
 1. 열기: https://github.com/k2000kor-bot/kakao/pull/new?base=main&head=dev-continue-2026-01-20
 2. 제목: `feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff`
 3. 본문: `docs/PR_COMPOSER_GRAPH_DRAFT.md` 전체 복사·붙여넣기  
-   (또는 터미널: `npm run pr:composer-graph-body | pbcopy`)
+   (또는 `npm run pr:copy-body`)
 4. **Create pull request** 클릭
 
 ## 2. GitHub Actions로 PR 생성 (권장)
