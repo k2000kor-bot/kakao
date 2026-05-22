@@ -227,6 +227,11 @@ interface NotebookLLMProps {
    * 소스 추가/삭제 시 콜백 (프로젝트 목록 갱신용)
    */
   onSourcesChanged?: () => void;
+
+  /**
+   * 부모에서 소스 목록을 다시 불러오도록 트리거 (ChatGPTInterface notebookSourcesRefreshToken)
+   */
+  sourcesRefreshToken?: number;
 }
 
 function pipelineExtrasFromNotebookResponse(result: NotebookLLMResponse) {
@@ -256,6 +261,7 @@ const NotebookLLM: React.FC<NotebookLLMProps> = ({
   onResponseComplete,
   onError,
   onSourcesChanged,
+  sourcesRefreshToken,
 }) => {
   const { isOffline } = useOfflineStatus();
   const [prompt, setPrompt] = useState(initialPrompt);
@@ -603,7 +609,7 @@ const NotebookLLM: React.FC<NotebookLLMProps> = ({
       setLeftPanelSources([]);
     }
     return () => { cancelled = true; };
-  }, [projectId]);
+  }, [projectId, sourcesRefreshToken]);
 
   // 스튜디오 출력 목록 로드
   const loadStudioOutputs = useCallback(async () => {

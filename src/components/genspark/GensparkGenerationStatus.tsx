@@ -19,12 +19,18 @@ import {
 
 export type GensparkGenerationStatusProps =
   | { variant: 'initial'; webSearch?: boolean; documentContext?: boolean; embedded?: boolean }
-  | { variant: 'step'; phase: AssistantGenerationPhase; webSearch?: boolean; embedded?: boolean };
+  | {
+      variant: 'step';
+      phase: AssistantGenerationPhase;
+      webSearch?: boolean;
+      documentContext?: boolean;
+      stepCaption?: string;
+      embedded?: boolean;
+    };
 
 export const GensparkGenerationStatus: React.FC<GensparkGenerationStatusProps> = (props) => {
   const webSearch = props.webSearch === true;
-  const documentContext =
-    props.variant === 'initial' ? props.documentContext === true : false;
+  const documentContext = props.documentContext === true;
   const labels = webSearch
     ? ASSISTANT_GENERATION_STEP_LABELS_WEB_RESEARCH
     : ASSISTANT_GENERATION_STEP_LABELS_DEFAULT;

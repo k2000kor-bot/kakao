@@ -22,6 +22,7 @@ export interface Notification {
 export interface NotificationCenterProps {
   notifications: Notification[];
   onMarkAsRead?: (id: string) => void;
+  onMarkAllRead?: () => void;
   onDismiss?: (id: string) => void;
   onClearAll?: () => void;
 }
@@ -29,6 +30,7 @@ export interface NotificationCenterProps {
 const NotificationCenter: React.FC<NotificationCenterProps> = ({
   notifications,
   onMarkAsRead,
+  onMarkAllRead,
   onDismiss,
   onClearAll,
 }) => {
@@ -185,14 +187,26 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 <option value="collaboration">협업</option>
               </select>
               {notifications.length > 0 && (
-                <button
-                  className="clear-all-btn"
-                  onClick={onClearAll}
-                  aria-label="모든 알림 지우기"
-                  type="button"
-                >
-                  모두 지우기
-                </button>
+                <>
+                  {unreadCount > 0 && onMarkAllRead ? (
+                    <button
+                      className="mark-all-read-btn"
+                      onClick={onMarkAllRead}
+                      aria-label="모든 알림 읽음 처리"
+                      type="button"
+                    >
+                      모두 읽음
+                    </button>
+                  ) : null}
+                  <button
+                    className="clear-all-btn"
+                    onClick={onClearAll}
+                    aria-label="모든 알림 지우기"
+                    type="button"
+                  >
+                    모두 지우기
+                  </button>
+                </>
               )}
             </fieldset>
           </div>

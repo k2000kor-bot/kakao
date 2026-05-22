@@ -382,8 +382,8 @@ interface Project {
     instructions?: string;
     initialGuidelines?: string[];
     tags?: string[];
-    files?: Array<{ name: string; type: string; size?: number }>;
-    webSources?: Array<{ id: string; type: 'document' | 'video'; url: string; title?: string; addedAt: Date }>;
+    files?: ProjectFile[];
+    webSources?: ProjectLearningSource[];
     createdAt: Date;
     updatedAt: Date;
     source_count?: number;
@@ -1561,8 +1561,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 return restored;
                             }),
                         };
-                        const flags = normalizeConversationDeepseekFlagsFromStorage(conv);
-                        return { ...withDates, ...flags };
+                        return normalizeConversationDeepseekFlagsFromStorage(withDates);
                     });
                 setConversations(conversationsWithDates);
             } catch (error) {
@@ -2181,7 +2180,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             type: s.type === 'video' ? 'video' : 'document',
             url: s.url,
             title: s.title,
-            notebookSourceId: (s as ProjectLearningSource).notebookSourceId,
+            notebookSourceId: s.notebookSourceId,
             addedAt: s.addedAt instanceof Date ? s.addedAt : new Date(s.addedAt ?? Date.now()),
         }));
     }, [currentProject]);
@@ -11835,7 +11834,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     <ProjectEditModal
                         isOpen={showProjectEditModal}
                         onClose={closeProjectEditModal}
-                        onDraftChange={(draft) => {
+                        onDraftChange={(draft: { name: string; description?: string }) => {
                             if (!currentProject?.id) return;
                             setCurrentProject((prev) =>
                                 prev

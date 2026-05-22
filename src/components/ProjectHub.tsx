@@ -42,6 +42,8 @@ import {
 } from '@mui/icons-material';
 // import { systemService } from '../services/projectService'; // Reserved for future use
 import ProjectShareDialog from './ProjectShareDialog';
+import { TEST_IDS } from '../constants/testIds';
+import './ProjectHub.css';
 
 const COLOR_LABEL_KEY = 'corbu.project.colorLabels';
 const PROJECT_NOTES_KEY = 'corbu.project.notes';
@@ -69,8 +71,6 @@ function loadColorLabels(): Record<string, string> {
 function saveColorLabels(labels: Record<string, string>) {
     try { localStorage.setItem(COLOR_LABEL_KEY, JSON.stringify(labels)); } catch { /* noop */ }
 }
-import { TEST_IDS } from '../constants/testIds';
-import './ProjectHub.css';
 
 export interface Project {
     id: string;

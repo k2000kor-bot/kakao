@@ -719,7 +719,7 @@
   max-width: 100%;
 }
 
-/* 도구 상세(*/-view): 버튼·액션 행 — 좁은 화면에서 줄바꿈·말줄임 */
+/* 도구 상세 (*-view): 버튼·액션 행 — 좁은 화면에서 줄바꿈·말줄임 */
 .bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) .bw-btn-primary,
 .bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) .bw-btn-secondary {
   font-size: var(--font-size-sm);

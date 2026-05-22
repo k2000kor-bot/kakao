@@ -61,3 +61,20 @@ export function isPipelineDeepseekReasonerEnabled(): boolean {
   if (typeof process === 'undefined') return false;
   return process.env.REACT_APP_PIPELINE_DEEPSEEK_REASONER === 'true';
 }
+
+/** localStorage·API에서 읽은 대화 객체에 딥시크 플래그가 없으면 당시 전역 기본으로 채움 */
+export function normalizeConversationDeepseekFlagsFromStorage<T extends ConversationDeepseekFlags>(
+  conv: T,
+): T & {
+  deepseekReviewHints: boolean;
+  pipelineDeepSeekRefine: boolean;
+  pipelineDeepSeekReasoner: boolean;
+} {
+  const defaults = newConversationDeepseekDefaults();
+  return {
+    ...conv,
+    deepseekReviewHints: conv.deepseekReviewHints ?? defaults.deepseekReviewHints,
+    pipelineDeepSeekRefine: conv.pipelineDeepSeekRefine ?? defaults.pipelineDeepSeekRefine,
+    pipelineDeepSeekReasoner: conv.pipelineDeepSeekReasoner ?? defaults.pipelineDeepSeekReasoner,
+  };
+}

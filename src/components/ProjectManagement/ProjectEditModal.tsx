@@ -341,6 +341,8 @@ export interface ProjectEditModalProps {
   onClose: () => void;
   projectId: string | null;
   currentProject: ProjectEditModalProject | null;
+  /** 모달 편집 중 사이드바·헤더 프로젝트명 미리보기 */
+  onDraftChange?: (draft: { name: string; description?: string }) => void;
   onSaved?: (project: Project) => void;
   onDelete?: (projectId: string) => void;
   focusTarget?: 'required-guideline' | null;
@@ -351,6 +353,7 @@ const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
   onClose,
   projectId,
   currentProject,
+  onDraftChange,
   onSaved,
   onDelete,
   focusTarget = null,
@@ -1772,7 +1775,11 @@ const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
                     <input
                       type="text"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setName(next);
+                        onDraftChange?.({ name: next, description });
+                      }}
                       placeholder="프로젝트 이름"
                       aria-label="프로젝트 이름"
                       className="project-edit-modal-input"
@@ -1782,7 +1789,11 @@ const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
                     <label className="project-edit-modal-label">설명</label>
                     <textarea
                       value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setDescription(next);
+                        onDraftChange?.({ name, description: next });
+                      }}
                       placeholder="프로젝트 설명"
                       rows={3}
                       className="project-edit-modal-input"

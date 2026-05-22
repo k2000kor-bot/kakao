@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Notification } from '../components/NotificationCenter';
+import type { Notification } from '../components/NotificationCenter';
 import { errorLogger } from '../utils/errorLogger';
 
 const NOTIFICATION_STORAGE_KEY = 'app_notifications';

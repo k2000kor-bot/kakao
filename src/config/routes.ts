@@ -24,6 +24,10 @@ export const AUTOMATION_PATH = '/automation';
 export const COMMUNITY_PATH = '/community';
 export const PIPELINE_TUNING_PATH = '/pipeline-tuning';
 export const CONVERSATION_GRAPH_PATH = '/conversation-graph';
+/** 시스템 대시보드 (`IntegratedDashboard`) */
+export const DASHBOARD_PATH = '/dashboard';
+/** Google Drive OAuth 팝업 리디렉트 (`googleDriveOAuth.ts` redirect URI와 동일) */
+export const GOOGLE_DRIVE_OAUTH_CALLBACK_PATH = '/oauth/google/drive/callback';
 /** React Router `location.state` — 다른 화면→관계도 붙여넣기 handoff */
 export const CONVERSATION_GRAPH_PASTE_STATE_KEY = 'corbu.conversationGraph.pasteText';
 export const CONVERSATION_GRAPH_AUTO_CREATE_STATE_KEY = 'corbu.conversationGraph.autoCreateGraph';
@@ -43,7 +47,7 @@ export const allAppPaths = [
   '/', '/chat', '/projects', '/ultimate', '/integrated', VOICE_GENERATION_PATH, AGENTS_PATH,
   SETTINGS_PATH, ANALYTICS_PATH, DOCS_PATH, TEMPLATES_PATH, SEARCH_PATH, INTEGRATIONS_PATH, TEAM_PATH, LEARN_PATH, BILLING_PATH,
   WORKSPACE_PATH, AUTOMATION_PATH, COMMUNITY_PATH, PIPELINE_TUNING_PATH, CONVERSATION_GRAPH_PATH, BACKUP_PATH,
-  DEV_STATUS_PATH,
+  DASHBOARD_PATH, GOOGLE_DRIVE_OAUTH_CALLBACK_PATH, DEV_STATUS_PATH,
 ] as const;
 
 // 기본 라우트 설정 (사이드 메뉴·라우팅 단일 소스)
@@ -152,6 +156,7 @@ export function getPageTitle(pathname: string): string {
   if (path === AGENTS_PATH) return '에이전트';
   if (path === '/ultimate') return 'Ultimate 대화';
   if (path === '/integrated') return '통합 마스터';
+  if (path === DASHBOARD_PATH) return '시스템 대시보드';
   return 'CORBU.AI';
 }
 

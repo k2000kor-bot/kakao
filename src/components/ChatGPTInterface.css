@@ -1387,7 +1387,7 @@
 }
 .genspark-agent-detail__url-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
     gap: 8px;
     margin-top: var(--spacing-sm);
     min-width: 0;
