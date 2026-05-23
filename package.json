@@ -83,6 +83,7 @@
     "repo:open-actions-secrets": "bash scripts/open-github-actions-secrets.sh",
     "repo:open-actions-settings": "bash scripts/open-github-actions-settings.sh",
     "repo:check-default-main": "bash scripts/check-default-branch-main.sh",
+    "finish:post-merge": "bash scripts/finish-post-merge.sh",
     "repo:set-default-main": "bash scripts/set-github-default-branch-main.sh",
     "promote:main": "bash scripts/promote-dev-continue-to-main.sh",
     "pr:create": "bash scripts/create-github-pr.sh",
