@@ -459,7 +459,11 @@ describe('searchHistoryService', () => {
       });
       try {
         searchHistoryService.saveSearch('테스트');
-        expect(errorLogger.error.mock.calls.some((c) => c[0] === '검색 히스토리 저장 실패')).toBe(true);
+        expect(errorLogger.error).toHaveBeenCalledWith(
+          '검색 히스토리 저장 실패',
+          expect.any(Error),
+          expect.objectContaining({ component: 'searchHistoryService' }),
+        );
       } finally {
         spy.mockRestore();
       }
