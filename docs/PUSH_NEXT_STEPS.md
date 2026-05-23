@@ -16,17 +16,21 @@
 
 ## GitHub default branch (권장)
 
-현재 API 기준 default: **`dev-continue-2026-01-20`** → **`main`** 권장:
+현재 API 기준 default: **`dev-continue-2026-01-20`** → **`main`** 권장.
+
+**1차 (자동):** `main` push 시 [Set default branch to main](https://github.com/k2000kor-bot/kakao/actions/workflows/set-default-branch-main.yml) 워크플로가 `GITHUB_TOKEN`으로 시도합니다.
+
+**실패 시 (KAKAO_BOT_PAT secret 없음 등):**
 
 ```bash
-# Actions (KAKAO_BOT_PAT secret 있을 때, 1클릭 Run workflow)
-npm run repo:dispatch-set-default-main
-
-# 로컬 admin PAT
-KAKAO_BOT_PAT=... npm run repo:set-default-main
-
-# 브라우저 수동
+npm run repo:open-actions-secrets   # secret 등록 (admin PAT)
+npm run repo:dispatch-set-default-main   # Run workflow
+# 또는 브라우저 수동
 npm run repo:open-default-branch
+```
+
+```bash
+KAKAO_BOT_PAT=... npm run repo:set-default-main
 ```
 
 수동: https://github.com/k2000kor-bot/kakao/settings/branches → Default branch → **`main`**

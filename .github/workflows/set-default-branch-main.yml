@@ -1,5 +1,5 @@
 # GitHub default branch → main
-# 1) GITHUB_TOKEN (administration: write) · 2) KAKAO_BOT_PAT secret · 로컬: npm run repo:set-default-main
+# GITHUB_TOKEN (administration: write) · fallback KAKAO_BOT_PAT · 로컬: npm run repo:set-default-main
 name: Set default branch to main
 
 on:
@@ -19,6 +19,7 @@ jobs:
     steps:
       - name: Set default_branch via GITHUB_TOKEN
         id: ghtoken
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           github-token: ${{ github.token }}
@@ -29,7 +30,6 @@ jobs:
             });
             if (repo.default_branch === 'main') {
               core.notice('default_branch already main');
-              core.setOutput('changed', 'false');
               return;
             }
             await github.rest.repos.update({
@@ -38,14 +38,18 @@ jobs:
               default_branch: 'main',
             });
             core.notice('OK: default_branch → main (GITHUB_TOKEN)');
-            core.setOutput('changed', 'true');
 
       - name: Fallback PATCH via KAKAO_BOT_PAT
-        if: failure() && secrets.KAKAO_BOT_PAT != ''
+        if: steps.ghtoken.outcome == 'failure'
         env:
           KAKAO_BOT_PAT: ${{ secrets.KAKAO_BOT_PAT }}
         run: |
           set -euo pipefail
+          if [ -z "${KAKAO_BOT_PAT:-}" ]; then
+            echo "::error::KAKAO_BOT_PAT secret 없음 — npm run repo:open-actions-secrets 후 admin PAT 등록"
+            echo "수동: https://github.com/${{ github.repository }}/settings/branches → main"
+            exit 1
+          fi
           CODE="$(curl -sS -o /tmp/repo-patch.json -w '%{http_code}' -X PATCH \
             -H "Authorization: Bearer ${KAKAO_BOT_PAT}" \
             -H "Accept: application/vnd.github+json" \
@@ -57,10 +61,3 @@ jobs:
             exit 1
           fi
           echo "OK: default_branch → main (KAKAO_BOT_PAT)"
-
-      - name: Manual fallback hint
-        if: failure()
-        run: |
-          echo "::error::default branch 변경 실패 — Settings에서 수동 변경 필요"
-          echo "https://github.com/${{ github.repository }}/settings/branches → Default branch → main"
-          exit 1
