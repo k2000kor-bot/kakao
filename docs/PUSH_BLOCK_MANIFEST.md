@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-23 13:08:40 KST
+- generated_at: 2026-05-23 13:42:22 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `97c6b3efa docs: handoff artifacts·PR HEAD 4099bbefd 갱신`
+- latest_commit: `f98f0a3a2 docs: handoff manifest tip 97c6b3efa (226 patches)`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 787953353
-- bundle_sha256: `ccfd1851089ef40aa14bea89ebcedda6dff0c939068e50514c2289129345eeea`
+- bundle_size_bytes: 787953868
+- bundle_sha256: `aee69a787e05170d4c8de116013454257fff447dd888fe1d44438826adf0fb6c`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 226
-- patch_series_expected: 226 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
+- patch_series_count: 227
+- patch_series_expected: 227 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
 
 ### Recent Commits
 
 ```
+f98f0a3a2 docs: handoff manifest tip 97c6b3efa (226 patches)
 97c6b3efa docs: handoff artifacts·PR HEAD 4099bbefd 갱신
 4099bbefd fix: Create PR workflow PAT 검사를 run step으로 분리
 67f6f884c fix: Create PR workflow — PAT 없으면 skip·notice (push CI noise 제거)
 08e8963eb feat: PR 생성 — .env.local PAT·로컬 gh 설치(pr:ensure-gh)
-3da2a8482 docs: PR HEAD cb80f14a0 반영
 ```
