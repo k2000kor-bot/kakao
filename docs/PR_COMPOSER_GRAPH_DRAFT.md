@@ -102,3 +102,5 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `08e8963eb` pr:ensure-gh · `.env.local` PAT · `4099bbefd` workflow PAT skip (Actions **success**)
 - [x] `npm run refresh:handoff-artifacts` — bundle tip `4099bbefd` · patch series 225
 - [x] `97c6b3efa`/`f98f0a3a2` PR·handoff manifest 동기화 · patch **227**
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

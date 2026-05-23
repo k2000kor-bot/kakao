@@ -244,7 +244,7 @@ describe('UltimateChatGPTInterface', () => {
         fireEvent.change(input, { target: { value: '질문:\n재생성 테스트\n요구사항:\n요약' } });
         fireEvent.click(screen.getByRole('button', { name: /메시지 전송/i }));
 
-        await waitFor(() => expect(screen.getByText('첫 응답')).toBeInTheDocument(), { timeout: 8000 });
+        await screen.findByText('첫 응답', {}, { timeout: 8000 });
 
         const callsAfterFirst = mockFetch.mock.calls.length;
         fireEvent.click(screen.getByTestId('composer-regenerate-message'));
@@ -253,9 +253,7 @@ describe('UltimateChatGPTInterface', () => {
           () => expect(mockFetch.mock.calls.length).toBeGreaterThan(callsAfterFirst),
           { timeout: 12000 },
         );
-        await waitFor(() => expect(screen.getByText('재생성 응답')).toBeInTheDocument(), {
-          timeout: 12000,
-        });
+        await screen.findByText('재생성 응답', {}, { timeout: 12000 });
       } finally {
         if (prevSd === undefined) delete process.env.REACT_APP_COMPOSER_ANSWER_SELF_DEVELOP;
         else process.env.REACT_APP_COMPOSER_ANSWER_SELF_DEVELOP = prevSd;

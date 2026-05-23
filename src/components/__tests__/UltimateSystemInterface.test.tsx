@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { act, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import UltimateSystemInterface from '../UltimateSystemInterface';
 import { renderWithTheme, setupCommonMocks } from '../../test-utils/testHelpers';
@@ -294,30 +294,22 @@ describe('UltimateSystemInterface', () => {
       renderWithTheme(<UltimateSystemInterface />);
 
       const notificationsMenu = screen.getByRole('button', { name: /알림 센터/i });
-      await act(async () => {
-        fireEvent.click(notificationsMenu);
-      });
+      fireEvent.click(notificationsMenu);
 
-      await waitFor(() => {
-        expect(screen.getByText('시스템 최적화 완료')).toBeInTheDocument();
-        expect(screen.getByText('새로운 AI 모델 배포')).toBeInTheDocument();
-        expect(screen.getByText('보안 스캔 필요')).toBeInTheDocument();
-      });
+      expect(await screen.findByText('시스템 최적화 완료')).toBeInTheDocument();
+      expect(screen.getByText('새로운 AI 모델 배포')).toBeInTheDocument();
+      expect(screen.getByText('보안 스캔 필요')).toBeInTheDocument();
     });
 
     it('모든 알림을 읽음 처리할 수 있어야 함', async () => {
       renderWithTheme(<UltimateSystemInterface />);
 
       const notificationsMenu = screen.getByRole('button', { name: /알림 센터/i });
-      await act(async () => {
-        fireEvent.click(notificationsMenu);
-      });
+      fireEvent.click(notificationsMenu);
 
       const markAllReadButton = await screen.findByRole('button', { name: /모두 읽음/i });
       expect(markAllReadButton).toBeInTheDocument();
-      await act(async () => {
-        fireEvent.click(markAllReadButton);
-      });
+      fireEvent.click(markAllReadButton);
 
       await waitFor(() => {
         expect(markAllReadButton).toBeDisabled();
@@ -331,9 +323,7 @@ describe('UltimateSystemInterface', () => {
 
       const restartButton = await screen.findByRole('button', { name: /시스템 재시작/i });
       expect(restartButton).toBeInTheDocument();
-      await act(async () => {
-        fireEvent.click(restartButton);
-      });
+      fireEvent.click(restartButton);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
@@ -379,9 +369,7 @@ describe('UltimateSystemInterface', () => {
       renderWithTheme(<UltimateSystemInterface />);
 
       const restartButton = await screen.findByRole('button', { name: /시스템 재시작/i });
-      await act(async () => {
-        fireEvent.click(restartButton);
-      });
+      fireEvent.click(restartButton);
 
       await waitFor(() => {
         expect(errorLogger.error).toHaveBeenCalledWith(
@@ -402,9 +390,7 @@ describe('UltimateSystemInterface', () => {
 
       const backupButton = await screen.findByRole('button', { name: /시스템 백업/i });
       expect(backupButton).toBeInTheDocument();
-      await act(async () => {
-        fireEvent.click(backupButton);
-      });
+      fireEvent.click(backupButton);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith(
@@ -450,9 +436,7 @@ describe('UltimateSystemInterface', () => {
       renderWithTheme(<UltimateSystemInterface />);
 
       const backupButton = await screen.findByRole('button', { name: /시스템 백업/i });
-      await act(async () => {
-        fireEvent.click(backupButton);
-      });
+      fireEvent.click(backupButton);
 
       await waitFor(() => {
         expect(errorLogger.error).toHaveBeenCalledWith(

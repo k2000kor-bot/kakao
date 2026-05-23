@@ -95,7 +95,7 @@ describe('DeepResearchModal', () => {
   it('오버레이 클릭 시 onClose 호출', () => {
     const onClose = jest.fn();
     render(<DeepResearchModal open onClose={onClose} projectId="p1" />);
-    fireEvent.click(screen.getByRole('dialog').parentElement as HTMLElement);
+    fireEvent.click(screen.getByRole('presentation'));
     expect(onClose).toHaveBeenCalled();
   });
 

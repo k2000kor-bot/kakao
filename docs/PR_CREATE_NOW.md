@@ -1,6 +1,6 @@
 # PR 생성 — 지금 바로 (2026-05-23)
 
-브랜치 `dev-continue-2026-01-20` · HEAD `2c21234d8` · ahead 33 · handoff 230 · open PR 0
+브랜치 `dev-continue-2026-01-20` · open PR: https://github.com/k2000kor-bot/kakao/pull/2
 
 ## 0. 로컬 서버
 
@@ -72,3 +72,5 @@ npm run sync:frontend-src
 - 내장 골격 + 로컬 학습 + 형식 고정 UI + 형식별 후처리
 - E2E 13 passed · `npm run verify:conversation-graph` 통과
 - 상세: [CONVERSATION_GRAPH_ANSWER_FORMATS.md](./CONVERSATION_GRAPH_ANSWER_FORMATS.md)
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
