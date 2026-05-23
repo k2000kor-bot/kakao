@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-23 14:23:24 KST
+- generated_at: 2026-05-23 14:46:18 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `07cb62d5c docs: handoff manifest pre-push sync`
+- latest_commit: `e87422df9 docs: handoff manifest pre-push sync`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 787968456
-- bundle_sha256: `c4176c1d7f70820072b5c5fe3075fadfa387cf1bde573e0f46480430a6160c14`
+- bundle_size_bytes: 787977601
+- bundle_sha256: `dc3efb2d30753bbcc5e9d585c307076220a6579e7e0769284354cf5619f26edd`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 237
-- patch_series_expected: 237 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
+- patch_series_count: 239
+- patch_series_expected: 239 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
 
 ### Recent Commits
 
 ```
+e87422df9 docs: handoff manifest pre-push sync
+406d88374 fix(deps): package-lock.json @types/d3·mermaid 동기화
 07cb62d5c docs: handoff manifest pre-push sync
 4307b295d fix(lint): lint:strict warning 13건·src↔frontend 동기화
 79050ee5b docs: handoff manifest pre-push sync
-3c6e5dec0 fix(test): searchHistoryService errorLogger 타입체크 (src·frontend)
-347e40c61 docs: handoff manifest pre-push sync
 ```
