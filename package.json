@@ -80,6 +80,7 @@
     "pr:status": "bash scripts/pr-status.sh",
     "repo:open-default-branch": "bash scripts/open-github-default-branch-settings.sh",
     "repo:dispatch-set-default-main": "bash scripts/open-set-default-branch-workflow.sh",
+    "repo:open-actions-secrets": "bash scripts/open-github-actions-secrets.sh",
     "repo:set-default-main": "bash scripts/set-github-default-branch-main.sh",
     "promote:main": "bash scripts/promote-dev-continue-to-main.sh",
     "pr:create": "bash scripts/create-github-pr.sh",

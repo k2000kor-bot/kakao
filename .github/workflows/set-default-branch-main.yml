@@ -1,30 +1,47 @@
-# GitHub default branch → main (admin PAT 필요)
-# Secrets: KAKAO_BOT_PAT (repo admin 권장) · 로컬: npm run repo:set-default-main
+# GitHub default branch → main
+# 1) GITHUB_TOKEN (administration: write) · 2) KAKAO_BOT_PAT secret · 로컬: npm run repo:set-default-main
 name: Set default branch to main
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/set-default-branch-main.yml
 
 permissions:
-  contents: read
+  administration: write
 
 jobs:
   set-default:
     runs-on: ubuntu-latest
     steps:
-      - name: Resolve token
-        id: token
-        env:
-          KAKAO_BOT_PAT: ${{ secrets.KAKAO_BOT_PAT }}
-        run: |
-          if [ -n "${KAKAO_BOT_PAT}" ]; then
-            echo "source=KAKAO_BOT_PAT" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "source=none" >> "$GITHUB_OUTPUT"
+      - name: Set default_branch via GITHUB_TOKEN
+        id: ghtoken
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { data: repo } = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            if (repo.default_branch === 'main') {
+              core.notice('default_branch already main');
+              core.setOutput('changed', 'false');
+              return;
+            }
+            await github.rest.repos.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              default_branch: 'main',
+            });
+            core.notice('OK: default_branch → main (GITHUB_TOKEN)');
+            core.setOutput('changed', 'true');
 
-      - name: PATCH default_branch → main
-        if: steps.token.outputs.source == 'KAKAO_BOT_PAT'
+      - name: Fallback PATCH via KAKAO_BOT_PAT
+        if: failure() && secrets.KAKAO_BOT_PAT != ''
         env:
           KAKAO_BOT_PAT: ${{ secrets.KAKAO_BOT_PAT }}
         run: |
@@ -39,11 +56,11 @@ jobs:
             echo "PATCH failed (HTTP ${CODE})"
             exit 1
           fi
-          echo "OK: default_branch → main"
+          echo "OK: default_branch → main (KAKAO_BOT_PAT)"
 
-      - name: Missing KAKAO_BOT_PAT
-        if: steps.token.outputs.source != 'KAKAO_BOT_PAT'
+      - name: Manual fallback hint
+        if: failure()
         run: |
-          echo "::error::Secrets에 KAKAO_BOT_PAT(admin)가 없습니다."
-          echo "수동: https://github.com/${{ github.repository }}/settings/branches → Default branch → main"
+          echo "::error::default branch 변경 실패 — Settings에서 수동 변경 필요"
+          echo "https://github.com/${{ github.repository }}/settings/branches → Default branch → main"
           exit 1
