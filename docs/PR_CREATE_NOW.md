@@ -1,7 +1,7 @@
 # PR #2 — merge 완료 (2026-05-23)
 
 **PR:** https://github.com/k2000kor-bot/kakao/pull/2 · **merged**  
-**HEAD:** `7cd1060ff` · `origin/main` = `origin/dev-continue-2026-01-20`
+**HEAD:** `e5740991a` · `origin/main` = `origin/dev-continue-2026-01-20`
 
 ## 완료 체크리스트
 
@@ -24,12 +24,18 @@ npm run repo:check-default-main   # default branch 확인
 
 ## default branch → main (마지막 1단계)
 
+GitHub clone 기본 ref는 default branch를 따릅니다. **`main`으로 clone** 하려면:
+
+```bash
+git clone -b main git@github.com:k2000kor-bot/kakao.git
+```
+
+default branch 이름 변경 (권장):
+
 ```bash
 npm run repo:open-default-branch    # 브라우저: Default branch → main
 npm run repo:check-default-main     # 확인
 ```
-
-또는 Actions: `npm run repo:dispatch-set-default-main` (KAKAO_BOT_PAT secret 필요)
 
 ## 핵심 기능 (graph-answer)
 
