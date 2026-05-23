@@ -55,6 +55,7 @@ describe('sidebarContextFilterEvent', () => {
     expect(coerceSidebarContextFilterDetail(' agent ')).toBeUndefined();
     expect(coerceSidebarContextFilterDetail('')).toBeUndefined();
     expect(coerceSidebarContextFilterDetail('PROJECT')).toBeUndefined();
+    // eslint-disable-next-line no-new-wrappers -- String 객체는 primitive가 아님을 검증
     expect(coerceSidebarContextFilterDetail(new String('all'))).toBeUndefined();
     expect(coerceSidebarContextFilterDetail('unknown')).toBeUndefined();
     expect(coerceSidebarContextFilterDetail(1)).toBeUndefined();
@@ -210,7 +211,9 @@ describe('sidebarContextFilterEvent', () => {
     expect(coerceSidebarContextBooleanDetail(false)).toBe(false);
     expect(coerceSidebarContextBooleanDetail('true')).toBeUndefined();
     expect(coerceSidebarContextBooleanDetail(1)).toBeUndefined();
+    // eslint-disable-next-line no-new-wrappers -- Boolean 객체는 primitive가 아님을 검증
     expect(coerceSidebarContextBooleanDetail(new Boolean(true))).toBeUndefined();
+    // eslint-disable-next-line no-new-wrappers
     expect(coerceSidebarContextBooleanDetail(new Boolean(false))).toBeUndefined();
     expect(coerceSidebarContextBooleanDetail({ enabled: true })).toBeUndefined();
     expect(coerceSidebarContextBooleanDetail([true])).toBeUndefined();

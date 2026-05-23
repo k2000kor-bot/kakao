@@ -116,7 +116,7 @@ function computeYearlyHeatmap(): Map<string, number> {
 }
 
 // ---------- 연속 사용 스트릭 ----------
-const STREAK_KEY = 'corbu.analytics.streak';
+const _STREAK_KEY = 'corbu.analytics.streak';
 const WEEKLY_GOAL_KEY = 'corbu.analytics.weeklyGoal';
 
 interface StreakData {

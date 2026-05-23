@@ -536,6 +536,8 @@ const IntegratedDashboard: React.FC = () => {
         if (!autoRefreshEnabled) return;
         const interval = setInterval(fetchData, refreshInterval * 1000);
         return () => clearInterval(interval);
+        // thresholds·pushLog·updateTrends는 fetchData 내부에서 최신 클로저로 읽음 — interval 키만 의존
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refreshInterval, autoRefreshEnabled]);
 
     // WebSocket 실시간 데이터 수신

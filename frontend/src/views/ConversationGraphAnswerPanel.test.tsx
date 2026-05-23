@@ -2,7 +2,7 @@
  * ConversationGraphAnswerPanel — 답변 생성·다단계 파이프라인 UI
  */
 import React from 'react';
-import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { ConversationGraphAnswerPanel } from './ConversationGraphAnswerPanel';
 import type { GraphAiAnalysis } from './conversationGraphAiAnalyzer';
 import { CREATE_GRAPH_API_USER_MESSAGE } from './conversationGraphAnswerIntent';

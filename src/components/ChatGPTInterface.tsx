@@ -74,7 +74,6 @@ import {
     extractPipelineFollowUpsFromChatResponse,
     extractPipelineMessageExtrasFromChatResponse,
     parsePipelineFollowUpHints,
-    parsePipelineMessageExtras,
     hasPipelineExtras,
     parseQuestionRequirementSections,
     shouldTreatAsStructuredQuestionRequirements,

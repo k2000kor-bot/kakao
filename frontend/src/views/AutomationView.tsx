@@ -281,7 +281,7 @@ function AutomationView() {
     setRunningId(null);
     showToast(`"${wf.name}" ${ok ? '실행 완료' : '실행 실패'} — 로그 보기 ▸`, ok ? 'success' : 'error');
     setLogModalRun(newRun);
-  }, [runs, saveRuns]);
+  }, [runs, saveRuns, generateRunLog]);
 
   const applyTemplate = useCallback((tpl: WfTemplate) => {
     setSelectedTemplate(tpl);

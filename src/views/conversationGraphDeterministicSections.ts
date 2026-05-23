@@ -23,7 +23,7 @@ export type DeterministicGraphSectionsInput = {
 };
 
 function escapeMermaidLabel(label: string): string {
-  return label.replace(/"/g, "'").replace(/[\[\]{}]/g, '').trim() || '참여자';
+  return label.replace(/"/g, "'").replace(/[[\]{}]/g, '').trim() || '참여자';
 }
 
 function mermaidNodeId(index: number): string {

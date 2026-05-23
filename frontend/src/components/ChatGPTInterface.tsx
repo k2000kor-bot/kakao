@@ -74,7 +74,6 @@ import {
     extractPipelineFollowUpsFromChatResponse,
     extractPipelineMessageExtrasFromChatResponse,
     parsePipelineFollowUpHints,
-    parsePipelineMessageExtras,
     hasPipelineExtras,
     parseQuestionRequirementSections,
     shouldTreatAsStructuredQuestionRequirements,
@@ -87,6 +86,8 @@ import {
     cleanResponseText,
     coerceTrimmedString,
     coerceTrimmedEnd,
+    clearControlledTextareaAfterCommit,
+    isKeyboardEventImeComposing,
     CONCISE_CONVERSATION_TITLE_MAX_LEN,
     getConciseConversationTitleFromUserInput,
     conversationListTitleFromUserMessage,
@@ -380,8 +381,8 @@ interface Project {
     instructions?: string;
     initialGuidelines?: string[];
     tags?: string[];
-    files?: Array<{ name: string; type: string; size?: number }>;
-    webSources?: Array<{ id: string; type: 'document' | 'video'; url: string; title?: string; addedAt: Date }>;
+    files?: ProjectFile[];
+    webSources?: ProjectLearningSource[];
     createdAt: Date;
     updatedAt: Date;
     source_count?: number;
@@ -1246,7 +1247,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 data-testid={TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_OPEN}
                 onClick={() => void openConversationGraphHandoff()}
             >
-                관계도 화면에서 만들기
+                관계도 열기
             </button>
         </div>
     ) : null;
@@ -1559,8 +1560,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 return restored;
                             }),
                         };
-                        const flags = normalizeConversationDeepseekFlagsFromStorage(conv);
-                        return { ...withDates, ...flags };
+                        return normalizeConversationDeepseekFlagsFromStorage(withDates);
                     });
                 setConversations(conversationsWithDates);
             } catch (error) {
@@ -2179,7 +2179,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             type: s.type === 'video' ? 'video' : 'document',
             url: s.url,
             title: s.title,
-            notebookSourceId: (s as ProjectLearningSource).notebookSourceId,
+            notebookSourceId: s.notebookSourceId,
             addedAt: s.addedAt instanceof Date ? s.addedAt : new Date(s.addedAt ?? Date.now()),
         }));
     }, [currentProject]);
@@ -2775,6 +2775,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             });
             setInput('');
             inputValueRef.current = '';
+            clearControlledTextareaAfterCommit(inputRef.current);
             setIsLoading(true);
             setResponseStartTime(Date.now());
         });
@@ -4432,7 +4433,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const _handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             // IME 조합 중 Enter는 확정용이므로 전송하지 않음(한글 등 입력 직후 오전송 방지)
-            if (e.nativeEvent.isComposing) return;
+            if (isKeyboardEventImeComposing(e)) return;
             e.preventDefault();
             // 중복 호출 방지
             if (isLoading || isSendingRef.current) return;
@@ -4498,7 +4499,12 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     // WorkspaceQueryComposer용 커밋 핸들러
     const handleWqCommit = useCallback(() => {
         if (isLoading || isSendingRef.current) return;
-        const v = coerceTrimmedString(input, '') || getCurrentInputValue();
+        const fromDom = coerceTrimmedString(inputRef.current?.value ?? '', '');
+        if (fromDom && fromDom !== input) {
+            inputValueRef.current = fromDom;
+            setInput(fromDom);
+        }
+        const v = fromDom || getCurrentInputValue();
         if (v) void sendMessage(v);
         else if (attachedConversationFile) void sendMessage();
     }, [sendMessage, getCurrentInputValue, attachedConversationFile, isLoading, input]);
@@ -9206,7 +9212,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     data-testid={TEST_IDS.PROJECT_SOURCES_ADD_BTN}
                     disabled={sourceFilesUploading}
                 >
-                    + 소스 추가
+                    + 추가
                 </button>
             </div>
             {sourceFilesUploading && (
@@ -9632,31 +9638,34 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     className="genspark-agent-detail__btn genspark-agent-detail__btn--secondary"
                                     data-testid={TEST_IDS.GENSPARK_AGENT_BANNER_HUB_LINK}
                                 >
-                                    에이전트 허브
+                                    허브
                                 </Link>
                                 <button
                                     type="button"
                                     className="genspark-agent-detail__btn genspark-agent-detail__btn--secondary"
                                     data-testid={TEST_IDS.GENSPARK_AGENT_COPY_PUBLIC_LINK}
+                                    title="공개 링크 복사"
                                     onClick={() => void copyGensparkAgentSessionLink('public')}
                                 >
-                                    공개 링크 복사
+                                    공개 복사
                                 </button>
                                 <button
                                     type="button"
                                     className="genspark-agent-detail__btn genspark-agent-detail__btn--secondary"
                                     data-testid={TEST_IDS.GENSPARK_AGENT_COPY_APP_LINK}
+                                    title="앱 링크 복사"
                                     onClick={() => void copyGensparkAgentSessionLink('app')}
                                 >
-                                    앱 링크 복사
+                                    앱 복사
                                 </button>
                                 <a
                                     className="genspark-agent-detail__btn genspark-agent-detail__btn--primary"
                                     href={gensparkAgentSessionMeta.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    aria-label="공개 사이트에서 열기"
                                 >
-                                    공개 사이트에서 열기
+                                    공개 열기
                                 </a>
                             </div>
                         </div>
@@ -9683,7 +9692,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     fontSize: '14px'
                                 }}
                             >
-                                대화로 돌아가기
+                                대화로
                             </button>
                         </div>
                         <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
@@ -9830,10 +9839,15 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 aria-label="이 대화 지침·파일·딥시크 설정"
                             >
                                 <div className="bw-thread-context-panel__toolbar">
-                                    <span className="bw-thread-context-panel__title">
-                                        {currentProject
-                                            ? '이 스레드만의 지침·파일 (프로젝트 지침에 추가로 적용)'
-                                            : '이 대화 · 지침·파일·딥시크'}
+                                    <span
+                                        className="bw-thread-context-panel__title"
+                                        title={
+                                            currentProject
+                                                ? '이 스레드만의 지침·파일 (프로젝트 지침에 추가로 적용)'
+                                                : '이 대화 · 지침·파일·딥시크'
+                                        }
+                                    >
+                                        {currentProject ? '스레드 지침·파일' : '대화 지침·딥시크'}
                                     </span>
                                     <button
                                         type="button"
@@ -9903,7 +9917,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                             파일 추가
                                         </button>
                                         <span className="bw-thread-context-panel__files-meta">
-                                            텍스트 위주 파일 최대 {MAX_THREAD_CONTEXT_FILES}개 · 내용은 답변 맥락에 포함
+                                            텍스트 파일 최대 {MAX_THREAD_CONTEXT_FILES}개
                                         </span>
                                     </div>
                                     {(currentConversation.threadFiles?.length ?? 0) > 0 && (
@@ -9990,7 +10004,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                             }}
                                             disabled={currentConversation.messages.length === 0}
                                         >
-                                            내보내기 옵션…
+                                            내보내기…
                                         </button>
                                         <button
                                             type="button"
@@ -10046,7 +10060,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                             }}
                                             disabled={currentConversation.messages.length === 0}
                                         >
-                                            텍스트 (.txt)
+                                            TXT
                                         </button>
                                     </div>
                                 </details>
@@ -10097,7 +10111,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                     requestClearMessages();
                                                 }}
                                             >
-                                                메시지 전체 삭제
+                                                메시지 삭제
                                             </button>
                                         ) : null}
                                     </div>
@@ -10665,6 +10679,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                                             onChange={(e) => setEditingContent(e.target.value)}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter' && !e.shiftKey) {
+                                                                    if (isKeyboardEventImeComposing(e)) return;
                                                                     e.preventDefault();
                                                                     void saveEditedMessage(message.id);
                                                                 } else if (e.key === 'Escape') {
@@ -11818,7 +11833,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     <ProjectEditModal
                         isOpen={showProjectEditModal}
                         onClose={closeProjectEditModal}
-                        onDraftChange={(draft) => {
+                        onDraftChange={(draft: { name: string; description?: string }) => {
                             if (!currentProject?.id) return;
                             setCurrentProject((prev) =>
                                 prev

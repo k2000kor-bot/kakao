@@ -122,9 +122,9 @@ export function verifyComposerAnswerDraft(
     }
   }
 
-  const numberedInInput = (input.match(/(?:^|\n)\s*\d+[\.\)]\s+/gm) ?? []).length;
+  const numberedInInput = (input.match(/(?:^|\n)\s*\d+[.)]\s+/gm) ?? []).length;
   if (numberedInInput >= 2) {
-    const numberedInAnswer = (text.match(/(?:^|\n)\s*\d+[\.\)]\s+/gm) ?? []).length;
+    const numberedInAnswer = (text.match(/(?:^|\n)\s*\d+[.)]\s+/gm) ?? []).length;
     if (numberedInAnswer < Math.min(numberedInInput, 2)) {
       issues.push('다중 항목 질문인데 답변에 번호별 구분이 부족합니다. 항목 순서대로 답하세요.');
       score -= 20;
