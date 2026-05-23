@@ -52,19 +52,14 @@ jobs:
             echo "configured=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Manual PR reminder (no PAT configured)
-        if: steps.existing.outputs.url == '' && steps.pat.outputs.configured != 'true'
-        run: |
-          MANUAL="https://github.com/k2000kor-bot/kakao/pull/new?base=main&head=dev-continue-2026-01-20"
-          echo "::notice title=PR manual required::KAKAO_BOT_PAT not set. Open $MANUAL (body: docs/PR_COMPOSER_GRAPH_DRAFT.md)"
-          echo "Manual PR: $MANUAL"
-
       - name: Create pull request
-        if: steps.existing.outputs.url == '' && steps.pat.outputs.configured == 'true'
+        if: steps.existing.outputs.url == ''
         id: create_pr
         uses: actions/github-script@v7
+        env:
+          USE_PAT: ${{ steps.pat.outputs.configured }}
         with:
-          github-token: ${{ secrets.KAKAO_BOT_PAT }}
+          github-token: ${{ steps.pat.outputs.configured == 'true' && secrets.KAKAO_BOT_PAT || github.token }}
           script: |
             const fs = require('fs');
             const path = 'docs/PR_COMPOSER_GRAPH_DRAFT.md';
@@ -75,6 +70,7 @@ jobs:
             const title =
               'feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff';
             const manual = `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/new?base=main&head=dev-continue-2026-01-20`;
+            const tokenLabel = process.env.USE_PAT === 'true' ? 'KAKAO_BOT_PAT' : 'GITHUB_TOKEN';
             try {
               const { data } = await github.rest.pulls.create({
                 owner: context.repo.owner,
@@ -84,20 +80,21 @@ jobs:
                 base: 'main',
                 body,
               });
-              core.summary.addRaw(`## Created PR\n${data.html_url} (#${data.number})`);
+              core.summary.addRaw(`## Created PR (${tokenLabel})\n${data.html_url} (#${data.number})`);
+              core.setOutput('url', data.html_url);
             } catch (e) {
               const msg = e.message || String(e);
               core.summary.addRaw(
                 [
-                  '## PR not created (token / repo settings)',
+                  `## PR not created (${tokenLabel})`,
                   '```',
                   msg,
                   '```',
                   '',
                   '**Fix (one of):**',
-                  '1. **Settings → Secrets → Actions** → `KAKAO_BOT_PAT` (repo scope PAT), then re-run workflow',
-                  '2. **Settings → Actions → General** → Workflow permissions **Read and write**',
+                  '1. **Settings → Actions → General** → Workflow permissions **Read and write**',
                   '   + **Allow GitHub Actions to create and approve pull requests**',
+                  '2. **Settings → Secrets → Actions** → `KAKAO_BOT_PAT` (repo scope PAT), then re-run workflow',
                   '',
                   `**Manual PR (1 min):** ${manual}`,
                   'Body: `docs/PR_COMPOSER_GRAPH_DRAFT.md` on branch `dev-continue-2026-01-20`',
@@ -107,8 +104,8 @@ jobs:
             }
 
       - name: Manual PR reminder (create failed)
-        if: failure() && steps.existing.outputs.url == '' && steps.pat.outputs.configured == 'true'
+        if: failure() && steps.existing.outputs.url == ''
         run: |
           MANUAL="https://github.com/k2000kor-bot/kakao/pull/new?base=main&head=dev-continue-2026-01-20"
-          echo "::warning title=PR not auto-created::Open $MANUAL — or set KAKAO_BOT_PAT / enable Actions PR creation (see workflow summary)."
+          echo "::warning title=PR not auto-created::Open $MANUAL — enable Actions PR creation or set KAKAO_BOT_PAT (see workflow summary)."
           echo "Manual PR: $MANUAL"

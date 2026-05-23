@@ -1,7 +1,7 @@
 # PR 초안 — composer multi-request + conversation graph
 
 **브랜치**: `dev-continue-2026-01-20`  
-**HEAD**: `c79cabe1e` · `npm run pr:composer-graph-url` (handoff 229 patches·push sync, 2026-05-23)  
+**HEAD**: `2c21234d8` · `npm run pr:composer-graph-url` (handoff 230 patches·push sync, 2026-05-23)  
 **베이스**: `main` (또는 팀 기본 브랜치)  
 **제목 제안**: `feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff`
 
