@@ -67,6 +67,7 @@ PR_TITLE='feat: 관계도 문서 형식별 답변·컴포저 순차 생성·hand
 현재 default: `dev-continue-2026-01-20`
 
 ```bash
+npm run repo:dispatch-set-default-main   # Actions (KAKAO_BOT_PAT secret)
 KAKAO_BOT_PAT=<admin PAT> npm run repo:set-default-main
 # 또는 수동: https://github.com/k2000kor-bot/kakao/settings/branches
 ```

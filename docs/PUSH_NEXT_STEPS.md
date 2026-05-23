@@ -1,6 +1,6 @@
 # Push / 배포 상태 (k2000kor-bot/kakao)
 
-**브랜치**: `main` · **HEAD**: `b8e349c6d` (`main` = `dev-continue-2026-01-20`)
+**브랜치**: `main` · **HEAD**: `89d4b4f79` (`main` = `dev-continue-2026-01-20`)
 
 ## 완료 (2026-05-23)
 
@@ -12,15 +12,21 @@
 | `main` 동기화 | ✅ `origin/main` = `origin/dev-continue-2026-01-20` |
 | Handoff | `npm run verify:handoff-artifacts` (bundle tip = branch tip, patch series 0) |
 | merge 후 문서 | `docs/PR_CREATE_NOW.md` 갱신됨 |
+| pre-deploy | ✅ `npm run verify:pre-deploy` (sidebar-context·composer·관계도 unit) |
 
 ## GitHub default branch (권장)
 
 현재 API 기준 default: **`dev-continue-2026-01-20`** → **`main`** 권장:
 
 ```bash
-npm run repo:open-default-branch
-# 또는 PAT 있을 때
+# Actions (KAKAO_BOT_PAT secret 있을 때, 1클릭 Run workflow)
+npm run repo:dispatch-set-default-main
+
+# 로컬 admin PAT
 KAKAO_BOT_PAT=... npm run repo:set-default-main
+
+# 브라우저 수동
+npm run repo:open-default-branch
 ```
 
 수동: https://github.com/k2000kor-bot/kakao/settings/branches → Default branch → **`main`**
