@@ -54,9 +54,10 @@ export function getAppEntryPath(): string {
   return isGensparkPrimaryExperience() ? AGENTS_PATH : '/';
 }
 
-/** 레거시 프로젝트 CRUD·사이드바·`/projects` 라우트 노출 여부 (`REACT_APP_UI_PROJECTS_ENABLED`) */
+/** 레거시 프로젝트 CRUD·사이드바·`/projects` 라우트 노출 여부 (LEGACY + ENABLED) */
 export function isUiProjectsLegacySurfaceEnabled(): boolean {
-  return isUiProjectsEnabled();
+  if (typeof process === 'undefined') return false;
+  return process.env.REACT_APP_UI_PROJECTS_LEGACY === 'true' && isUiProjectsEnabled();
 }
 
 /**
