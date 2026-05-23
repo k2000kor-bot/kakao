@@ -1,7 +1,7 @@
 # PR #2 — merge 완료 (2026-05-23)
 
 **PR:** https://github.com/k2000kor-bot/kakao/pull/2 · **merged**  
-**HEAD:** `e5740991a` · `origin/main` = `origin/dev-continue-2026-01-20`
+**HEAD:** `f1182abac` · `origin/main` = `origin/dev-continue-2026-01-20`
 
 ## 완료 체크리스트
 
@@ -11,7 +11,7 @@
 | main · dev-continue 동기화 | ✅ |
 | `verify:pre-deploy` | ✅ |
 | `verify:handoff-artifacts` | ✅ |
-| GitHub default branch → `main` | ⏳ [Settings → General](https://github.com/k2000kor-bot/kakao/settings) |
+| GitHub default branch → `main` | ⏳ 현재 **`kakao`** — [Settings → General](https://github.com/k2000kor-bot/kakao/settings)에서 **`main`** 선택 |
 
 ## 로컬 동기화
 
