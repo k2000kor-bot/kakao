@@ -23,7 +23,25 @@ jobs:
         with:
           ref: dev-continue-2026-01-20
 
+      - name: Skip when main already synced with dev-continue
+        id: sync
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              basehead: 'main...dev-continue-2026-01-20',
+            });
+            const skip = data.status === 'identical' || (data.ahead_by === 0 && data.behind_by === 0);
+            core.setOutput('skip', skip ? 'true' : 'false');
+            if (skip) {
+              core.summary.addRaw('## Skip\n`main` = `dev-continue-2026-01-20` — open PR 불필요');
+              core.notice('main and dev-continue in sync — skip PR create');
+            }
+
       - name: Find open PR
+        if: steps.sync.outputs.skip != 'true'
         id: existing
         uses: actions/github-script@v7
         with:
@@ -45,7 +63,7 @@ jobs:
             }
 
       - name: Mark draft PR ready for review
-        if: steps.existing.outputs.url != '' && steps.existing.outputs.draft == 'true'
+        if: steps.sync.outputs.skip != 'true' && steps.existing.outputs.url != '' && steps.existing.outputs.draft == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ github.token }}
@@ -71,7 +89,7 @@ jobs:
           fi
 
       - name: Create pull request
-        if: steps.existing.outputs.url == ''
+        if: steps.sync.outputs.skip != 'true' && steps.existing.outputs.url == ''
         id: create_pr
         uses: actions/github-script@v7
         env:

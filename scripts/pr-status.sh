@@ -26,9 +26,16 @@ for p in d:
   echo "open PR (main←dev-continue): $PRS"
   CMP=$(curl -sS "https://api.github.com/repos/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/compare/main...dev-continue-2026-01-20" | python3 -c "import sys,json; c=json.load(sys.stdin); print(c.get('status','?'), 'ahead', c.get('ahead_by','?'), 'behind', c.get('behind_by','?'))" 2>/dev/null || echo "?")
   echo "compare main...dev-continue: $CMP"
+  DEFAULT=$(curl -sS "https://api.github.com/repos/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('default_branch','?'))" 2>/dev/null || echo "?")
+  echo "default_branch: $DEFAULT"
+  [[ "$DEFAULT" == "main" ]] && echo "default branch: OK" || echo "default branch: main 권장 → npm run repo:open-default-branch"
   if [[ "$PRS" == "0" ]] || [[ "$PRS" == $'\n0' ]]; then
-    echo "PR 없음 → npm run pr:ready"
-    echo "  docs/PR_CREATE_NOW.md"
+    if [[ "$CMP" == *"identical"* ]] || [[ "$CMP" == *"ahead 0 behind 0"* ]]; then
+      echo "PR 불필요 (main = dev-continue)"
+    else
+      echo "PR 없음 → npm run pr:ready"
+      echo "  docs/PR_CREATE_NOW.md"
+    fi
   fi
   echo ""
   echo "다음:"
