@@ -6,7 +6,149 @@
 import React from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
+import { API_HEALTH_PATH } from '../config/api';
 import { createMuiTestTheme } from './muiTestTheme';
+
+type ProcessEnvPatch = Record<string, string | undefined>;
+
+function applyProcessEnvPatch(patch: ProcessEnvPatch): ProcessEnvPatch {
+  const prev: ProcessEnvPatch = {};
+  for (const k of Object.keys(patch)) {
+    prev[k] = process.env[k];
+    const v = patch[k];
+    if (v === undefined) {
+      delete process.env[k];
+    } else {
+      process.env[k] = v;
+    }
+  }
+  return prev;
+}
+
+function restoreProcessEnvFromPatch(keys: string[], prev: ProcessEnvPatch) {
+  for (const k of keys) {
+    const was = prev[k];
+    if (was === undefined) {
+      delete process.env[k];
+    } else {
+      process.env[k] = was;
+    }
+  }
+}
+
+/** process.env 일부만 임시 변경 후 복구 */
+export function withProcessEnv<T>(patch: ProcessEnvPatch, fn: () => T): T {
+  const keys = Object.keys(patch);
+  const prev = applyProcessEnvPatch(patch);
+  try {
+    return fn();
+  } finally {
+    restoreProcessEnvFromPatch(keys, prev);
+  }
+}
+
+export async function withProcessEnvAsync<T>(
+  patch: ProcessEnvPatch,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const keys = Object.keys(patch);
+  const prev = applyProcessEnvPatch(patch);
+  try {
+    return await fn();
+  } finally {
+    restoreProcessEnvFromPatch(keys, prev);
+  }
+}
+
+/** fetch health/llm-status 호출이 jsdom 네트워크로 나가는 노이즈를 줄이는 스텁 */
+export function installJestFetchHealthLlmStub(options?: { label?: string }): () => void {
+  const label = options?.label ?? 'jest';
+  const underlying =
+    typeof globalThis.fetch === 'function' ? globalThis.fetch.bind(globalThis) : undefined;
+  const stub: typeof fetch = (input, init) => {
+    const u = typeof input === 'string' ? input : input.toString();
+    if (u.includes(API_HEALTH_PATH) || u.includes('llm-status')) {
+      const forLlm = u.includes('llm-status');
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: () => Promise.resolve(forLlm ? { success: true, summary: '' } : {}),
+        text: () => Promise.resolve(''),
+      } as Response);
+    }
+    if (underlying) {
+      return underlying(input as RequestInfo, init);
+    }
+    return Promise.reject(new Error(`${label}: unmocked fetch (${u.slice(0, 160)})`));
+  };
+  globalThis.fetch = stub as typeof fetch;
+  if (typeof window !== 'undefined') {
+    window.fetch = globalThis.fetch;
+  }
+  return () => {
+    if (underlying) {
+      globalThis.fetch = underlying;
+      if (typeof window !== 'undefined') {
+        window.fetch = underlying as typeof fetch;
+      }
+    }
+  };
+}
+
+/** axios XHR AggregateError·React act·DOM nesting 경고 로그 선별 억제 */
+export function installJsdomXhrAggregateErrorConsoleFilter(): () => void {
+  const orig = console.error.bind(console);
+  const spy = jest.spyOn(console, 'error').mockImplementation((first: unknown, ...rest: unknown[]) => {
+    const argToText = (x: unknown): string => {
+      if (x instanceof Error) return `${x.name}: ${x.message}\n${x.stack ?? ''}`;
+      if (typeof x === 'string') return x;
+      if (typeof x === 'number' || typeof x === 'boolean' || typeof x === 'bigint') return String(x);
+      if (x == null) return '';
+      try {
+        return String(x);
+      } catch {
+        return '';
+      }
+    };
+    const text = [first, ...rest].map(argToText).join('\n');
+    if (/AggregateError/i.test(text) && /xhr-utils|XMLHttpRequest-impl|helpers\/http-request/i.test(text)) {
+      return;
+    }
+    if (
+      /not wrapped in act/i.test(text) &&
+      (/wrap-tests-with-act|react\.dev\/link\/wrap-tests-with-act/i.test(text) ||
+        /When testing, code that causes React state updates should be wrapped/i.test(text))
+    ) {
+      return;
+    }
+    if (
+      /In HTML, .*cannot be a descendant of/i.test(text) ||
+      /cannot contain a nested/i.test(text) ||
+      /validateDOMNesting/i.test(text)
+    ) {
+      return;
+    }
+    orig(first as never, ...rest as never[]);
+  });
+  return () => {
+    spy.mockRestore();
+  };
+}
+
+/** fetch health 스텁 + 콘솔 필터를 한 번에 설치·해제 */
+export function installJestDomQuietNetworkForTests(options?: {
+  label?: string;
+  fetchStub?: boolean;
+}): () => void {
+  const useFetchStub = options?.fetchStub !== false;
+  const teardownFetch = useFetchStub ? installJestFetchHealthLlmStub(options) : () => {};
+  const teardownConsole = installJsdomXhrAggregateErrorConsoleFilter();
+  return () => {
+    teardownConsole();
+    teardownFetch();
+  };
+}
 
 /**
  * 테마를 포함한 렌더링 헬퍼
