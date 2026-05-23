@@ -1,89 +1,39 @@
 # PR #2 — merge 완료 (2026-05-23)
 
 **PR:** https://github.com/k2000kor-bot/kakao/pull/2 · **merged**  
-**main HEAD:** `b6a92576b` (= `dev-continue-2026-01-20` tip)  
-**반영 방법:** `CONFIRM=1 npm run promote:main` (GitHub PR Draft 상태에서 직접 push)
+**HEAD:** `f8afccda0` · `origin/main` = `origin/dev-continue-2026-01-20`
 
-## 로컬 main 동기화
+## 완료 체크리스트
+
+| 항목 | 상태 |
+|------|------|
+| PR #2 merge | ✅ |
+| main · dev-continue 동기화 | ✅ |
+| `verify:pre-deploy` | ✅ |
+| `verify:handoff-artifacts` | ✅ |
+| GitHub default branch → `main` | ⏳ [설정](https://github.com/k2000kor-bot/kakao/settings/branches) |
+
+## 로컬 동기화
 
 ```bash
 git checkout main && git pull origin main
 npm run sync:frontend-src
 npm run verify:handoff-artifacts
+npm run repo:check-default-main   # default branch 확인
 ```
 
-## (참고) 이전 merge 준비 메모
-
-## 0. 로컬 서버
-
-`docs/LOCAL_SERVER_START.md` — `cd kakao-frontend/kakao-frontend` 후 `npm run start:dev`
-
-## 1. PR 생성 (수동, 1분)
+## default branch → main (마지막 1단계)
 
 ```bash
-npm run pr:ready
+npm run repo:open-default-branch    # 브라우저: Default branch → main
+npm run repo:check-default-main     # 확인
 ```
 
-또는 수동:
+또는 Actions: `npm run repo:dispatch-set-default-main` (KAKAO_BOT_PAT secret 필요)
 
-1. 열기: https://github.com/k2000kor-bot/kakao/pull/new?base=main&head=dev-continue-2026-01-20
-2. 제목: `feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff`
-3. 본문: `docs/PR_COMPOSER_GRAPH_DRAFT.md` 전체 복사·붙여넣기  
-   (또는 `npm run pr:copy-body`)
-4. **Create pull request** 클릭
+## 핵심 기능 (graph-answer)
 
-## 2. GitHub Actions로 PR 생성 (권장)
-
-**필수 설정 (한 번만):**
-
-1. https://github.com/k2000kor-bot/kakao/settings/secrets/actions → **`KAKAO_BOT_PAT`** (repo 권한 PAT)
-2. https://github.com/k2000kor-bot/kakao/settings/actions → Workflow permissions **Read and write** + **Allow GitHub Actions to create and approve pull requests** 체크
-
-**실행:**
-
-1. https://github.com/k2000kor-bot/kakao/actions/workflows/create-pr-to-main.yml
-2. **Run workflow** (또는 `dev-continue-2026-01-20` push 시 자동 시도)
-
-> 최근 Actions 실패 원인(확인됨): **「GitHub Actions is not permitted to create or approve pull requests」**  
-> → 위 1·2 중 하나 필요. 워크플로는 실패 시에도 Summary에 수동 PR 링크를 남깁니다.  
-> 로그: [Create PR to main](https://github.com/k2000kor-bot/kakao/actions/workflows/create-pr-to-main.yml)
-
-## 3. 로컬 API (토큰 또는 gh)
-
-```bash
-# A) GitHub CLI (한 번만)
-npm run pr:ensure-gh
-gh auth login
-npm run pr:create
-
-# B) PAT (export 또는 .env.local — gitignore)
-export GITHUB_TOKEN=<repo scope PAT>
-# .env.local 예: KAKAO_BOT_PAT=ghp_...
-PR_TITLE='feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff' npm run pr:create
-```
-
-## 4. default branch → `main` (선택)
-
-현재 default: `dev-continue-2026-01-20`
-
-```bash
-npm run repo:dispatch-set-default-main   # Actions (KAKAO_BOT_PAT secret)
-KAKAO_BOT_PAT=<admin PAT> npm run repo:set-default-main
-# 또는 수동: https://github.com/k2000kor-bot/kakao/settings/branches
-```
-
-## 5. merge 후 로컬
-
-```bash
-git checkout main && git pull origin main
-npm run sync:frontend-src
-```
-
-## 이번 PR 핵심 (graph-answer)
-
-- 14종 문서 형식(보고서·엔티티·인텔리전스·논문·문학·FAQ·백서 등)
-- 내장 골격 + 로컬 학습 + 형식 고정 UI + 형식별 후처리
-- E2E 13 passed · `npm run verify:conversation-graph` 통과
+- 14종 문서 형식 · 컴포저 순차 생성 · handoff
 - 상세: [CONVERSATION_GRAPH_ANSWER_FORMATS.md](./CONVERSATION_GRAPH_ANSWER_FORMATS.md)
 
-저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+검증: [TESTING_GUIDE.md](../TESTING_GUIDE.md) · [PUSH_NEXT_STEPS.md](./PUSH_NEXT_STEPS.md)

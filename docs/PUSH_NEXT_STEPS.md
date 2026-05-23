@@ -1,6 +1,6 @@
 # Push / 배포 상태 (k2000kor-bot/kakao)
 
-**브랜치**: `main` · **HEAD**: `c5b3d4f7a` (`main` = `dev-continue-2026-01-20`)
+**브랜치**: `main` · **HEAD**: `f8afccda0` (`main` = `dev-continue-2026-01-20`)
 
 ## 완료 (2026-05-23)
 
