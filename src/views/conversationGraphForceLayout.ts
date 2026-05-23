@@ -164,8 +164,8 @@ function appendGraphNodes(
     });
 
   if (simulation) {
-    node.call(
-      drag()
+    (node as Selection<SVGGElement, LayoutNode, SVGGElement, unknown>).call(
+      drag<SVGGElement, LayoutNode>()
         .on('start', (event: GraphDragEvent) => {
           try {
             if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -312,7 +312,7 @@ export function mountConversationGraphForceLayout(
     const nodes: LayoutNode[] = (graph.nodes ?? []).map((n) => ({ ...n, x: 0, y: 0 }));
     const nodesById = new Map(nodes.map((n) => [n.id ?? '', n]));
 
-    const svg = select(svgEl);
+    const svg = select<SVGSVGElement, unknown>(svgEl);
     svg.selectAll('*').remove();
 
     const genealogy =
@@ -453,7 +453,7 @@ export function mountConversationGraphForceLayout(
       syncLinksAndLabels();
     }
 
-    const zoomBehavior = zoom()
+    const zoomBehavior = zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.35, 2.5])
       .on('zoom', (event: GraphZoomEvent) => {
         viewport.attr('transform', event.transform.toString());
