@@ -1,17 +1,17 @@
 # Push / 배포 상태 (k2000kor-bot/kakao)
 
-**브랜치**: `dev-continue-2026-01-20` · **HEAD**: `git rev-parse --short HEAD`
+**브랜치**: `main` · **HEAD**: `b8e349c6d` (`main` = `dev-continue-2026-01-20`)
 
-## 완료 (2026-05)
+## 완료 (2026-05-23)
 
 | 항목 | 상태 |
 |------|------|
 | 저장소 | **k2000kor-bot/kakao** |
 | SSH | **k2000kor-bot** |
-| `dev-continue-2026-01-20` push | ✅ |
-| `main` 동기화 | ✅ `npm run promote:main` (`main` = `dev-continue` tip) |
-| Handoff | `npm run verify:handoff-artifacts` (bundle tip `cf710e93d`, 193 patches) |
-| 카카오 CSV 유틸 | `cf710e93d` — `main`·`dev-continue` 동기화됨 |
+| PR #2 merge | ✅ [feat: 관계도·컴포저·handoff](https://github.com/k2000kor-bot/kakao/pull/2) |
+| `main` 동기화 | ✅ `origin/main` = `origin/dev-continue-2026-01-20` |
+| Handoff | `npm run verify:handoff-artifacts` (bundle tip = branch tip, patch series 0) |
+| merge 후 문서 | `docs/PR_CREATE_NOW.md` 갱신됨 |
 
 ## GitHub default branch (권장)
 
