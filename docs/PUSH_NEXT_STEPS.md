@@ -1,6 +1,6 @@
 # Push / 배포 상태 (k2000kor-bot/kakao)
 
-**브랜치**: `main` · **HEAD**: `05d77f131` (`main` = `dev-continue-2026-01-20`)
+**브랜치**: `main` · **HEAD**: `ebe0e9083` (`main` = `dev-continue-2026-01-20`)
 
 ## 완료 (2026-05-23)
 
@@ -14,7 +14,8 @@
 | Handoff | ✅ `npm run verify:handoff-artifacts` |
 | pre-deploy | ✅ `npm run verify:pre-deploy` |
 | verify:completion | ✅ |
-| verify:final | ✅ (백엔드 미기동 시 API·통합 SKIP) |
+| verify:final | ✅ (백엔드 :5002 · API·통합 포함) |
+| deploy:check | ✅ |
 | E2E CI | ✅ `CI=1 npm run test:e2e:pipelines:ci:all` |
 | post-merge | ✅ `npm run finish:post-merge` |
 

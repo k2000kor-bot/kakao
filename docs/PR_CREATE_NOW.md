@@ -1,7 +1,7 @@
-# PR #2 — merge 완료 (2026-05-23)
+# PR #2 — merge·검증 완료 (2026-05-23)
 
 **PR:** https://github.com/k2000kor-bot/kakao/pull/2 · **merged**  
-**HEAD:** `82d0894a9` · `origin/main` = `origin/dev-continue-2026-01-20`
+**HEAD:** `ebe0e9083` · `origin/main` = `origin/dev-continue-2026-01-20`
 
 ## 완료 체크리스트
 
@@ -9,10 +9,13 @@
 |------|------|
 | PR #2 merge | ✅ |
 | main · dev-continue 동기화 | ✅ |
-| `verify:pre-deploy` | ✅ |
-| `verify:handoff-artifacts` | ✅ |
 | GitHub default branch → `main` | ✅ |
 | `finish:post-merge` | ✅ |
+| `verify:pre-deploy` | ✅ |
+| `verify:completion` · `deploy:check` | ✅ |
+| `verify:final` (백엔드 :5002 포함) | ✅ |
+| E2E CI (`test:e2e:pipelines:ci:all`) | ✅ |
+| `verify:handoff-artifacts` | ✅ |
 
 ## 로컬 동기화
 
@@ -20,22 +23,15 @@
 git checkout main && git pull origin main
 npm run sync:frontend-src
 npm run verify:handoff-artifacts
-npm run repo:check-default-main   # default branch 확인
+npm run repo:check-default-main
 ```
 
-## default branch → main (마지막 1단계)
-
-GitHub clone 기본 ref는 default branch를 따릅니다. **`main`으로 clone** 하려면:
+## 풀 스택 검증 (선택)
 
 ```bash
-git clone -b main git@github.com:k2000kor-bot/kakao.git
-```
-
-default branch 이름 변경 (권장):
-
-```bash
-npm run repo:open-default-branch    # 브라우저: Default branch → main
-npm run repo:check-default-main     # 확인
+npm run restart:backend    # :5002
+npm run verify:final
+CI=1 npm run test:e2e:pipelines:ci:all
 ```
 
 ## 핵심 기능 (graph-answer)
