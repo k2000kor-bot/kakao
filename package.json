@@ -85,6 +85,7 @@
     "pr:ensure-gh": "bash scripts/ensure-gh-cli.sh",
     "pr:copy-body": "bash scripts/pr-copy-body.sh",
     "pr:ready": "bash scripts/pr-ready.sh",
+    "pr:mark-ready": "bash scripts/mark-pr-ready.sh",
     "ship:preflight": "bash scripts/ship-dev-continue-preflight.sh",
     "ship:release-check": "bash scripts/ship-release-check.sh",
     "local:verify": "npm run sync:frontend-src && npx tsc --noEmit && npm run verify:conversation-graph:unit && npm run test:composer-pipeline",

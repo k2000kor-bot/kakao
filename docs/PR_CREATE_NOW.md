@@ -1,4 +1,49 @@
-# PR 생성 — 지금 바로 (2026-05-23)
+# PR #2 — merge 준비 (2026-05-23)
+
+**PR:** https://github.com/k2000kor-bot/kakao/pull/2  
+**HEAD:** `1f4a2d1e0` · **상태:** Draft → merge 전 **Ready for review** 필요
+
+## 0. Draft 해제 (필수, 1클릭)
+
+PR이 **Draft**이면 merge 불가입니다.
+
+```bash
+npm run pr:mark-ready
+```
+
+또는 https://github.com/k2000kor-bot/kakao/pull/2 에서 **Ready for review** 클릭.
+
+> push 시 `create-pr-to-main` workflow가 draft PR을 자동으로 ready로 전환합니다.
+
+## 1. CI 확인
+
+https://github.com/k2000kor-bot/kakao/pull/2/checks
+
+로컬 통과 (HEAD `1f4a2d1e0`):
+
+- `lint:strict` · `verify:composer-pipeline` (143) · `verify:conversation-graph:unit` · `npm run build` · `ship:preflight`
+
+## 2. Merge
+
+Checks green 후 GitHub에서 **Merge pull request** (Squash 권장).
+
+```bash
+# PAT/gh 있을 때
+npm run pr:ensure-gh && gh auth login
+gh pr merge 2 --repo k2000kor-bot/kakao --squash
+```
+
+## 3. merge 후
+
+```bash
+git checkout main && git pull origin main
+npm run sync:frontend-src
+# 또는 PR 없이 main 반영: CONFIRM=1 npm run promote:main
+```
+
+---
+
+## (참고) PR 생성 — 이미 완료
 
 브랜치 `dev-continue-2026-01-20` · open PR: https://github.com/k2000kor-bot/kakao/pull/2
 

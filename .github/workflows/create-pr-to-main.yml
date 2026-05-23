@@ -35,11 +35,29 @@ jobs:
               base: 'main',
               head: `${context.repo.owner}:dev-continue-2026-01-20`,
             });
-            const url = data[0]?.html_url ?? '';
+            const pr = data[0];
+            const url = pr?.html_url ?? '';
             core.setOutput('url', url);
+            core.setOutput('number', pr?.number ? String(pr.number) : '');
+            core.setOutput('draft', pr?.draft ? 'true' : 'false');
             if (url) {
-              core.summary.addRaw(`## PR already open\n${url}`);
+              core.summary.addRaw(`## PR already open\n${url}${pr?.draft ? ' (draft)' : ''}`);
             }
+
+      - name: Mark draft PR ready for review
+        if: steps.existing.outputs.url != '' && steps.existing.outputs.draft == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const num = Number('${{ steps.existing.outputs.number }}');
+            const { data } = await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: num,
+              draft: false,
+            });
+            core.summary.addRaw(`## PR marked ready\n${data.html_url} (#${data.number})`);
 
       - name: Check PAT configured
         id: pat
@@ -79,6 +97,7 @@ jobs:
                 head: 'dev-continue-2026-01-20',
                 base: 'main',
                 body,
+                draft: false,
               });
               core.summary.addRaw(`## Created PR (${tokenLabel})\n${data.html_url} (#${data.number})`);
               core.setOutput('url', data.html_url);
