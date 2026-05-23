@@ -21,7 +21,7 @@ describe('GensparkAgentsHubView', () => {
       </MemoryRouter>,
     );
     const expected = `${AGENTS_PATH}?${AGENTS_QUERY_PARAM_TYPE}=${GENSPARK_AGENTS_TYPE_SUPER_AGENT}`;
-    const link = screen.getByRole('link', { name: expected });
+    const link = screen.getByRole('link', { name: 'Super Agent' });
     expect(link).toHaveAttribute('href', expected);
   });
 
@@ -32,9 +32,7 @@ describe('GensparkAgentsHubView', () => {
       </MemoryRouter>,
     );
     const href = `${AGENTS_PATH}?${AGENTS_QUERY_PARAM_ID}=${encodeURIComponent(GENSPARK_REFERENCE_AGENT_ID)}`;
-    const link = screen.getByRole('link', {
-      name: new RegExp(`이 앱에서 열기 \\(${GENSPARK_REFERENCE_AGENT_ID.slice(0, 8)}`),
-    });
+    const link = screen.getByRole('link', { name: '앱에서 열기' });
     expect(link).toHaveAttribute('href', href);
   });
 

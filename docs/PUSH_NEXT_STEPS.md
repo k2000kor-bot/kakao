@@ -1,6 +1,6 @@
 # Push / 배포 상태 (k2000kor-bot/kakao)
 
-**브랜치**: `main` · **HEAD**: `82d0894a9` (`main` = `dev-continue-2026-01-20`)
+**브랜치**: `main` · **HEAD**: `05d77f131` (`main` = `dev-continue-2026-01-20`)
 
 ## 완료 (2026-05-23)
 
@@ -10,28 +10,21 @@
 | SSH | **k2000kor-bot** |
 | PR #2 merge | ✅ [feat: 관계도·컴포저·handoff](https://github.com/k2000kor-bot/kakao/pull/2) |
 | `main` 동기화 | ✅ `origin/main` = `origin/dev-continue-2026-01-20` |
-| GitHub default branch | ✅ **`main`** (`npm run repo:check-default-main`) |
-| Handoff | `npm run verify:handoff-artifacts` |
-| merge 후 문서 | `docs/PR_CREATE_NOW.md` 갱신됨 |
+| GitHub default branch | ✅ **`main`** |
+| Handoff | ✅ `npm run verify:handoff-artifacts` |
 | pre-deploy | ✅ `npm run verify:pre-deploy` |
+| verify:completion | ✅ |
+| verify:final | ✅ (백엔드 미기동 시 API·통합 SKIP) |
+| E2E CI | ✅ `CI=1 npm run test:e2e:pipelines:ci:all` |
 | post-merge | ✅ `npm run finish:post-merge` |
-
-## (선택) 정리
-
-default가 `main`이면 **`kakao` 브랜치 삭제** 가능 (저장소 이름과 혼동 방지):
-
-```bash
-git push origin --delete kakao
-```
 
 ## 로컬 검증
 
 ```bash
 npm run verify:handoff-artifacts
-npm run verify:pre-deploy          # Jest·관계도 unit (~1분)
-npm run verify:final               # 빌드·API·통합 (서버 필요)
-# 서버 :3000 기동 후
-npm run test:e2e:pipelines:all
+npm run verify:pre-deploy          # Jest·관계도 unit (~1min)
+npm run verify:final               # build + Jest pipelines (backend optional)
+CI=1 npm run test:e2e:pipelines:ci:all
 ```
 
 ## PR (선택)
