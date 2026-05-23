@@ -38,6 +38,7 @@ src/components/backup/
 
 # misc
 .DS_Store
+tools/gh/
 .env.local
 .env.development.local
 .env.test.local

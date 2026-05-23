@@ -1,6 +1,6 @@
 # PR 생성 — 지금 바로 (2026-05-23)
 
-브랜치 `dev-continue-2026-01-20` · HEAD `cb80f14a0` · push 후 `npm run pr:ready` · open PR 없음 (Actions create failure = PAT/권한)
+브랜치 `dev-continue-2026-01-20` · HEAD `3da2a8482` · `npm run pr:ready` · open PR 없음 (Actions create failure = PAT/권한)
 
 ## 0. 로컬 서버
 
@@ -40,13 +40,13 @@ npm run pr:ready
 
 ```bash
 # A) GitHub CLI (한 번만)
+npm run pr:ensure-gh
 gh auth login
-cd kakao-frontend
 npm run pr:create
 
-# B) PAT
+# B) PAT (export 또는 .env.local — gitignore)
 export GITHUB_TOKEN=<repo scope PAT>
-# 또는 export KAKAO_BOT_PAT=...
+# .env.local 예: KAKAO_BOT_PAT=ghp_...
 PR_TITLE='feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff' npm run pr:create
 ```
 

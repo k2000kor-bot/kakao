@@ -6,4 +6,4 @@
 - [x] `npx tsc --noEmit` 통과
 - [x] 커밋·push (`76d4b607f`)
 - [x] `npm run ship:preflight` · `npm run build` · `test:conversation-graph` 226 passed
-- [ ] PR 생성 (수동 또는 `KAKAO_BOT_PAT` / `gh auth login`)
+- [ ] PR 생성 — `.env.local`에 `KAKAO_BOT_PAT` 또는 `npm run pr:ensure-gh && gh auth login` 후 `npm run pr:create`

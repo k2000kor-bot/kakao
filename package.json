@@ -82,6 +82,7 @@
     "repo:set-default-main": "bash scripts/set-github-default-branch-main.sh",
     "promote:main": "bash scripts/promote-dev-continue-to-main.sh",
     "pr:create": "bash scripts/create-github-pr.sh",
+    "pr:ensure-gh": "bash scripts/ensure-gh-cli.sh",
     "pr:copy-body": "bash scripts/pr-copy-body.sh",
     "pr:ready": "bash scripts/pr-ready.sh",
     "ship:preflight": "bash scripts/ship-dev-continue-preflight.sh",
