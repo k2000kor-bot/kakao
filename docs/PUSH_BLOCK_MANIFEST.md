@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-23 15:24:30 KST
+- generated_at: 2026-05-23 15:39:16 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `67faf6d0d fix(ci): frontend/src src 동기화·workflow sync 단계 추가`
+- latest_commit: `1f4a2d1e0 docs: handoff manifest pre-push sync`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 788036632
-- bundle_sha256: `c707ac5b582324a7571d4a79c1b7901f854e8540a9b16117cbc922439c58d9f7`
+- bundle_size_bytes: 788037941
+- bundle_sha256: `94ba0fff1966d0516b6ee5bf899ae5861fbc1a2b300d246942999470124fec8f`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 242
-- patch_series_expected: 242 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
+- patch_series_count: 244
+- patch_series_expected: 244 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
 
 ### Recent Commits
 
 ```
+1f4a2d1e0 docs: handoff manifest pre-push sync
+6b1919754 fix(src): 누락된 workspace·Google Drive·mermaid 모듈 추가
 67faf6d0d fix(ci): frontend/src src 동기화·workflow sync 단계 추가
 42fae8001 docs: handoff manifest pre-push sync
 f272fb0eb ci: workflow re-run (package-lock·lint fix 검증)
-e87422df9 docs: handoff manifest pre-push sync
-406d88374 fix(deps): package-lock.json @types/d3·mermaid 동기화
 ```
