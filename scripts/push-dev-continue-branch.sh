@@ -31,6 +31,11 @@ echo "origin → $REMOTE_URL"
 git remote set-url origin "$REMOTE_URL"
 
 echo "--- handoff artifacts (refresh → verify) ---"
+if [[ -n "$(git status --porcelain docs/PUSH_BLOCK_MANIFEST.md 2>/dev/null)" ]]; then
+  echo "commit pending docs/PUSH_BLOCK_MANIFEST.md before refresh"
+  git add docs/PUSH_BLOCK_MANIFEST.md
+  git commit -m "docs: handoff manifest pre-push sync"
+fi
 if ! npm run refresh:handoff-artifacts; then
   echo "FAIL: handoff bundle/patch 갱신·검증 실패." >&2
   exit 3
