@@ -89,7 +89,7 @@ jobs:
             }
 
       - name: Manual PR reminder
-        if: steps.existing.outputs.url == '' && steps.create_pr.outcome != 'success'
+        if: failure() && steps.existing.outputs.url == ''
         run: |
           MANUAL="https://github.com/k2000kor-bot/kakao/pull/new?base=main&head=dev-continue-2026-01-20"
           echo "::warning title=PR not auto-created::Open $MANUAL — or set KAKAO_BOT_PAT / enable Actions PR creation (see workflow summary)."

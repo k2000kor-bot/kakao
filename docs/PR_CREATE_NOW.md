@@ -1,6 +1,6 @@
 # PR 생성 — 지금 바로 (2026-05-23)
 
-브랜치 `dev-continue-2026-01-20` · HEAD `76d4b607f` · push 후 `npm run pr:ready` · open PR 없음 (Actions PR 권한/PAT 필요)
+브랜치 `dev-continue-2026-01-20` · HEAD `5d9c3d144` · push 후 `npm run pr:ready` · open PR 없음 (Actions create failure = PAT/권한)
 
 ## 0. 로컬 서버
 

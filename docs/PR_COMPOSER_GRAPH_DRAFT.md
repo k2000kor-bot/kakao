@@ -1,7 +1,7 @@
 # PR 초안 — composer multi-request + conversation graph
 
 **브랜치**: `dev-continue-2026-01-20`  
-**HEAD**: `75f734bfe` · `npm run pr:composer-graph-url` (push·handoff 갱신 완료)  
+**HEAD**: `5d9c3d144` · `npm run pr:composer-graph-url` (testHelpers·d3·Create PR workflow, 2026-05-23)  
 **베이스**: `main` (또는 팀 기본 브랜치)  
 **제목 제안**: `feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff`
 
@@ -29,7 +29,7 @@
 - [x] `npm run verify:pre-deploy`
 - [x] `npm run verify:final`
 - [x] `npm run verify:conversation-graph:unit` (관계도 Jest + 백엔드 pytest)
-- [x] `ConversationGraphView.test.tsx` · `npm run test:conversation-graph` (205 tests, 카카오 CSV 업로드 포함)
+- [x] `ConversationGraphView.test.tsx` · `npm run test:conversation-graph` (226 tests, 카카오 CSV 업로드 포함)
 - [x] `npm run verify:handoff-artifacts` (bundle tip = 브랜치 HEAD; push 직전 `npm run refresh:handoff-artifacts`)
 - [x] `HANDOFF_REFRESH=1 npm run maintain:push-block` (사이드바·컴포저 회귀)
 - [x] `npm run verify:conversation-graph-api` (upload·relationship-graph·`conversation_graph_analysis` chat 스모크)
@@ -91,4 +91,11 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `npm run test:conversation-graph` — 226 passed (2026-05-22 재확인)
 - [ ] default branch → `main` — `npm run repo:open-default-branch` 또는 `KAKAO_BOT_PAT=... npm run repo:set-default-main` (현재: `dev-continue-2026-01-20`)
 - [x] push — `d19c66377` feat(graph-answer) 문서 형식별 답변 (2026-05-21)
-- [ ] PR 생성 — `npm run pr:ready` · [PR_CREATE_NOW.md](./PR_CREATE_NOW.md) (open PR 0건; default branch=`dev-continue-2026-01-20`, base=`main`)
+- [ ] PR 생성 — `npm run pr:ready` · [PR_CREATE_NOW.md](./PR_CREATE_NOW.md) (open PR 0건; Actions PR 권한/PAT 필요; base=`main`)
+
+**로컬 재검증 (2026-05-23)**
+
+- [x] `799b2e984` d3 타입 스텁 제거·force layout zoom/drag · `npx tsc --noEmit`
+- [x] `76d4b607f` testHelpers `withProcessEnv`·jsdom 네트워크 스텁 · `npm run test:composer-pipeline` 143 passed
+- [x] `npm run local:verify` · `npm run ship:preflight` · `npm run build` · `test:conversation-graph` 226 passed
+- [x] `5d9c3d144` Create PR workflow head 필터·실패 가시화 (Actions create 단계 failure = PAT/권한 미설정)
