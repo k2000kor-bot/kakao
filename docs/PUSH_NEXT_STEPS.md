@@ -1,6 +1,6 @@
 # Push / 배포 상태 (k2000kor-bot/kakao)
 
-**브랜치**: `main` · **HEAD**: `91fe8a6d9` (`main` = `dev-continue-2026-01-20`)
+**브랜치**: `main` · **HEAD**: `cd672b890` (`main` = `dev-continue-2026-01-20` = `kakao` tip)
 
 ## 완료 (2026-05-23)
 
@@ -16,10 +16,12 @@
 
 ## GitHub default branch (마지막 1단계)
 
-현재 API 기준 default: **`dev-continue-2026-01-20`** → **`main`** 권장.
+현재 API 기준 default: **`kakao`** (저장소 이름과 혼동 가능) → **`main`** 으로 변경 필요.
 
-1. **가장 빠름 (30초):** https://github.com/k2000kor-bot/kakao/settings → **General** → **Default branch** → `main`
-2. 확인: `npm run repo:check-default-main`
+`main`·`kakao` 브랜치 tip은 동일(`cd672b890`) — **default 이름만** `main`으로 바꾸면 됨.
+
+1. **가장 빠름 (30초):** https://github.com/k2000kor-bot/kakao/settings → **General** → **Default branch** → 연필(⇄) → **`main`** → Update
+2. 확인: `npm run repo:check-default-main` → `OK: default branch is main`
 3. (선택) Actions: `KAKAO_BOT_PAT` secret 등록 후 `npm run repo:dispatch-set-default-main`
 
 ## 로컬 검증
