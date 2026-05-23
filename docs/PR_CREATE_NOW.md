@@ -1,7 +1,7 @@
 # PR #2 — merge 완료 (2026-05-23)
 
 **PR:** https://github.com/k2000kor-bot/kakao/pull/2 · **merged**  
-**HEAD:** `f8afccda0` · `origin/main` = `origin/dev-continue-2026-01-20`
+**HEAD:** `7cd1060ff` · `origin/main` = `origin/dev-continue-2026-01-20`
 
 ## 완료 체크리스트
 
