@@ -1,53 +1,37 @@
-# GitHub default branch → main
-# GITHUB_TOKEN (administration: write) · fallback KAKAO_BOT_PAT · 로컬: npm run repo:set-default-main
+# GitHub default branch → main (KAKAO_BOT_PAT admin secret 또는 수동)
 name: Set default branch to main
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/set-default-branch-main.yml
 
 permissions:
-  administration: write
+  contents: read
 
 jobs:
   set-default:
     runs-on: ubuntu-latest
     steps:
-      - name: Set default_branch via GITHUB_TOKEN
-        id: ghtoken
-        continue-on-error: true
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const { data: repo } = await github.rest.repos.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-            if (repo.default_branch === 'main') {
-              core.notice('default_branch already main');
-              return;
-            }
-            await github.rest.repos.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              default_branch: 'main',
-            });
-            core.notice('OK: default_branch → main (GITHUB_TOKEN)');
+      - name: Check current default branch
+        id: check
+        run: |
+          set -euo pipefail
+          DEFAULT="$(curl -sS "https://api.github.com/repos/${{ github.repository }}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('default_branch','?'))")"
+          echo "default_branch=${DEFAULT}" >> "$GITHUB_OUTPUT"
+          echo "current: ${DEFAULT}"
+          if [ "${DEFAULT}" = "main" ]; then
+            echo "already main — nothing to do"
+          fi
 
-      - name: Fallback PATCH via KAKAO_BOT_PAT
-        if: steps.ghtoken.outcome == 'failure'
+      - name: PATCH default_branch → main (KAKAO_BOT_PAT)
+        if: steps.check.outputs.default_branch != 'main'
         env:
           KAKAO_BOT_PAT: ${{ secrets.KAKAO_BOT_PAT }}
         run: |
           set -euo pipefail
           if [ -z "${KAKAO_BOT_PAT:-}" ]; then
-            echo "::error::KAKAO_BOT_PAT secret 없음 — npm run repo:open-actions-secrets 후 admin PAT 등록"
-            echo "수동: https://github.com/${{ github.repository }}/settings/branches → main"
+            echo "::warning::KAKAO_BOT_PAT secret 없음"
+            echo "수동: https://github.com/${{ github.repository }}/settings/branches → Default branch → main"
+            echo "secret: https://github.com/${{ github.repository }}/settings/secrets/actions"
             exit 1
           fi
           CODE="$(curl -sS -o /tmp/repo-patch.json -w '%{http_code}' -X PATCH \
@@ -60,4 +44,4 @@ jobs:
             echo "PATCH failed (HTTP ${CODE})"
             exit 1
           fi
-          echo "OK: default_branch → main (KAKAO_BOT_PAT)"
+          echo "OK: default_branch → main"
