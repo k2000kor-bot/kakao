@@ -16,15 +16,28 @@
 | verify:completion | ✅ |
 | verify:final | ✅ (백엔드 :5002 · API·통합 포함) |
 | deploy:check | ✅ |
+| deploy:package | ✅ `deploy-package/corbu-frontend-*.zip` |
+| 로컬 접속 (:3000 · :5002) | ✅ |
 | E2E CI | ✅ `CI=1 npm run test:e2e:pipelines:ci:all` |
 | post-merge | ✅ `npm run finish:post-merge` |
 
-## 로컬 검증
+## 배포·로컬
+
+```bash
+npm run restart:backend          # :5002
+npm run restart:local            # :3000
+bash scripts/check-access.sh http://localhost:3000 http://localhost:5002
+npm run deploy:package           # deploy-package/corbu-frontend-*.zip
+# 원격 rsync ( .env DEPLOY_DEV_* 설정 시 )
+npm run deploy:dev
+```
+
+## 검증 (회귀)
 
 ```bash
 npm run verify:handoff-artifacts
-npm run verify:pre-deploy          # Jest·관계도 unit (~1min)
-npm run verify:final               # build + Jest pipelines (backend optional)
+npm run verify:pre-deploy
+npm run verify:final
 CI=1 npm run test:e2e:pipelines:ci:all
 ```
 

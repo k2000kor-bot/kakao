@@ -15,6 +15,8 @@
 | `verify:completion` · `deploy:check` | ✅ |
 | `verify:final` (백엔드 :5002 포함) | ✅ |
 | E2E CI (`test:e2e:pipelines:ci:all`) | ✅ |
+| `deploy:package` | ✅ |
+| 로컬 `:3000` · `:5002` | ✅ |
 | `verify:handoff-artifacts` | ✅ |
 
 ## 로컬 동기화
