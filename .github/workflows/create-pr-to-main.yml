@@ -33,7 +33,7 @@ jobs:
               repo: context.repo.repo,
               state: 'open',
               base: 'main',
-              head: 'dev-continue-2026-01-20',
+              head: `${context.repo.owner}:dev-continue-2026-01-20`,
             });
             const url = data[0]?.html_url ?? '';
             core.setOutput('url', url);
@@ -44,7 +44,6 @@ jobs:
       - name: Create pull request
         if: steps.existing.outputs.url == ''
         id: create_pr
-        continue-on-error: true
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.KAKAO_BOT_PAT || github.token }}

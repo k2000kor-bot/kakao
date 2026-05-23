@@ -6,4 +6,6 @@
 - **증상**: `TypeError: withProcessEnv is not a function`, `installJestDomQuietNetworkForTests` undefined로 composer pipeline 65건 실패.
 - **근거**: `frontend/coverage/.../testHelpers.tsx.html`에 과거 구현 흔적 존재. coverage HTML에서 `applyProcessEnvPatch`, `installJestFetchHealthLlmStub` 시그니처 확인.
 - **조치**: `src/test-utils/testHelpers.tsx`에 누락 헬퍼만 추가(기존 `setupCommonMocks` 등은 유지). `sync:frontend-src`로 `frontend/src` 동기화.
-- **미완**: PR은 `KAKAO_BOT_PAT`/`gh` 없어 API 생성 불가. Actions workflow는 success이나 open PR 0건.
+- **검증**: `test:composer-pipeline` 19 suites 143 passed · `local:verify` · `tsc --noEmit` 통과.
+- **커밋**: `76d4b607f` push 완료.
+- **미완**: PR은 `KAKAO_BOT_PAT`/`gh` 없어 API 생성 불가. Actions `Create PR to main`은 create 단계가 토큰 권한 부족으로 실패하지만 `continue-on-error` 때문에 job이 success로 보였음 → head 필터 `owner:branch` 수정·continue-on-error 제거.
