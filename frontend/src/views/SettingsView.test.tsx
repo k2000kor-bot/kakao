@@ -708,9 +708,9 @@ describe('SettingsView', () => {
       await userEvent.click(screen.getByRole('button', { name: '사이드바 필터 프로젝트로 설정' }));
       await waitFor(() => {
         expect(onUpdated).toHaveBeenCalled();
-        const lastCall = onUpdated.mock.calls.at(-1)?.[0] as CustomEvent<SidebarContextFilterUpdatedDetail>;
-        expect(lastCall?.detail?.filter).toBe('project');
       });
+      const lastCall = onUpdated.mock.calls.at(-1)?.[0] as CustomEvent<SidebarContextFilterUpdatedDetail>;
+      expect(lastCall?.detail?.filter).toBe('project');
     } finally {
       window.removeEventListener(SIDEBAR_CONTEXT_FILTER_UPDATED_EVENT, onUpdated as EventListener);
       localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);
@@ -736,9 +736,9 @@ describe('SettingsView', () => {
 
       await waitFor(() => {
         expect(onUpdated).toHaveBeenCalled();
-        const lastCall = onUpdated.mock.calls.at(-1)?.[0] as CustomEvent<SidebarContextFilterUpdatedDetail>;
-        expect(lastCall?.detail?.filter).toBe('all');
       });
+      const lastCallAll = onUpdated.mock.calls.at(-1)?.[0] as CustomEvent<SidebarContextFilterUpdatedDetail>;
+      expect(lastCallAll?.detail?.filter).toBe('all');
     } finally {
       window.removeEventListener(SIDEBAR_CONTEXT_FILTER_UPDATED_EVENT, onUpdated as EventListener);
       localStorage.removeItem(SIDEBAR_CONTEXT_FILTER_STORAGE_KEY);

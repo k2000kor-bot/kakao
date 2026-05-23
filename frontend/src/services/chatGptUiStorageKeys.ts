@@ -8,3 +8,5 @@ export const CHATGPT_CONVERSATIONS_STORAGE_KEY = 'chatgpt-conversations' as cons
 export const CHATGPT_CONVERSATION_REMOVED_EVENT = 'chatgpt-conversation-removed' as const;
 export const CHATGPT_LAST_CHAT_ID_STORAGE_KEY = 'chatgpt_last_chat_id' as const;
 export const CHATGPT_CHATS_STORAGE_KEY = 'chatgpt_chats' as const;
+/** `chatgpt-conversations` localStorage 변경 시 사이드바·AppUnified 목록 갱신 */
+export const SIDEBAR_CHATS_UPDATED_EVENT = 'sidebar-chats-updated' as const;

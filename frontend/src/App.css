@@ -391,12 +391,6 @@ body {
 .brainwave-chat-route-breadcrumb__link:hover {
   text-decoration: underline;
 }
-.bw-tool-view > .conversation-graph-route-breadcrumb {
-  flex-shrink: 0;
-  padding: var(--spacing-md) var(--spacing-lg) 0;
-  border-bottom: none;
-}
-
 .brainwave-chat-route-breadcrumb__hint {
   flex: 1 0 100%;
   font-size: 0.7rem;
@@ -729,6 +723,228 @@ body {
 .conversation-graph-upload-toolbar .conversation-graph-upload-file,
 .conversation-graph-upload-toolbar .conversation-graph-upload-submit,
 .conversation-graph-upload-toolbar .conversation-graph-upload-or {
+  flex-shrink: 0;
+}
+
+/* 대화 관계도: 상세(도구) 본문·툴바·답변 패널 */
+.bw-detail-root[data-testid='conversation-graph-view'] .bw-tool-view-body {
+  min-width: 0;
+}
+
+.conversation-graph-graph-stage {
+  overflow: auto;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.conversation-graph-graph-stage svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.conversation-graph-graph-toolbar,
+.conversation-graph-period-form,
+.conversation-graph-participant-controls,
+.conversation-graph-timeline-chips,
+.conversation-graph-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.conversation-graph-graph-toolbar .bw-btn-secondary,
+.conversation-graph-graph-toolbar .bw-btn-primary,
+.conversation-graph-period-form .bw-btn-primary,
+.conversation-graph-period-form .bw-btn-secondary,
+.conversation-graph-participant-controls .bw-btn-secondary,
+.conversation-graph-participant-controls .bw-btn-primary,
+.conversation-graph-timeline-chips .bw-btn-secondary {
+  font-size: 12px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.conversation-graph-period-form .bw-input {
+  width: min(160px, 100%);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.conversation-graph-participant-controls .bw-input {
+  flex: 1 1 140px;
+  min-width: 0;
+  max-width: 240px;
+  box-sizing: border-box;
+}
+
+.conversation-graph-participant-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.conversation-graph-participant-chips .bw-btn-secondary {
+  font-size: 12px;
+  padding: 4px 10px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conversation-graph-answer-panel {
+  padding: var(--spacing-md);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.conversation-graph-answer-panel__presets,
+.conversation-graph-answer-panel__options,
+.conversation-graph-answer-panel__actions,
+.conversation-graph-answer-panel__result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.conversation-graph-answer-panel__options label {
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.conversation-graph-answer-panel__prompt {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-top: 6px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.conversation-graph-answer-turns {
+  max-height: min(52vh, 520px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 10px 12px;
+  margin-top: 4px;
+  border: 1px solid var(--bw-border-subtle, #e5e7eb);
+  border-radius: 12px;
+  background: var(--bw-surface-muted, #f8f9fb);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 관계도 답변 — 메인 대화와 동일한 젠스파이크 Q&A·마크다운 타이포 */
+.conversation-graph-answer-turn {
+  margin-bottom: 14px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  min-width: 0;
+}
+
+.conversation-graph-answer-turn:last-child {
+  margin-bottom: 0;
+}
+
+.conversation-graph-answer-turn__question-block {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border-bottom-right-radius: 4px;
+  background: var(--accent-info-muted, rgba(59, 130, 246, 0.1));
+  border: 1px solid var(--accent-info-muted, rgba(59, 130, 246, 0.22));
+}
+
+.conversation-graph-answer-turn__meta {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
+}
+
+.conversation-graph-answer-turn__question {
+  margin: 8px 0 0;
+  font-size: var(--font-size-sm, 14px);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-primary, #0f172a);
+}
+
+.conversation-graph-answer-turn__answer {
+  padding: 12px 14px 14px;
+  border-radius: 14px;
+  border-bottom-left-radius: 4px;
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--bw-border-subtle, #e5e7eb);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  min-width: 0;
+}
+
+.conversation-graph-answer-turn__md {
+  margin-top: 6px;
+}
+
+.conversation-graph-answer-turn__md h2 {
+  margin-top: 1.1em;
+}
+
+.conversation-graph-answer-turn__md h3 {
+  margin-top: 0.85em;
+  color: var(--text-secondary, #475569);
+}
+
+.conversation-graph-answer-turn__error {
+  margin: 8px 0 0;
+  line-height: 1.55;
+  color: var(--accent-danger, #b91c1c);
+  white-space: pre-wrap;
+}
+
+.conversation-graph-answer-turn__streaming-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
+}
+
+.dark-mode .conversation-graph-answer-turn__question-block {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(96, 165, 250, 0.25);
+}
+
+.dark-mode .conversation-graph-answer-turn__answer {
+  background: var(--bg-secondary, #1e293b);
+  border-color: #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.conversation-graph-ai-panel__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  width: 100%;
+}
+
+.conversation-graph-ai-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   flex-shrink: 0;
 }
 

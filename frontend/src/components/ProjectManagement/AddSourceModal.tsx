@@ -20,6 +20,10 @@ export interface AddSourceModalProps {
   onSlackClick?: () => void;
   /** 드래그 앤 드롭으로 파일 선택 시 */
   onFilesSelected?: (files: File[]) => void;
+  /** 웹 URL 제출 (http/https) */
+  onWebUrlSubmit?: (url: string) => void;
+  /** 업로드·URL 추가 진행 중 */
+  busy?: boolean;
 }
 
 const AddSourceModal: React.FC<AddSourceModalProps> = ({
@@ -30,8 +34,11 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({
   onGoogleDriveClick,
   onSlackClick,
   onFilesSelected,
+  onWebUrlSubmit,
+  busy = false,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [webUrl, setWebUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -118,6 +125,37 @@ const AddSourceModal: React.FC<AddSourceModalProps> = ({
             </span>
             <p className="add-source-modal-dropzone-text">여기에 소스를 드래그하세요</p>
           </div>
+
+          {onWebUrlSubmit ? (
+            <form
+              className="add-source-modal-web-url"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const u = webUrl.trim();
+                if (!u || busy) return;
+                onWebUrlSubmit(u);
+                setWebUrl('');
+              }}
+            >
+              <label htmlFor="add-source-web-url" className="add-source-modal-web-url-label">
+                웹 문서·영상 URL
+              </label>
+              <div className="add-source-modal-web-url-row">
+                <input
+                  id="add-source-web-url"
+                  type="url"
+                  className="add-source-modal-web-url-input"
+                  placeholder="https://..."
+                  value={webUrl}
+                  onChange={(e) => setWebUrl(e.target.value)}
+                  disabled={busy}
+                />
+                <button type="submit" className="add-source-modal-web-url-submit" disabled={busy || !webUrl.trim()}>
+                  추가
+                </button>
+              </div>
+            </form>
+          ) : null}
 
           <div className="add-source-modal-actions">
             <button

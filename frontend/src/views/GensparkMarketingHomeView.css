@@ -21,7 +21,7 @@
   margin: 0 auto;
   box-sizing: border-box;
   padding: clamp(1rem, 2.5vw, 1.75rem) 1.25rem 0.75rem;
-  min-height: min(58vh, 560px);
+  min-height: clamp(20rem, 58vh, 35rem);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -189,12 +189,12 @@
 
 /* 본문 영역 패딩 복원 */
 .gs-embed .bw-tool-view-body {
-  padding: 20px max(1.25rem, 2.5vw) 32px !important;
+  padding: 20px clamp(1.25rem, 2.5vw, 2rem) 32px !important;
 }
 
 /* AgentsHub 전용 */
 .gs-embed .genspark-home-view {
-  padding: 20px max(1.25rem, 2.5vw) 32px !important;
+  padding: 20px clamp(1.25rem, 2.5vw, 2rem) 32px !important;
 }
 
 .gs-embed .genspark-home-view > header {
@@ -208,7 +208,7 @@
 }
 
 .gs-embed .bw-detail-inner {
-  padding: 20px max(1.25rem, 2.5vw) 32px !important;
+  padding: 20px clamp(1.25rem, 2.5vw, 2rem) 32px !important;
 }
 
 /* ── 다크 모드 ── */

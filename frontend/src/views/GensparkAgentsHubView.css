@@ -1,0 +1,645 @@
+/**
+ * `/agents` 허브 — 다단계 UI형 랜딩(히어로 + 그리드), 라이트·다크·포커스 일관
+ */
+.genspark-home {
+  --genspark-hero-gradient: linear-gradient(
+    165deg,
+    var(--bg-primary, #fff) 0%,
+    var(--bg-secondary, #f4f6fb) 42%,
+    var(--bg-primary, #fff) 100%
+  );
+  --genspark-cta-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  --genspark-cta-shadow-hover: 0 6px 20px rgba(37, 99, 235, 0.4);
+  min-height: 100%;
+  background: var(--genspark-hero-gradient);
+}
+
+.dark-mode .genspark-home {
+  --genspark-hero-gradient: linear-gradient(
+    165deg,
+    var(--bg-primary, #0f172a) 0%,
+    var(--bg-secondary, #1e293b) 45%,
+    var(--bg-primary, #0f172a) 100%
+  );
+  --genspark-cta-shadow: 0 4px 18px rgba(37, 99, 235, 0.25);
+  --genspark-cta-shadow-hover: 0 6px 22px rgba(99, 102, 241, 0.35);
+}
+
+.genspark-home-hero {
+  text-align: center;
+  padding: clamp(2rem, 5vw, 3.5rem) 1.25rem 1.5rem;
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+.genspark-home-kicker {
+  display: inline-block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #64748b);
+  margin-bottom: 0.75rem;
+}
+
+.genspark-home-title {
+  font-size: clamp(1.75rem, 4.2vw, 2.375rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--text-primary, #0f172a);
+  margin: 0;
+}
+
+.genspark-home-lead {
+  margin: 1rem auto 0;
+  max-width: 32rem;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--text-secondary, #475569);
+}
+
+.genspark-home-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1.75rem;
+}
+
+.genspark-home-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 55%, #7c3aed 100%);
+  box-shadow: var(--genspark-cta-shadow);
+  border: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.genspark-home-cta-primary:hover {
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: var(--genspark-cta-shadow-hover);
+}
+
+.genspark-home-cta-primary:focus-visible {
+  outline: var(--focus-ring, 2px solid var(--accent-info-figma, #93c5fd));
+  outline-offset: 3px;
+}
+
+.genspark-home-cta-primary--block {
+  margin-top: 0.75rem;
+}
+
+.genspark-home-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.35rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  color: var(--text-primary, #0f172a);
+  background: var(--bg-primary, #fff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.genspark-home-cta-secondary:hover {
+  background: var(--bg-secondary, #f8fafc);
+  border-color: var(--border-color, #cbd5e1);
+  color: var(--text-primary, #0f172a);
+}
+
+.genspark-home-cta-secondary:focus-visible {
+  outline: var(--focus-ring, 2px solid var(--accent-info-figma, #3b82f6));
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .genspark-home-cta-primary:hover {
+    transform: none;
+  }
+}
+
+.genspark-home-body {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1.25rem calc(2.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.genspark-home-url-strip {
+  margin-bottom: 2rem;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-primary, #fff);
+  box-shadow: 0 2px 16px rgba(15, 23, 42, 0.05);
+}
+
+.dark-mode .genspark-home-url-strip {
+  border-color: var(--sidebar-dark-border-strong, #334155);
+  background: rgba(15, 23, 42, 0.55);
+  box-shadow: none;
+}
+
+.genspark-home-url-strip-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.genspark-home-url-strip-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #64748b);
+}
+
+.genspark-home-url-strip-pattern {
+  font-size: 0.75rem;
+  word-break: break-all;
+  color: var(--text-primary, #0f172a);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.dark-mode .genspark-home-url-strip-pattern {
+  color: #e2e8f0;
+}
+
+.genspark-home-url-strip-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.genspark-home-url-strip-links a {
+  color: var(--accent-info, #2563eb);
+  text-decoration: none;
+}
+
+.genspark-home-url-strip-links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.genspark-home-url-strip-links a:focus-visible {
+  outline: var(--focus-ring, 2px solid var(--accent-info-figma, #3b82f6));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.genspark-home-url-strip-dot {
+  color: var(--text-secondary, #94a3b8);
+  user-select: none;
+}
+
+.genspark-home-code--inline {
+  font-size: 0.85em;
+  padding: 0.08em 0.32em;
+  vertical-align: baseline;
+}
+
+.genspark-home-section-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin: 0 0 1rem;
+  letter-spacing: -0.02em;
+}
+
+.genspark-home-section {
+  margin-top: 2rem;
+}
+
+.genspark-home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+  gap: 1rem;
+}
+
+.genspark-home-empty {
+  padding: 1.5rem 1.25rem;
+  border-radius: 14px;
+  border: 1px dashed var(--border-color, #cbd5e1);
+  background: var(--bg-primary, #fff);
+  text-align: center;
+}
+
+.dark-mode .genspark-home-empty {
+  background: var(--bg-tertiary, rgba(255, 255, 255, 0.04));
+  border-color: var(--sidebar-dark-border-strong, #475569);
+}
+
+.genspark-home-empty-title {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--text-primary, #0f172a);
+}
+
+.genspark-home-empty-text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--text-secondary, #64748b);
+}
+
+.genspark-home-code {
+  font-size: 0.8125em;
+  padding: 0.12em 0.4em;
+  border-radius: 4px;
+  background: var(--bg-secondary, #f1f5f9);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.dark-mode .genspark-home-code {
+  background: rgba(0, 0, 0, 0.25);
+  border-color: var(--sidebar-dark-border-strong, #4b5563);
+}
+
+.genspark-home-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.125rem 1.125rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-primary, #fff);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dark-mode .genspark-home-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.genspark-home-card:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.dark-mode .genspark-home-card:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+
+.genspark-home-card:focus-within {
+  outline: var(--focus-ring, 2px solid var(--accent-info-figma, #3b82f6));
+  outline-offset: 2px;
+}
+
+.genspark-home-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.genspark-home-card-head {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+
+.genspark-home-card-pill {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.4rem;
+  border-radius: 9999px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #4f46e5;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.dark-mode .genspark-home-card-pill {
+  background: rgba(129, 140, 248, 0.15);
+  color: #c7d2fe;
+  border-color: rgba(129, 140, 248, 0.35);
+}
+
+.genspark-home-card-avatar {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  background: linear-gradient(145deg, #e0e7ff 0%, #ede9fe 100%);
+}
+
+.dark-mode .genspark-home-card-avatar {
+  background: linear-gradient(145deg, rgba(99, 102, 241, 0.35) 0%, rgba(37, 99, 235, 0.25) 100%);
+}
+
+.genspark-home-card-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--text-primary, #0f172a);
+  line-height: 1.35;
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.genspark-home-card-id-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.65rem;
+  min-width: 0;
+}
+
+.genspark-home-card-id {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #64748b);
+  font-family: ui-monospace, monospace;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  cursor: default;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.genspark-home-card-copy-id {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.2rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-secondary, #f1f5f9);
+  color: var(--text-primary, #334155);
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.genspark-home-card-copy-id:hover {
+  background: var(--bg-secondary, #e2e8f0);
+  border-color: var(--border-color, #cbd5e1);
+}
+
+.genspark-home-card-copy-id:focus-visible {
+  outline: var(--focus-ring, 2px solid var(--accent-info-figma, #3b82f6));
+  outline-offset: 2px;
+}
+
+.dark-mode .genspark-home-card-copy-id {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--sidebar-dark-border-strong, #475569);
+  color: #e2e8f0;
+}
+
+.dark-mode .genspark-home-card-copy-id:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.genspark-home-card-desc {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #475569);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.dark-mode .genspark-home-card-desc {
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.genspark-home-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.genspark-home-card-btn {
+  flex: 1;
+  min-width: 6.5rem;
+  text-align: center;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.12s ease, background 0.12s ease;
+}
+
+.genspark-home-card-btn:focus-visible {
+  outline: var(--focus-ring, 2px solid var(--accent-info-figma, #3b82f6));
+  outline-offset: 2px;
+}
+
+.genspark-home-card-btn--primary {
+  color: #fff;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+}
+
+.genspark-home-card-btn--primary:hover {
+  color: #fff;
+  filter: brightness(1.05);
+}
+
+.genspark-home-card-btn--ghost {
+  color: var(--text-secondary, #475569);
+  background: var(--bg-secondary, #f1f5f9);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.genspark-home-card-btn--ghost:hover {
+  color: var(--text-primary, #0f172a);
+  background: var(--bg-secondary, #e2e8f0);
+}
+
+.dark-mode .genspark-home-card-btn--ghost {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--sidebar-dark-border-strong, #4b5563);
+}
+
+.dark-mode .genspark-home-card-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #f8fafc);
+}
+
+
+/* 검색 섹션 헤더 */
+.genspark-home-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.genspark-home-section-header .genspark-home-section-title {
+  margin-bottom: 0;
+}
+
+.genspark-home-section-count {
+  font-size: 0.85em;
+  font-weight: 400;
+  color: var(--text-secondary, #64748b);
+}
+
+.genspark-home-search-wrap {
+  flex: 0 0 auto;
+}
+
+.genspark-home-search-input {
+  height: 36px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #0f172a);
+  font-size: 0.875rem;
+  min-width: 200px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.genspark-home-search-input:focus {
+  border-color: var(--accent-info-figma, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.dark-mode .genspark-home-search-input {
+  background: var(--sidebar-dark-bg, #1e293b);
+  border-color: var(--sidebar-dark-border, #334155);
+  color: var(--text-primary, #f1f5f9);
+}
+
+.dark-mode .genspark-home-search-input::placeholder {
+  color: var(--text-secondary, #94a3b8);
+}
+
+.genspark-home-empty-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-info-figma, #6366f1);
+  cursor: pointer;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+.genspark-home-empty-reset:hover {
+  opacity: 0.8;
+}
+
+/* ---------- 카테고리 필터 탭 ---------- */
+.genspark-home-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 16px;
+}
+
+.genspark-home-category-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.genspark-home-category-tab:hover {
+  background: var(--sidebar-hover-bg, rgba(99, 102, 241, 0.07));
+  border-color: var(--accent-info-figma, #6366f1);
+  color: var(--accent-info-figma, #6366f1);
+}
+
+.genspark-home-category-tab--active {
+  background: var(--accent-info-figma, #6366f1);
+  border-color: var(--accent-info-figma, #6366f1);
+  color: #fff;
+}
+
+.genspark-home-category-tab--active:hover {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #fff;
+}
+
+.genspark-home-category-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.25);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.genspark-home-category-tab--active .genspark-home-category-tab-count {
+  background: rgba(255,255,255,0.3);
+  color: #fff;
+}
+
+/* ---------- 카드 뱃지 그룹 ---------- */
+.genspark-home-card-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.genspark-home-card-pill--cat {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.genspark-home-card-pill--cat-과업 { background: #ede9fe; color: #6d28d9; }
+.genspark-home-card-pill--cat-연동 { background: #e0f2fe; color: #0369a1; }
+.genspark-home-card-pill--cat-분석 { background: #dcfce7; color: #166534; }
+.genspark-home-card-pill--cat-글쓰기 { background: #fef9c3; color: #854d0e; }
+
+.dark-mode .genspark-home-card-pill--cat-과업 { background: rgba(109,40,217,0.22); color: #c4b5fd; }
+.dark-mode .genspark-home-card-pill--cat-연동 { background: rgba(3,105,161,0.22); color: #7dd3fc; }
+.dark-mode .genspark-home-card-pill--cat-분석 { background: rgba(22,101,52,0.22); color: #86efac; }
+.dark-mode .genspark-home-card-pill--cat-글쓰기 { background: rgba(133,77,14,0.22); color: #fde68a; }

@@ -5,7 +5,12 @@
 /* eslint-disable jest/no-conditional-expect */
 
 import { getChatPostUrlsForConfigBase, resolveApiBaseUrl } from '../../config/api';
-import { AGENTS_QUERY_PARAM_ID } from '../../config/routes';
+import {
+  AGENTS_QUERY_PARAM_ID,
+  AGENTS_QUERY_PARAM_TYPE,
+  GENSPARK_AGENTS_TYPE_SUPER_AGENT,
+} from '../../config/routes';
+import { GENSPARK_REFERENCE_AGENT_ID } from '../gensparkReferenceAgentPreset';
 import {
   buildModernChatPipelineContext,
   scenarioInheritMergeOptionsFromPipelineLikeMessages,
@@ -263,6 +268,76 @@ describe('unifiedMessageService', () => {
           {},
           '',
           `/?${AGENTS_QUERY_PARAM_ID}=7c36051a-2b94-4e9e-bd36-05dfabfe3e07`,
+        );
+        await unifiedMessageService.processMessage({
+          type: 'chat',
+          content: '안녕',
+          context: {},
+        });
+        const body = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body);
+        expect(body.context?.genspark_route_agent_id).toBeUndefined();
+        expect(body.context?.genspark_reference_agent_id).toBeUndefined();
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('URL type=super_agent만 있으면 chat context에 참조 Super Agent id가 실린다', async () => {
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      if (prevDisable !== undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          message: {
+            content: 'ok',
+            sender: 'ai',
+            timestamp: new Date().toISOString(),
+          },
+        }),
+      } as Response);
+      try {
+        window.history.replaceState(
+          {},
+          '',
+          `/?${AGENTS_QUERY_PARAM_TYPE}=${encodeURIComponent(GENSPARK_AGENTS_TYPE_SUPER_AGENT)}`,
+        );
+        await unifiedMessageService.processMessage({
+          type: 'chat',
+          content: '안녕',
+          context: {},
+        });
+        const body = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body);
+        expect(body.context?.genspark_reference_agent_id).toBe(GENSPARK_REFERENCE_AGENT_ID);
+        expect(body.context?.genspark_route_agent_id).toBe(GENSPARK_REFERENCE_AGENT_ID);
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('GENSPARK_DISABLE이면 type=super_agent만 있어도 chat context에 genspark_*를 넣지 않는다', async () => {
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = '1';
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          message: {
+            content: 'ok',
+            sender: 'ai',
+            timestamp: new Date().toISOString(),
+          },
+        }),
+      } as Response);
+      try {
+        window.history.replaceState(
+          {},
+          '',
+          `/?${AGENTS_QUERY_PARAM_TYPE}=${encodeURIComponent(GENSPARK_AGENTS_TYPE_SUPER_AGENT)}`,
         );
         await unifiedMessageService.processMessage({
           type: 'chat',

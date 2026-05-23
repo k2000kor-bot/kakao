@@ -24,6 +24,15 @@ AppUnified 라우트에 매핑되는 페이지 컴포넌트.
 | AutomationView | `/automation` | 자동화: 빌더·트리거·이력. GET /automation/status·/workflows. automationViewService. |
 | CommunityView | `/community` | 커뮤니티: 포럼·지식 공유·OSS. GET /api/community/summary. |
 | DevStatusView | `/dev-status` | 개발 현황: "이걸 뭐 하려는 거야?", 프론트 변경 사항(문서 목록 CHAT_ANSWER_FLOW_VERIFICATION 등)·검증·배포(20 suites·105 tests). 사이드바 더 보기→개발 현황. 테스트: DevStatusView.test.tsx(섹션·문서 목록 포함 검증) |
+| ConversationGraphView | `/conversation-graph` | 대화 업로드·관계도·**정리된 답변 합성**(표·Mermaid+LLM)·2-pass·학습·`/chat` handoff. [CONVERSATION_GRAPH.md](../../docs/CONVERSATION_GRAPH.md). Jest 200+·E2E 13·`verify:conversation-graph` |
+
+## 뷰 테스트 TypeScript (Jest 전역 타입)
+
+루트 `tsconfig.json`은 `**/*.test.tsx`를 exclude하므로, IDE·`tsc`에서 Jest 전역(`describe`·`it`·`jest`)을 쓰려면 **`src/views/tsconfig.json`**을 사용합니다.
+
+- 단독: `npm run typecheck:views-tests`
+- 별칭(동일): `npm run typecheck:views-tests:all` — 미러 동기화는 `check:src-frontend-parity`
+- `dev:check` 2단계에 포함
 
 ## 도구 뷰 레이아웃
 
@@ -37,7 +46,7 @@ AppUnified 라우트에 매핑되는 페이지 컴포넌트.
 - **도구 뷰 데이터 연동**: **AnalyticsView**·**IntegrationsView**·**AutomationView**·**SearchView**·**TemplatesView**·**TeamView**·**LearnView**·**WorkspaceView**·**CommunityView**·**BillingView** 모두 실 API(GET /api/*/summary). 백엔드 extended_views_api 목데이터 반환, 실패 시 프론트 폴백. (Settings·Docs는 실사용/가이드.)
 - **도구 뷰 서비스 테스트**: analyticsViewService·automationViewService·integrationsViewService·billingViewService·communityViewService·workspaceViewService·teamViewService·learnViewService·searchViewService·templatesViewService — 10 suites, 45 tests (success·data 없음 엣지 케이스 포함). `npm run test -- --testPathPattern=ViewService --watchAll=false` 또는 `npm run test:views:services`(해당 스크립트 있을 때).
 
-**검증 명령**: `npm run test:routes` (**27** — 라우트만) · `npm run test:app-unified` (**115** — `AppUnified` 셸·리다이렉트, 수 초대) · `npm run test:sidebar-context` (사이드바·설정·대화 이력 묶음) · `npm run test:views` (20 suites, 105 tests — 뷰 유닛 + 라우트) · `npm test -- --testPathPattern=ViewService --watchAll=false` (10 suites, 45 tests) · `npm run test -- src/views` (뷰만) · `E2E_SERVER_READY=1 npx playwright test e2e/example.spec.ts` (E2E, 서버 선실행 시). 원격 push 막힘: [docs/PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md).
+**검증 명령**: `npm run test:routes` (**27** — 라우트만) · `npm run test:app-unified` (**122** — `AppUnified` 셸·리다이렉트, 수 초~15초대) · `npm run test:sidebar-context` (사이드바·설정·대화 이력 묶음; 수동 §14.5 [CHAT_UI_TEST_SCENARIOS](../../docs/guides/CHAT_UI_TEST_SCENARIOS.md)) · `npm run test:views` (22 suites, 137 tests — 뷰 유닛 + `routes.test`) · `npm test -- --testPathPattern=ViewService --watchAll=false` (10 suites, 45 tests) · `npm run test -- src/views` (뷰만) · `E2E_SERVER_READY=1 npx playwright test e2e/example.spec.ts` (E2E, 서버 선실행 시). 원격 push 막힘: [docs/PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md).
 
 ## 도구 뷰 API (구현 완료)
 
@@ -62,5 +71,5 @@ AppUnified 라우트에 매핑되는 페이지 컴포넌트.
 
 ## 개발자 검증
 
-저장소 루트 검증 허브: [TESTING_GUIDE.md](../../../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../../../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../../../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../../../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../../TESTING_GUIDE.md) — `npm run test:routes` · `npm run test:views`(확장 뷰·라우트) · (권장) `npm run test:sidebar-context`(수동 §14.5 [CHAT_UI_TEST_SCENARIOS](../../docs/guides/CHAT_UI_TEST_SCENARIOS.md)) · (선택) `npm run check:doc-verification-hub` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](../../docs/COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](../../docs/FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](../../docs/PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
 

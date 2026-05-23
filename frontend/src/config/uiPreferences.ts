@@ -53,3 +53,18 @@ export function isStandaloneChatPath(pathname: string): boolean {
 export function getAppEntryPath(): string {
   return isGensparkPrimaryExperience() ? AGENTS_PATH : '/';
 }
+
+/** 레거시 프로젝트 CRUD·사이드바·`/projects` 라우트 노출 여부 (`REACT_APP_UI_PROJECTS_ENABLED`) */
+export function isUiProjectsLegacySurfaceEnabled(): boolean {
+  return isUiProjectsEnabled();
+}
+
+/**
+ * 마케팅 홈·관계도 handoff 초안/자동전송을 ChatGPTInterface에 반영할 경로.
+ * 독립 대화(`/chat` 등)와 에이전트(`/agents`)에서만 적용합니다.
+ */
+export function isMarketingDraftEligiblePath(pathname: string): boolean {
+  const p = normalizePathTail(pathname);
+  if (isStandaloneChatPath(p)) return true;
+  return p === AGENTS_PATH;
+}

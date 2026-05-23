@@ -2101,3 +2101,34 @@ export function startAssistantNonStreamLoadingTimeline(
     promise,
   };
 }
+
+/** 한글 등 IME 조합 중 Enter인지 (조합 확정용 Enter는 전송·비우기에서 제외) */
+export function isKeyboardEventImeComposing(
+  e: React.KeyboardEvent,
+  composingRefValue = false,
+): boolean {
+  if (composingRefValue) return true;
+  const native = e.nativeEvent as KeyboardEvent;
+  if (native.isComposing) return true;
+  if (e.key === 'Process') return true;
+  if (native.keyCode === 229) return true;
+  return false;
+}
+
+/**
+ * controlled textarea: 전송 직후 setState('')만 하면 IME가 마지막 글자를 DOM에 다시 넣는 경우가 있음.
+ * rAF 이중 호출로 조합 종료 후 DOM 값을 비움.
+ */
+export function clearControlledTextareaAfterCommit(
+  el: HTMLTextAreaElement | null | undefined,
+): void {
+  if (!el) return;
+  const wipe = () => {
+    if (el.value !== '') {
+      el.value = '';
+    }
+  };
+  requestAnimationFrame(() => {
+    requestAnimationFrame(wipe);
+  });
+}

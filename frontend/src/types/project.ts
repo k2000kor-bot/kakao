@@ -26,6 +26,8 @@ export interface ProjectLearningSource {
     type: 'document' | 'video';
     url: string;
     title?: string;
+    /** 노트북 LLM 백엔드 소스 ID (웹/파일 ingest 후 연동) */
+    notebookSourceId?: string;
     addedAt: Date;
     syncStatus?: 'pending' | 'success' | 'failed';
     lastSyncedAt?: Date;

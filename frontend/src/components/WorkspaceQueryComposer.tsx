@@ -12,6 +12,7 @@ import {
   WORKSPACE_COMPOSER_PLACEHOLDER,
 } from '../constants/workspaceHomeCopy';
 import { IconBook, IconUpload } from './Icons/BrainwaveIcons';
+import { isKeyboardEventImeComposing } from '../utils/chatInputUtils';
 import './WorkspaceQueryComposer.css';
 
 function wqAttachmentKindLabel(mime: string): string {
@@ -166,6 +167,17 @@ function WorkspaceQueryComposer(
   const [_inputHistory] = useState<string[]>(loadInputHistory);
   const historyIdxRef = useRef<number>(-1);
   const historyDraftRef = useRef<string>('');
+  const imeComposingRef = useRef(false);
+
+  const syncTextareaValueToState = useCallback(
+    (el: HTMLTextAreaElement) => {
+      const next = el.value;
+      if (next !== value) {
+        onChange(next);
+      }
+    },
+    [onChange, value],
+  );
 
   // ── 스니펫 저장 & 빠른 삽입 ──
   const [snippets, setSnippets] = useState<WqSnippet[]>(loadSnippets);
@@ -343,7 +355,11 @@ function WorkspaceQueryComposer(
 
   const onFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = value.trim();
+    if (imeComposingRef.current) return;
+    if (textareaRef.current) {
+      syncTextareaValueToState(textareaRef.current);
+    }
+    const trimmed = (textareaRef.current?.value ?? value).trim();
     if (trimmed) {
       const prev = loadInputHistory();
       const dedup = [trimmed, ...prev.filter((h) => h !== trimmed)].slice(0, MAX_INPUT_HISTORY);
@@ -407,6 +423,13 @@ function WorkspaceQueryComposer(
           onChange(e.target.value);
           autoResize();
         }}
+        onCompositionStart={() => {
+          imeComposingRef.current = true;
+        }}
+        onCompositionEnd={(e) => {
+          imeComposingRef.current = false;
+          syncTextareaValueToState(e.currentTarget);
+        }}
         placeholder={placeholder}
         onKeyDown={(e) => {
           if (slashOpen) {
@@ -445,7 +468,11 @@ function WorkspaceQueryComposer(
             return;
           }
           if (e.key === 'Enter' && !e.shiftKey) {
+            if (isKeyboardEventImeComposing(e, imeComposingRef.current)) {
+              return;
+            }
             e.preventDefault();
+            syncTextareaValueToState(el);
             onCommit();
           }
         }}

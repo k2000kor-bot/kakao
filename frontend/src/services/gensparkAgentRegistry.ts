@@ -89,6 +89,25 @@ export function resolveGensparkAgentIdFromSearchParamsIfEnabled(searchParams: {
   return resolveAgentIdFromGensparkAgentsQuery(searchParams);
 }
 
+export type GensparkAgentCategory = '전체' | '과업' | '연동' | '분석' | '글쓰기';
+
+export type GensparkAgentListItem = {
+  id: string;
+  displayName: string;
+  url: string;
+  oneLineDescription: string;
+  category: GensparkAgentCategory;
+};
+
+function categoryForRegisteredAgent(id: string): GensparkAgentCategory {
+  if (id === GENSPARK_REFERENCE_AGENT_ID) return '과업';
+  if (id === '7c36051a-2b94-4e9e-bd36-05dfabfe3e07') return '연동';
+  if (id === '07875e45-d0b1-41b2-b639-a10904faa6ac' || id === 'f423fb3c-b28b-458d-9fe5-3b9063c8a6b4') {
+    return '연동';
+  }
+  return '분석';
+}
+
 const REGISTERED: Record<string, GensparkAgentFormFields> = {
   'eb7747f5-0399-48ff-b436-68a0a23365c9': {
     ...DEFAULT_GENSPARK_AGENT_FORM,
@@ -116,11 +135,13 @@ const REGISTERED: Record<string, GensparkAgentFormFields> = {
   },
 };
 
-export function listRegisteredGensparkAgents(): Array<{ id: string; displayName: string; url: string }> {
+export function listRegisteredGensparkAgents(): GensparkAgentListItem[] {
   return Object.entries(REGISTERED).map(([id, f]) => ({
     id,
     displayName: f.displayName,
     url: buildPublicGensparkAgentUrl(id),
+    oneLineDescription: f.oneLineDescription,
+    category: categoryForRegisteredAgent(id),
   }));
 }
 

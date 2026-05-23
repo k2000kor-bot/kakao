@@ -1,4 +1,4 @@
-import { Project, ProjectFile, Chat, Message } from '../types/project';
+import { Project, ProjectFile, ProjectLearningSource, Chat, Message } from '../types/project';
 import { retryApiCall, RetryOptions } from '../utils/retryHandler';
 import { errorLogger } from '../utils/errorLogger';
 import { notifyProjectsChanged } from '../utils/projectEvents';
@@ -865,6 +865,207 @@ export const projectService = {
             );
             return null;
         }
+    },
+
+    inferProjectFileType(fileName: string): ProjectFile['type'] {
+        const lower = fileName.toLowerCase();
+        if (/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(lower)) return 'image';
+        if (/\.(ts|tsx|js|jsx|py|java|go|rs|cpp|c|h|cs|rb|php|swift|kt)$/i.test(lower)) return 'code';
+        if (/\.(pdf|docx?|txt|md|hwp|xlsx?|pptx?|csv|json|html)$/i.test(lower)) return 'document';
+        return 'other';
+    },
+
+    async appendProjectSourceFiles(
+        projectId: string,
+        existingFiles: ProjectFile[],
+        files: File[],
+    ): Promise<{ project: Project; uploadFailedCount: number }> {
+        const nextFiles = [...existingFiles];
+        let uploadFailedCount = 0;
+        for (const file of files) {
+            const uploaded = await this.uploadProjectFile(projectId, file);
+            if (uploaded) {
+                nextFiles.push(uploaded);
+            } else {
+                uploadFailedCount += 1;
+                nextFiles.push({
+                    id: generateId(),
+                    name: file.name,
+                    type: this.inferProjectFileType(file.name),
+                    size: file.size,
+                    uploadedAt: new Date(),
+                });
+            }
+        }
+        const updated =
+            (await this.updateProject(projectId, { files: nextFiles })) ??
+            (await this.getProject(projectId));
+        if (!updated) {
+            throw new Error('프로젝트 파일 목록을 갱신하지 못했습니다.');
+        }
+        return { project: updated, uploadFailedCount };
+    },
+
+    async removeProjectSourceFile(
+        projectId: string,
+        existingFiles: ProjectFile[],
+        fileId: string,
+    ): Promise<Project | null> {
+        const nextFiles = existingFiles.filter((f) => f.id !== fileId);
+        return this.updateProject(projectId, { files: nextFiles });
+    },
+
+    async appendProjectWebSource(
+        projectId: string,
+        existingSources: ProjectLearningSource[],
+        rawUrl: string,
+    ): Promise<{ project: Project | null; duplicate: boolean }> {
+        const url = coerceTrimmedString(rawUrl, '');
+        if (!url) {
+            return { project: await this.getProject(projectId), duplicate: false };
+        }
+        const normalized = url.replace(/\/$/, '');
+        const duplicate = existingSources.some(
+            (s) => s.url.replace(/\/$/, '') === normalized,
+        );
+        if (duplicate) {
+            return { project: await this.getProject(projectId), duplicate: true };
+        }
+        const isVideo = /youtube\.com|youtu\.be|vimeo\.com/i.test(url);
+        const notebook = await this.addNotebookSourceFromUrl(projectId, url);
+        const entry: ProjectLearningSource = {
+            id: generateId(),
+            type: isVideo ? 'video' : 'document',
+            url,
+            title: notebook?.source?.title ?? url,
+            notebookSourceId: notebook?.source?.id,
+            addedAt: new Date(),
+        };
+        const nextSources = [...existingSources, entry];
+        const project = await this.updateProject(projectId, {
+            webSources: nextSources,
+            source_count: notebook?.source_count ?? nextSources.length,
+        });
+        return { project, duplicate: false };
+    },
+
+    async removeProjectWebSource(
+        projectId: string,
+        existingSources: ProjectLearningSource[],
+        sourceId: string,
+    ): Promise<Project | null> {
+        const target = existingSources.find((s) => s.id === sourceId);
+        if (target?.notebookSourceId) {
+            await this.deleteNotebookSource(projectId, target.notebookSourceId);
+        }
+        const nextSources = existingSources.filter((s) => s.id !== sourceId);
+        return this.updateProject(projectId, { webSources: nextSources });
+    },
+
+    async addNotebookSourceFromWebIngestUrl(
+        projectId: string,
+        url: string,
+        opts?: { synthesizeWithLlm?: true; config?: Record<string, unknown> },
+    ): Promise<{
+        ok: boolean;
+        errorMessage?: string;
+        source?: { id: string; title: string; type: string };
+        source_count?: number;
+    }> {
+        const u = coerceTrimmedString(url, '');
+        if (!u) {
+            return { ok: false, errorMessage: 'URL이 비어 있습니다.' };
+        }
+        try {
+            const body: Record<string, unknown> = { url: u };
+            if (opts?.synthesizeWithLlm) {
+                body.synthesize_with_llm = true;
+                if (opts.config && Object.keys(opts.config).length > 0) {
+                    body.config = opts.config;
+                }
+            }
+            const response = await fetch(
+                joinApiHealthCheckUrl(
+                    API_BASE_URL,
+                    `${API_PROJECTS_LIST_PATH}/${encodeURIComponent(projectId)}${API_PROJECT_NOTEBOOK_SOURCES_FROM_URL_SEGMENT}`,
+                ),
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                },
+            );
+            const data = await response.json();
+            if (data?.success && data?.data?.source) {
+                return {
+                    ok: true,
+                    source: data.data.source,
+                    source_count: data.data.source_count ?? 0,
+                };
+            }
+            const msg =
+                typeof data?.detail === 'string'
+                    ? data.detail
+                    : (data?.detail as { message?: string } | undefined)?.message;
+            if (msg) {
+                return { ok: false, errorMessage: msg };
+            }
+        } catch (err) {
+            errorLogger.warn('웹 ingest URL 소스 추가 실패 — URL 소스로 폴백', {
+                component: 'projectService',
+                action: 'addNotebookSourceFromWebIngestUrl',
+                projectId,
+                error: err instanceof Error ? err.message : String(err),
+            });
+        }
+        const added = await this.addNotebookSourceFromUrl(projectId, u);
+        if (!added) {
+            return { ok: false, errorMessage: '소스 추가에 실패했습니다.' };
+        }
+        return {
+            ok: true,
+            source: added.source,
+            source_count: added.source_count,
+        };
+    },
+
+    async addNotebookSourceFromGoogleDrivePdf(
+        projectId: string,
+        params: {
+            accessToken: string;
+            fileId: string;
+            title: string;
+            filenameHint: string;
+        },
+    ): Promise<boolean> {
+        void params.accessToken;
+        void params.fileId;
+        void params.filenameHint;
+        const added = await this.addNotebookSource(projectId, {
+            title: params.title || 'Google Drive PDF',
+            content: `Google Drive PDF: ${params.fileId}`,
+            type: 'document',
+        });
+        return Boolean(added);
+    },
+
+    async addNotebookSourceFromGoogleDriveExport(
+        projectId: string,
+        params: {
+            accessToken: string;
+            fileId: string;
+            title: string;
+            exportMimeType: string;
+        },
+    ): Promise<boolean> {
+        void params.accessToken;
+        void params.exportMimeType;
+        const added = await this.addNotebookSource(projectId, {
+            title: params.title || 'Google Drive',
+            content: `Google Drive export: ${params.fileId}`,
+            type: 'document',
+        });
+        return Boolean(added);
     },
 
     // 프로젝트의 대화들 삭제

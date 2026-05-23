@@ -109,15 +109,14 @@ export function ConversationGraphAiPanel({
   const stancePresets: GraphFilterPresetId[] = ['all', '동조', '반대', '중립'];
   return (
     <div
-      className="bw-mt-md bw-features-card"
+      className="bw-mt-md bw-features-card conversation-graph-answer-panel"
       data-testid="conversation-graph-ai-panel"
-      style={{ padding: 12 }}
     >
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="conversation-graph-ai-panel__header">
         <p className="bw-label-block" style={{ margin: 0 }}>
-          AI 성향·주고받기 분석
+          AI 성향 분석
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div className="conversation-graph-ai-panel__actions">
           <button
             type="button"
             className="bw-btn-secondary"
@@ -125,7 +124,7 @@ export function ConversationGraphAiPanel({
             disabled={loadingAiNarrative}
             data-testid="conversation-graph-ai-request"
           >
-            {loadingAiNarrative ? 'AI 해석 생성 중…' : 'AI 종합 해석 갱신'}
+            {loadingAiNarrative ? '생성 중…' : 'AI 해석'}
           </button>
           <button
             type="button"
@@ -133,7 +132,7 @@ export function ConversationGraphAiPanel({
             onClick={onExportJson}
             data-testid="conversation-graph-ai-export-json"
           >
-            분석 JSON 저장
+            JSON
           </button>
         </div>
       </div>
@@ -141,6 +140,7 @@ export function ConversationGraphAiPanel({
       <label
         className="bw-detail-meta-text bw-mt-sm"
         style={{ display: 'flex', gap: 8, alignItems: 'center' }}
+        title="관계도 생성 직후 AI 종합 해석 자동 요청"
       >
         <input
           type="checkbox"
@@ -148,7 +148,7 @@ export function ConversationGraphAiPanel({
           onChange={(e) => onAutoRequestAiNarrativeChange(e.target.checked)}
           data-testid="conversation-graph-ai-auto-request"
         />
-        관계도 생성 후 AI 종합 해석 자동 요청
+        AI 해석 자동
       </label>
 
       <div

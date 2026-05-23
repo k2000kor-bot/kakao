@@ -90,6 +90,9 @@ jobs:
     - name: 의존성 설치
       run: npm ci
 
+    - name: src ↔ frontend/src 동기화
+      run: npm run sync:frontend-src
+
     - name: 관계도 Jest·타입 (프론트)
       run: npm run typecheck:views-tests && npm run test:conversation-graph
 

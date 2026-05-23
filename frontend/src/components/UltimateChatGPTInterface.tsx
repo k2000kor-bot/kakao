@@ -20,6 +20,8 @@ import {
   extractPipelineFollowUpsFromChatResponse,
   hasPipelineExtras,
   coerceTrimmedString,
+  clearControlledTextareaAfterCommit,
+  isKeyboardEventImeComposing,
   isAssistantGenerationPlaceholder,
   STORED_ASSISTANT_INCOMPLETE_NOTICE,
   buildFeatureContextFromMessage,
@@ -268,6 +270,7 @@ const UltimateChatGPTInterface: React.FC = () => {
 
     setMessages([...priorMessages, userMessage, placeholderAssistant]);
     setInputValue('');
+    clearControlledTextareaAfterCommit(inputRef.current);
     setIsLoading(true);
 
     let clearUltimateNsPhases = scheduleAssistantNonStreamLoadingPhaseTimers((text) => {
@@ -1286,6 +1289,7 @@ const UltimateChatGPTInterface: React.FC = () => {
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
+                        if (isKeyboardEventImeComposing(e)) return;
                         e.preventDefault();
                         handleSendMessage();
                       }

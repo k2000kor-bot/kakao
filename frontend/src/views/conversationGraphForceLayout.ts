@@ -2,7 +2,19 @@
  * 대화 관계도 SVG — 기본: 족보형(위→아래) 트리, 선택: force 자유 배치
  * Jest에서는 `ConversationGraphView.test.tsx`에서 이 모듈 전체를 모킹한다.
  */
-import * as d3 from 'd3';
+import {
+  drag,
+  forceCenter,
+  forceCollide,
+  forceLink,
+  forceManyBody,
+  forceSimulation,
+  select,
+  zoom,
+  zoomIdentity,
+} from 'd3';
+import type { Simulation } from 'd3-force';
+import type { Selection } from 'd3-selection';
 import type { RelationshipGraphData } from '../services/conversationGraphService';
 import type { ExchangeRole } from './conversationGraphAiAnalyzer';
 import { formatConciseEdgeLabel } from './conversationGraphEdgeLabels';
@@ -97,7 +109,7 @@ function resolveEndpoint(
   };
 }
 
-function appendEdgeMarkers(svg: d3.Selection<SVGSVGElement, unknown, null, undefined>) {
+function appendEdgeMarkers(svg: Selection<SVGSVGElement, unknown, null, undefined>) {
   const edgeTypes = ['flow', '동조', '반대', '대립'] as const;
   const defs = svg.append('defs');
   for (const edgeType of edgeTypes) {
@@ -117,15 +129,15 @@ function appendEdgeMarkers(svg: d3.Selection<SVGSVGElement, unknown, null, undef
 }
 
 function appendGraphNodes(
-  viewport: d3.Selection<SVGGElement, unknown, null, undefined>,
+  viewport: Selection<SVGGElement, unknown, null, undefined>,
   nodes: LayoutNode[],
   options: ConversationGraphMountOptions | undefined,
-  simulation: d3.Simulation<LayoutNode, undefined> | null,
+  simulation: Simulation<LayoutNode, undefined> | null,
 ) {
   const node = viewport
     .append('g')
     .attr('data-graph-nodes', 'true')
-    .selectAll<SVGGElement, LayoutNode>('g')
+    .selectAll('g')
     .data(nodes)
     .join('g')
     .attr('data-graph-node', 'true')
@@ -152,9 +164,8 @@ function appendGraphNodes(
     });
 
   if (simulation) {
-    node.call(
-      d3
-        .drag<SVGGElement, LayoutNode>()
+    (node as Selection<SVGGElement, LayoutNode, SVGGElement, unknown>).call(
+      drag<SVGGElement, LayoutNode>()
         .on('start', (event: GraphDragEvent) => {
           try {
             if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -252,12 +263,12 @@ function appendGraphNodes(
 }
 
 function updateEdgeLabels(
-  labelSel: d3.Selection<SVGGElement, LayoutLink, SVGGElement, unknown>,
+  labelSel: Selection<SVGGElement, LayoutLink, SVGGElement, unknown>,
   nodesById: Map<string, LayoutNode>,
   visuals?: Map<string, ConversationGraphNodeVisual>,
 ) {
   labelSel.each(function updateOne(this: SVGGElement, d: LayoutLink) {
-    const g = d3.select(this);
+    const g = select(this);
     const sx = resolveEndpoint('source', 'x', nodesById)(d);
     const sy = resolveEndpoint('source', 'y', nodesById)(d);
     const tx = resolveEndpoint('target', 'x', nodesById)(d);
@@ -301,7 +312,7 @@ export function mountConversationGraphForceLayout(
     const nodes: LayoutNode[] = (graph.nodes ?? []).map((n) => ({ ...n, x: 0, y: 0 }));
     const nodesById = new Map(nodes.map((n) => [n.id ?? '', n]));
 
-    const svg = d3.select(svgEl);
+    const svg = select<SVGSVGElement, unknown>(svgEl);
     svg.selectAll('*').remove();
 
     const genealogy =
@@ -311,7 +322,7 @@ export function mountConversationGraphForceLayout(
     svg.attr('width', width).attr('height', height);
 
     const viewport = svg.append('g').attr('data-graph-viewport', 'true');
-    appendEdgeMarkers(svg as unknown as d3.Selection<SVGSVGElement, unknown, null, undefined>);
+    appendEdgeMarkers(svg as unknown as Selection<SVGSVGElement, unknown, null, undefined>);
 
     if (genealogy) {
       for (const n of nodes) {
@@ -325,23 +336,22 @@ export function mountConversationGraphForceLayout(
       }
     }
 
-    let simulation: d3.Simulation<LayoutNode, undefined> | null = null;
+    let simulation: Simulation<LayoutNode, undefined> | null = null;
     if (!genealogy) {
-      simulation = d3
-        .forceSimulation(nodes)
-        .force('charge', d3.forceManyBody().strength(-200))
-        .force('center', d3.forceCenter(width / 2, height / 2))
-        .force('collision', d3.forceCollide().radius(28));
+      const sim = forceSimulation(nodes)
+        .force('charge', forceManyBody().strength(-200))
+        .force('center', forceCenter(width / 2, height / 2))
+        .force('collision', forceCollide().radius(28));
       if (links.length > 0) {
-        simulation.force(
+        sim.force(
           'link',
-          d3
-            .forceLink(links)
+          forceLink(links)
             .id((d: unknown) => (d as LayoutNode).id ?? '')
             .distance(80)
             .strength(0.5),
         );
       }
+      simulation = sim;
     }
 
     const linkStroke = (d: LayoutLink) => strokeByEdgeType(d.edge_type || 'flow');
@@ -353,9 +363,9 @@ export function mountConversationGraphForceLayout(
     const linkGroup = viewport.append('g').attr('data-graph-links', 'true');
     const link = (
       genealogy
-        ? linkGroup.selectAll<SVGPathElement, LayoutLink>('path').data(links).join('path')
-        : linkGroup.selectAll<SVGLineElement, LayoutLink>('line').data(links).join('line')
-    ) as d3.Selection<SVGPathElement | SVGLineElement, LayoutLink, SVGGElement, unknown>;
+        ? linkGroup.selectAll('path').data(links).join('path')
+        : linkGroup.selectAll('line').data(links).join('line')
+    ) as Selection<SVGPathElement | SVGLineElement, LayoutLink, SVGGElement, unknown>;
     link
       .attr('data-graph-edge', 'true')
       .attr('data-edge-source', (d: LayoutLink) =>
@@ -376,7 +386,7 @@ export function mountConversationGraphForceLayout(
     const edgeLabels = viewport
       .append('g')
       .attr('data-graph-edge-labels', 'true')
-      .selectAll<SVGGElement, LayoutLink>('g')
+      .selectAll('g')
       .data(links)
       .join('g')
       .attr('class', 'cg-edge-label')
@@ -420,14 +430,14 @@ export function mountConversationGraphForceLayout(
             return genealogyLinkPath(sx, sy, tx, ty, Math.max(r1, r2));
           });
         } else {
-          (link as d3.Selection<SVGLineElement, LayoutLink, SVGGElement, unknown>)
+          (link as Selection<SVGLineElement, LayoutLink, SVGGElement, unknown>)
             .attr('x1', resolveEndpoint('source', 'x', nodesById))
             .attr('y1', resolveEndpoint('source', 'y', nodesById))
             .attr('x2', resolveEndpoint('target', 'x', nodesById))
             .attr('y2', resolveEndpoint('target', 'y', nodesById));
         }
         updateEdgeLabels(
-          edgeLabels as d3.Selection<SVGGElement, LayoutLink, SVGGElement, unknown>,
+          edgeLabels as Selection<SVGGElement, LayoutLink, SVGGElement, unknown>,
           nodesById,
           options?.nodeVisuals,
         );
@@ -443,8 +453,7 @@ export function mountConversationGraphForceLayout(
       syncLinksAndLabels();
     }
 
-    const zoomBehavior = d3
-      .zoom<SVGSVGElement, unknown>()
+    const zoomBehavior = zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.35, 2.5])
       .on('zoom', (event: GraphZoomEvent) => {
         viewport.attr('transform', event.transform.toString());
@@ -454,7 +463,7 @@ export function mountConversationGraphForceLayout(
 
     const resetZoom = () => {
       try {
-        svg.call(zoomBehavior.transform, d3.zoomIdentity as d3.ZoomTransform);
+        svg.call(zoomBehavior.transform, zoomIdentity);
       } catch {
         viewport.attr('transform', null);
       }
@@ -467,7 +476,7 @@ export function mountConversationGraphForceLayout(
         const scale = 1.35;
         const tx = width / 2 - target.x * scale;
         const ty = height / 2 - target.y * scale;
-        const transform = d3.zoomIdentity.translate(tx, ty).scale(scale);
+        const transform = zoomIdentity.translate(tx, ty).scale(scale);
         svg.transition().duration(400).call(zoomBehavior.transform, transform);
       } catch {
         /* noop */

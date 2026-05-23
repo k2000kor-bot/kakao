@@ -20,7 +20,12 @@ import {
   getChatPostUrlsForConfigBase,
   joinApiHealthCheckUrl,
 } from '../../config/api';
-import { AGENTS_QUERY_PARAM_ID } from '../../config/routes';
+import {
+  AGENTS_QUERY_PARAM_ID,
+  AGENTS_QUERY_PARAM_TYPE,
+  GENSPARK_AGENTS_TYPE_SUPER_AGENT,
+} from '../../config/routes';
+import { GENSPARK_REFERENCE_AGENT_ID } from '../gensparkReferenceAgentPreset';
 import type { Message } from '../../types';
 import {
   buildModernChatPipelineContext,
@@ -171,6 +176,56 @@ describe('IntegratedMessageService', () => {
           {},
           '',
           `/?${AGENTS_QUERY_PARAM_ID}=7c36051a-2b94-4e9e-bd36-05dfabfe3e07`,
+        );
+        await service.sendMessage({ content: '안녕', chatContext: {} });
+        const chatCall = jest.mocked(axios.post).mock.calls.find((c) => String(c[0]).includes(CHAT_POST_PATH));
+        expect(chatCall).toBeDefined();
+        const posted = chatCall![1] as Record<string, unknown>;
+        const ctx = posted.context as Record<string, unknown> | undefined;
+        expect(ctx?.genspark_route_agent_id).toBeUndefined();
+        expect(ctx?.genspark_reference_agent_id).toBeUndefined();
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('URL type=super_agent만 있으면 chatContext에 참조 Super Agent id가 실린다', async () => {
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      if (prevDisable !== undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      mockIntegratedChatAxiosOnce({ response: 'ok', type: 'text', confidence: 0.9 });
+      try {
+        window.history.replaceState(
+          {},
+          '',
+          `/?${AGENTS_QUERY_PARAM_TYPE}=${encodeURIComponent(GENSPARK_AGENTS_TYPE_SUPER_AGENT)}`,
+        );
+        await service.sendMessage({ content: '안녕', chatContext: {} });
+        const chatCall = jest.mocked(axios.post).mock.calls.find((c) => String(c[0]).includes(CHAT_POST_PATH));
+        expect(chatCall).toBeDefined();
+        const posted = chatCall![1] as Record<string, unknown>;
+        const ctx = posted.context as Record<string, unknown> | undefined;
+        expect(ctx?.genspark_reference_agent_id).toBe(GENSPARK_REFERENCE_AGENT_ID);
+        expect(ctx?.genspark_route_agent_id).toBe(GENSPARK_REFERENCE_AGENT_ID);
+      } finally {
+        window.history.replaceState({}, '', prevPath);
+        if (prevDisable === undefined) delete process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+        else process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = prevDisable;
+      }
+    });
+
+    it('GENSPARK_DISABLE이면 type=super_agent만 있어도 chatContext에 genspark_*를 넣지 않는다', async () => {
+      const prevDisable = process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT;
+      const prevPath = `${window.location.pathname}${window.location.search}`;
+      process.env.REACT_APP_GENSPARK_DISABLE_WINDOW_ROUTE_CONTEXT = '1';
+      mockIntegratedChatAxiosOnce({ response: 'ok', type: 'text', confidence: 0.9 });
+      try {
+        window.history.replaceState(
+          {},
+          '',
+          `/?${AGENTS_QUERY_PARAM_TYPE}=${encodeURIComponent(GENSPARK_AGENTS_TYPE_SUPER_AGENT)}`,
         );
         await service.sendMessage({ content: '안녕', chatContext: {} });
         const chatCall = jest.mocked(axios.post).mock.calls.find((c) => String(c[0]).includes(CHAT_POST_PATH));

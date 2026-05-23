@@ -661,6 +661,12 @@ export const AUTH_REFRESH_PATH = '/api/auth/refresh';
 export const AUTH_REGISTER_PATH = '/api/auth/register';
 export const AUTH_CHANGE_PASSWORD_PATH = '/api/auth/change-password';
 export const AUTH_RESET_PASSWORD_PATH = '/api/auth/reset-password';
+/** Google Drive OAuth·export·폴더 목록 (`backend/api/google_drive_auth_api.py`) */
+export const AUTH_GOOGLE_DRIVE_OAUTH_TOKEN_PATH = '/api/auth/google/drive/oauth/token';
+export const AUTH_GOOGLE_DRIVE_EXPORT_TEXT_PATH = '/api/auth/google/drive/files/export-text';
+export const AUTH_GOOGLE_DRIVE_FETCH_PDF_TEXT_PATH = '/api/auth/google/drive/files/fetch-pdf-text';
+export const AUTH_GOOGLE_DRIVE_LIST_IMPORTABLE_IN_FOLDER_PATH =
+  '/api/auth/google/drive/files/list-importable-in-folder';
 export const SECURITY_EVENTS_PATH = '/api/security/events';
 export const SECURITY_METRICS_PATH = '/api/security/metrics';
 export const SECURITY_CONFIG_PATH = '/api/security/config';

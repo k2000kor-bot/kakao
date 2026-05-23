@@ -138,19 +138,8 @@
 }
 
 .chat-main-stage > .bw-project-guidance-hint,
-.chat-main-stage > .project-sources-input-hint,
-.chat-main-stage > .chat-input-dock-route-breadcrumb {
+.chat-main-stage > .project-sources-input-hint {
     flex-shrink: 0;
-}
-
-/* 입력 도크 직상: 홈 › 대화 — 52rem 컬럼·한 줄 */
-.chat-input-dock-route-breadcrumb {
-    width: 100%;
-    max-width: 52rem;
-    margin: 0 auto;
-    padding: 0 var(--spacing-md) var(--spacing-sm);
-    box-sizing: border-box;
-    border-bottom: none;
 }
 
 /* 웰컴: 히어로는 스크롤 안, 입력은 하단 고정 — 대화 시작 후와 동일 52rem 도크 */
@@ -752,9 +741,16 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: var(--spacing-sm);
+    gap: 6px 8px;
     justify-content: flex-end;
     min-width: 0;
+}
+.brainwave-chat-header-actions .bw-btn-secondary,
+.brainwave-chat-header-actions .bw-btn-primary,
+.brainwave-chat-header-actions .bw-chat-header-menu__trigger {
+    font-size: 12px;
+    padding: 4px 10px;
+    white-space: nowrap;
 }
 
 /* 프로젝트 상세: 상단 카드에 프로젝트명·탭이 있으므로 채팅 헤더는 한 줄 스레드 제목만 */
@@ -957,18 +953,25 @@
 }
 .bw-thread-context-panel__toolbar {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-tertiary);
+    min-width: 0;
 }
 .bw-thread-context-panel__title {
+    flex: 1 1 8rem;
+    min-width: 0;
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
     line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .bw-thread-context-panel__body {
     padding: var(--spacing-md);
@@ -1350,6 +1353,82 @@
         margin-left: 0;
         justify-content: center;
     }
+}
+
+/* 에이전트 세션 상세 — 채팅 상단 배너 */
+.genspark-agent-detail {
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 52rem;
+    margin: 0 auto var(--spacing-sm);
+    padding: 0 var(--spacing-md);
+    box-sizing: border-box;
+}
+.genspark-agent-detail__inner {
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    min-width: 0;
+}
+.genspark-agent-detail__title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+}
+.genspark-agent-detail__title {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.genspark-agent-detail__url-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: var(--spacing-sm);
+    min-width: 0;
+}
+.genspark-agent-detail__url-cell {
+    min-width: 0;
+}
+.genspark-agent-detail__url-text {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--font-size-xs);
+}
+.genspark-agent-detail__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    margin-top: var(--spacing-sm);
+    align-items: center;
+}
+.genspark-agent-detail__btn {
+    font-size: 12px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.genspark-agent-detail__btn--secondary {
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+.genspark-agent-detail__btn--primary {
+    border: 1px solid var(--accent-info-figma, var(--accent-info));
+    background: var(--accent-info-figma, var(--accent-info));
+    color: #fff;
 }
 
 /* 소스 탭: 대화 크롬 숨김 — 소스 목록에 집중 (대화 탭에서 다시 표시) */
@@ -1861,6 +1940,8 @@
 }
 .project-sources-panel-title {
     margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-semibold);
     color: var(--text-primary);
@@ -1888,6 +1969,8 @@
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-sm);
+    flex-shrink: 0;
+    font-size: 12px;
     white-space: nowrap;
 }
 .project-sources-hint {
