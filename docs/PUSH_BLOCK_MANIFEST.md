@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-21 19:01:48 KST
+- generated_at: 2026-05-23 13:06:46 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `d19c66377 feat(graph-answer): 문서 형식별 답변 생성·학습·후처리`
+- latest_commit: `4099bbefd fix: Create PR workflow PAT 검사를 run step으로 분리`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 787898588
-- bundle_sha256: `9672f4da5fbc4e741977a923df868bbd97d6cd408eb4304c8f855bb6477f2ed0`
+- bundle_size_bytes: 787950043
+- bundle_sha256: `70cbcd8c8ee17be9134e0ffa1ee21a9af824a2008f095820549855830bebf358`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -23,15 +23,15 @@
 
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
-- patch_series_count: 198
-- patch_series_expected: 198 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
+- patch_series_count: 225
+- patch_series_expected: 225 (`edbdc5915658ed5313e7f2b8fdf04dc5a2d4c40b..HEAD`)
 
 ### Recent Commits
 
 ```
-d19c66377 feat(graph-answer): 문서 형식별 답변 생성·학습·후처리
-dcfef8abc docs: PR 초안에 verify:conversation-graph:unit 통과 기록
-484bd1bea chore: handoff manifest tip 9ae459681 동기화
-9ae459681 fix: views typecheck·관계도 API 쿼리·Lazy Chat 데모 복구
-2591598e8 docs: handoff manifest cf710e93d 및 default branch main 설정 안내
+4099bbefd fix: Create PR workflow PAT 검사를 run step으로 분리
+67f6f884c fix: Create PR workflow — PAT 없으면 skip·notice (push CI noise 제거)
+08e8963eb feat: PR 생성 — .env.local PAT·로컬 gh 설치(pr:ensure-gh)
+3da2a8482 docs: PR HEAD cb80f14a0 반영
+cb80f14a0 docs: PR 초안 HEAD·검증 갱신 및 workflow 수동 안내
 ```

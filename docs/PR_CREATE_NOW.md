@@ -1,6 +1,6 @@
 # PR 생성 — 지금 바로 (2026-05-23)
 
-브랜치 `dev-continue-2026-01-20` · HEAD `08e8963eb` · ahead 26 · `npm run pr:ready`
+브랜치 `dev-continue-2026-01-20` · HEAD `4099bbefd` · ahead 28 · handoff OK · `npm run pr:ready`
 
 ## 0. 로컬 서버
 

@@ -1,7 +1,7 @@
 # PR 초안 — composer multi-request + conversation graph
 
 **브랜치**: `dev-continue-2026-01-20`  
-**HEAD**: `08e8963eb` · `npm run pr:composer-graph-url` (testHelpers·d3·pr:ensure-gh, 2026-05-23)  
+**HEAD**: `4099bbefd` · `npm run pr:composer-graph-url` (handoff refresh·Create PR workflow, 2026-05-23)  
 **베이스**: `main` (또는 팀 기본 브랜치)  
 **제목 제안**: `feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff`
 
@@ -99,3 +99,5 @@ PR 본문: `npm run pr:composer-graph-body` · Compare: `npm run pr:open-compare
 - [x] `76d4b607f` testHelpers `withProcessEnv`·jsdom 네트워크 스텁 · `npm run test:composer-pipeline` 143 passed
 - [x] `npm run local:verify` · `npm run ship:preflight` · `npm run build` · `test:conversation-graph` 226 passed
 - [x] `5d9c3d144` Create PR workflow head 필터·실패 가시화 (Actions create 단계 failure = PAT/권한 미설정)
+- [x] `08e8963eb` pr:ensure-gh · `.env.local` PAT · `4099bbefd` workflow PAT skip (Actions **success**)
+- [x] `npm run refresh:handoff-artifacts` — bundle tip `4099bbefd` · patch series 225
