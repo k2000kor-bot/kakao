@@ -1,6 +1,6 @@
 # Push / 배포 상태 (k2000kor-bot/kakao)
 
-**브랜치**: `main` · **HEAD**: `89d4b4f79` (`main` = `dev-continue-2026-01-20`)
+**브랜치**: `main` · **HEAD**: `c5b3d4f7a` (`main` = `dev-continue-2026-01-20`)
 
 ## 완료 (2026-05-23)
 
@@ -20,20 +20,11 @@
 
 **1차 (자동):** `main` push 시 [Set default branch to main](https://github.com/k2000kor-bot/kakao/actions/workflows/set-default-branch-main.yml) 워크플로가 `GITHUB_TOKEN`으로 시도합니다.
 
-**실패 시 (KAKAO_BOT_PAT secret 없음 등):**
+**실패 시** (KAKAO_BOT_PAT 없음 · Actions workflow permissions read-only):
 
-```bash
-npm run repo:open-actions-secrets   # secret 등록 (admin PAT)
-npm run repo:dispatch-set-default-main   # Run workflow
-# 또는 브라우저 수동
-npm run repo:open-default-branch
-```
-
-```bash
-KAKAO_BOT_PAT=... npm run repo:set-default-main
-```
-
-수동: https://github.com/k2000kor-bot/kakao/settings/branches → Default branch → **`main`**
+1. **가장 빠름 (30초):** https://github.com/k2000kor-bot/kakao/settings/branches → Default branch → **`main`**
+2. Actions write 권한: `npm run repo:open-actions-settings` → Workflow permissions **Read and write**
+3. Secret 등록: `npm run repo:open-actions-secrets` → `KAKAO_BOT_PAT` (admin PAT) → `npm run repo:dispatch-set-default-main`
 
 ## 로컬 검증
 
