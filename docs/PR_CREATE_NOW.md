@@ -11,7 +11,7 @@
 | main · dev-continue 동기화 | ✅ |
 | `verify:pre-deploy` | ✅ |
 | `verify:handoff-artifacts` | ✅ |
-| GitHub default branch → `main` | ⏳ [설정](https://github.com/k2000kor-bot/kakao/settings/branches) |
+| GitHub default branch → `main` | ⏳ [Settings → General](https://github.com/k2000kor-bot/kakao/settings) |
 
 ## 로컬 동기화
 

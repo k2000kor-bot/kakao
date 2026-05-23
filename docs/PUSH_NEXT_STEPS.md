@@ -18,7 +18,7 @@
 
 현재 API 기준 default: **`dev-continue-2026-01-20`** → **`main`** 권장.
 
-1. **가장 빠름 (30초):** https://github.com/k2000kor-bot/kakao/settings/branches → Default branch → **`main`**
+1. **가장 빠름 (30초):** https://github.com/k2000kor-bot/kakao/settings → **General** → **Default branch** → `main`
 2. 확인: `npm run repo:check-default-main`
 3. (선택) Actions: `KAKAO_BOT_PAT` secret 등록 후 `npm run repo:dispatch-set-default-main`
 

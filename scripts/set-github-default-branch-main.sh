@@ -41,7 +41,7 @@ TOKEN="$(resolve_token)"
 if [[ -z "$TOKEN" ]]; then
   echo "토큰 없음 — 다음 중 하나:"
   echo "  1) Actions (KAKAO_BOT_PAT secret): npm run repo:dispatch-set-default-main"
-  echo "  2) Settings 수동: https://github.com/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/settings/branches"
+  echo "  2) Settings → General: https://github.com/${PUSH_GITHUB_OWNER}/${PUSH_GITHUB_REPO}/settings"
   echo "  3) 로컬 PAT: KAKAO_BOT_PAT=... npm run repo:set-default-main"
   exit 1
 fi

@@ -30,7 +30,7 @@ jobs:
           set -euo pipefail
           if [ -z "${KAKAO_BOT_PAT:-}" ]; then
             echo "::warning::KAKAO_BOT_PAT secret 없음"
-            echo "수동: https://github.com/${{ github.repository }}/settings/branches → Default branch → main"
+            echo "수동: https://github.com/${{ github.repository }}/settings → General → Default branch → main"
             echo "secret: https://github.com/${{ github.repository }}/settings/secrets/actions"
             exit 1
           fi
