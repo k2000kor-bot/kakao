@@ -17,5 +17,7 @@ if curl -sS "https://api.github.com/repos/k2000kor-bot/kakao/pulls?state=open&he
 else
   echo ""
   echo "PR 아직 없음 — 브라우저에서 Create pull request 클릭"
-  echo "  자동화: gh auth login · KAKAO_BOT_PAT · docs/PR_CREATE_NOW.md"
+  echo "  .env.local: KAKAO_BOT_PAT=... 후 npm run pr:create"
+  echo "  또는: npm run pr:ensure-gh && gh auth login && npm run pr:create"
+  echo "  docs/PR_CREATE_NOW.md"
 fi
