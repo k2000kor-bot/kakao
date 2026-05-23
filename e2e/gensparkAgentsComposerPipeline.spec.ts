@@ -3,9 +3,9 @@ import {
   e2eSkipMessageCannotConnectKo,
   skipUnlessE2EServerReachable,
 } from './helpers/playwrightEnv';
-import { buildComposerStreamSseBody, installComposerChatStub } from './helpers/composerChatStub';
+import { installComposerChatStub } from './helpers/composerChatStub';
 import { fillChatComposerAndSend, waitForComposerInput } from './helpers/chatComposerPage';
-import { dismissWebpackDevOverlay } from './helpers/playwrightLocators';
+import { dismissWebpackDevOverlay, seedOnboardingDone, dismissOnboardingOverlay } from './helpers/playwrightLocators';
 import { PATHS } from './paths';
 import { TEST_IDS, byTestId } from './testIds';
 import { AGENTS_QUERY_PARAM_ID } from '../src/config/routes';
@@ -21,27 +21,23 @@ const agentsComposerPipelineE2EEnabled = process.env.E2E_AGENTS_COMPOSER_PIPELIN
 const describeAgentsComposer = agentsComposerPipelineE2EEnabled ? test.describe : test.describe.skip;
 
 describeAgentsComposer('/agents 에이전트 세션 — 입력창 하단 생성 단계 UI', () => {
+  test.beforeEach(async ({ page }) => {
+    await seedOnboardingDone(page);
+  });
+
   test('전송 직후 composer-genspark-generation-status가 표시된다', async ({ page }) => {
     test.skip(!!process.env.E2E_USE_BUILD, '정적 빌드 serve는 이 검증에서 제외합니다');
 
     if (!(await skipUnlessE2EServerReachable(test, e2eSkipMessageCannotConnectKo()))) return;
 
-    const sseBody = buildComposerStreamSseBody('E2E 스텁 응답');
-
-    const streamStub = async (route: import('@playwright/test').Route) => {
-      await new Promise((r) => setTimeout(r, 2200));
-      await route.fulfill({
-        status: 200,
-        headers: { 'content-type': 'text/event-stream; charset=utf-8' },
-        body: sseBody,
-      });
-    };
-
-    await page.route('**/api/chat/stream**', streamStub);
-    await page.route('**/api/unified/chat/stream**', streamStub);
+    await installComposerChatStub(page, {
+      responses: ['E2E 스텁 응답'],
+      delayMs: 2200,
+    });
 
     const agentUrl = `${PATHS.AGENTS}?${AGENTS_QUERY_PARAM_ID}=${encodeURIComponent(GENSPARK_REFERENCE_AGENT_ID)}`;
     await page.goto(agentUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await dismissWebpackDevOverlay(page);
 
     const chatInput = await waitForComposerInput(page, 20_000);
     if (!chatInput) {
@@ -64,22 +60,14 @@ describeAgentsComposer('/agents 에이전트 세션 — 입력창 하단 생성 
 
     if (!(await skipUnlessE2EServerReachable(test, e2eSkipMessageCannotConnectKo()))) return;
 
-    const sseBody = buildComposerStreamSseBody('E2E 다중 요청 스텁');
-
-    const streamStub = async (route: import('@playwright/test').Route) => {
-      await new Promise((r) => setTimeout(r, 2800));
-      await route.fulfill({
-        status: 200,
-        headers: { 'content-type': 'text/event-stream; charset=utf-8' },
-        body: sseBody,
-      });
-    };
-
-    await page.route('**/api/chat/stream**', streamStub);
-    await page.route('**/api/unified/chat/stream**', streamStub);
+    await installComposerChatStub(page, {
+      responses: ['E2E 다중 요청 스텁 1', 'E2E 다중 요청 스텁 2'],
+      delayMs: 2800,
+    });
 
     const agentUrl = `${PATHS.AGENTS}?${AGENTS_QUERY_PARAM_ID}=${encodeURIComponent(GENSPARK_REFERENCE_AGENT_ID)}`;
     await page.goto(agentUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await dismissWebpackDevOverlay(page);
 
     const chatInput = await waitForComposerInput(page, 20_000);
     if (!chatInput) {
@@ -128,7 +116,8 @@ describeAgentsComposer('/agents 에이전트 세션 — 입력창 하단 생성 
 
     const extras = page.locator(byTestId(TEST_IDS.COMPOSER_PIPELINE_EXTRAS));
     await expect(extras).toBeVisible({ timeout: 10_000 });
-    await extras.locator('summary').click();
+    await dismissOnboardingOverlay(page);
+    await extras.locator('summary').click({ force: true });
     await expect(page.locator(byTestId(TEST_IDS.COMPOSER_OVERSIGHT_COUNCIL))).toBeVisible({
       timeout: 5_000,
     });

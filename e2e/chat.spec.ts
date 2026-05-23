@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { fillChatComposerAndSend, gotoChatAndWaitForComposerInput } from './helpers/chatComposerPage';
+import { installComposerChatStub } from './helpers/composerChatStub';
 import {
   devServerUnreachableSkipMessage,
   skipUnlessE2EServerReachable,
@@ -661,22 +662,10 @@ describeChatMultiRequest('/chat — 다중 요청 체크리스트', () => {
 
     if (!(await skipUnlessE2EServerReachable(test, devServerUnreachableSkipMessage()))) return;
 
-    const sseBody = [
-      `data: ${JSON.stringify({ choices: [{ delta: { content: 'E2E /chat 다중 요청' } }] })}\n\n`,
-      `data: ${JSON.stringify({ done: true })}\n\n`,
-    ].join('');
-
-    const streamStub = async (route: import('@playwright/test').Route) => {
-      await new Promise((r) => setTimeout(r, 2800));
-      await route.fulfill({
-        status: 200,
-        headers: { 'content-type': 'text/event-stream; charset=utf-8' },
-        body: sseBody,
-      });
-    };
-
-    await page.route('**/api/chat/stream**', streamStub);
-    await page.route('**/api/unified/chat/stream**', streamStub);
+    await installComposerChatStub(page, {
+      responses: ['E2E /chat 다중 요청 1', 'E2E /chat 다중 요청 2'],
+      delayMs: 2800,
+    });
 
     const chatInput = await gotoChatAndWaitForComposerInput(page);
     if (!chatInput) {

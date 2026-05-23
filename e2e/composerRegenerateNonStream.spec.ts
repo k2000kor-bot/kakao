@@ -5,7 +5,7 @@ import {
 } from './helpers/playwrightEnv';
 import { fillChatComposerAndSend } from './helpers/chatComposerPage';
 import { installComposerChatStub } from './helpers/composerChatStub';
-import { dismissWebpackDevOverlay } from './helpers/playwrightLocators';
+import { dismissWebpackDevOverlay, seedOnboardingDone, dismissOnboardingOverlay } from './helpers/playwrightLocators';
 import { LEGACY_REDIRECT_PATHS, PATHS } from './paths';
 import { TEST_IDS, byTestId } from './testIds';
 
@@ -21,6 +21,10 @@ const structuredPrompt = (tag: string) =>
   `질문: E2E ${tag} 재생성\n요구사항: 한 줄 (${Date.now()})`;
 
 describeRegen('비스트리밍 컴포저 — 재생성·Council', () => {
+  test.beforeEach(async ({ page }) => {
+    await seedOnboardingDone(page);
+  });
+
   test('Ultimate(/ultimate) 재생성 시 API가 다시 호출된다', async ({ page }) => {
     test.skip(!!process.env.E2E_USE_BUILD, '정적 빌드 serve는 이 검증에서 제외합니다');
     if (!(await skipUnlessE2EServerReachable(test, e2eSkipMessageCannotConnectKo()))) return;
@@ -42,6 +46,7 @@ describeRegen('비스트리밍 컴포저 — 재생성·Council', () => {
     expect(postsAfterFirst).toBeGreaterThanOrEqual(1);
 
     await dismissWebpackDevOverlay(page);
+    await dismissOnboardingOverlay(page);
     await page.locator(byTestId(TEST_IDS.COMPOSER_REGENERATE_MESSAGE)).first().click({ force: true });
 
     await expect(page.getByText('E2E Ultimate 재생성 응답')).toBeVisible({ timeout: 25_000 });
@@ -49,7 +54,8 @@ describeRegen('비스트리밍 컴포저 — 재생성·Council', () => {
 
     const extras = page.locator(byTestId(TEST_IDS.COMPOSER_PIPELINE_EXTRAS));
     await expect(extras).toBeVisible({ timeout: 10_000 });
-    await extras.locator('summary').click();
+    await dismissOnboardingOverlay(page);
+    await extras.locator('summary').click({ force: true });
     await expect(page.locator(byTestId(TEST_IDS.COMPOSER_OVERSIGHT_COUNCIL))).toBeVisible({
       timeout: 5_000,
     });

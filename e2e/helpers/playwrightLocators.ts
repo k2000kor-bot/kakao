@@ -24,6 +24,33 @@ export async function dismissWebpackDevOverlay(page: Page): Promise<void> {
   });
 }
 
+/** 온보딩 투어 오버레이 — E2E 클릭 가로막음 방지 */
+export async function dismissOnboardingOverlay(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    try {
+      localStorage.setItem('corbu.onboarding.done', '1');
+    } catch {
+      /* ignore */
+    }
+    document.querySelector('.onboarding-overlay')?.remove();
+  });
+  const skip = page.getByRole('button', { name: /건너뛰|Skip|닫기|완료/i }).first();
+  if (await skip.isVisible().catch(() => false)) {
+    await skip.click({ force: true }).catch(() => undefined);
+  }
+}
+
+/** E2E 초기 localStorage — 온보딩 완료 */
+export async function seedOnboardingDone(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('corbu.onboarding.done', '1');
+    } catch {
+      /* ignore */
+    }
+  });
+}
+
 /**
  * 셀렉터 목록을 순서대로 `waitFor({ state: 'visible' })` — 첫 성공 시 해당 locator 반환.
  * (`pickVisibleLocator`는 즉시 isVisible만 보므로, 늦게 나타나는 UI에는 이쪽 사용)

@@ -5,7 +5,7 @@ import {
 } from './helpers/playwrightEnv';
 import { installComposerChatStub } from './helpers/composerChatStub';
 import { fillChatComposerAndSend, waitForComposerInput } from './helpers/chatComposerPage';
-import { dismissWebpackDevOverlay } from './helpers/playwrightLocators';
+import { dismissWebpackDevOverlay, seedOnboardingDone, dismissOnboardingOverlay } from './helpers/playwrightLocators';
 import { PATHS } from './paths';
 import { TEST_IDS, byTestId } from './testIds';
 import { AGENTS_QUERY_PARAM_ID } from '../src/config/routes';
@@ -24,6 +24,10 @@ const structuredPrompt = (tag: string) =>
 
 describeRegen('스트리밍 컴포저 — ChatGPTInterface 재생성', () => {
   test.describe.configure({ timeout: 90_000 });
+
+  test.beforeEach(async ({ page }) => {
+    await seedOnboardingDone(page);
+  });
 
   test('에이전트 세션 재생성 시 스트림 API가 다시 호출된다', async ({ page }) => {
     test.skip(!!process.env.E2E_USE_BUILD, '정적 빌드 serve는 이 검증에서 제외합니다');
@@ -55,6 +59,7 @@ describeRegen('스트리밍 컴포저 — ChatGPTInterface 재생성', () => {
     const postsAfterFirst = stub.getPostCount();
 
     await dismissWebpackDevOverlay(page);
+    await dismissOnboardingOverlay(page);
     await regenBtn.click({ force: true });
 
     await expect

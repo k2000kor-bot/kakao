@@ -64,6 +64,11 @@ export default defineConfig({
           url: 'http://localhost:3000',
           reuseExistingServer: !process.env.CI,
           timeout: process.env.E2E_USE_BUILD ? 30 * 1000 : 600 * 1000,
+          // .env.local REACT_APP_API_URL=5002 우회 — CRA proxy(:3000→:5002) + page.route 스텁
+          env: {
+            REACT_APP_API_URL: '',
+            REACT_APP_API_BASE_URL: '',
+          },
         },
       }),
 });

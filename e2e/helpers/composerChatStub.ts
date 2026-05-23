@@ -56,6 +56,9 @@ export async function installComposerChatStub(
 
   await page.route('**/api/chat**', stub);
   await page.route('**/api/unified/chat**', stub);
+  // .env.local REACT_APP_API_URL=http://localhost:5002 직접 호출 대비
+  await page.route('http://localhost:5002/api/**', stub);
+  await page.route('http://127.0.0.1:5002/api/**', stub);
 
   return { getPostCount: () => postIndex };
 }

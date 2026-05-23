@@ -36,23 +36,15 @@ export async function gotoChatAndWaitForComposerInput(
   return waitForComposerInput(page, timeout);
 }
 
-/** 입력창에 텍스트 입력 후 전송(버튼 우선, 없으면 Enter) */
+/** 입력창에 텍스트 입력 후 전송(Enter — controlled textarea·전송 버튼 disabled 동기화 이슈 회피) */
 export async function fillChatComposerAndSend(page: Page, input: Locator, text: string): Promise<void> {
   await dismissWebpackDevOverlay(page);
+  await input.scrollIntoViewIfNeeded();
   await input.fill(text);
-  const sendButton = await waitForFirstVisibleLocator(
-    page,
-    [
-      byTestId(TEST_IDS.SEND_BUTTON),
-      'button[type="submit"]',
-      'button:has-text("전송")',
-      'button:has-text("Send")',
-    ],
-    8_000,
-  );
-  if (sendButton && (await sendButton.isEnabled().catch(() => false))) {
-    await sendButton.click({ force: true });
-  } else {
-    await input.press('Enter');
-  }
+  await input.evaluate((el, value) => {
+    const ta = el as HTMLTextAreaElement;
+    ta.value = value;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+  }, text);
+  await input.press('Enter');
 }
