@@ -1,6 +1,6 @@
 # Push / 배포 상태 (k2000kor-bot/kakao)
 
-**브랜치**: `main` · **HEAD**: `cd672b890` (`main` = `dev-continue-2026-01-20` = `kakao` tip)
+**브랜치**: `main` · **HEAD**: `82d0894a9` (`main` = `dev-continue-2026-01-20`)
 
 ## 완료 (2026-05-23)
 
@@ -10,19 +10,19 @@
 | SSH | **k2000kor-bot** |
 | PR #2 merge | ✅ [feat: 관계도·컴포저·handoff](https://github.com/k2000kor-bot/kakao/pull/2) |
 | `main` 동기화 | ✅ `origin/main` = `origin/dev-continue-2026-01-20` |
-| Handoff | `npm run verify:handoff-artifacts` (bundle tip = branch tip, patch series 0) |
+| GitHub default branch | ✅ **`main`** (`npm run repo:check-default-main`) |
+| Handoff | `npm run verify:handoff-artifacts` |
 | merge 후 문서 | `docs/PR_CREATE_NOW.md` 갱신됨 |
-| pre-deploy | ✅ `npm run verify:pre-deploy` (sidebar-context·composer·관계도 unit) |
+| pre-deploy | ✅ `npm run verify:pre-deploy` |
+| post-merge | ✅ `npm run finish:post-merge` |
 
-## GitHub default branch (마지막 1단계)
+## (선택) 정리
 
-현재 API 기준 default: **`kakao`** (저장소 이름과 혼동 가능) → **`main`** 으로 변경 필요.
+default가 `main`이면 **`kakao` 브랜치 삭제** 가능 (저장소 이름과 혼동 방지):
 
-`main`·`kakao` 브랜치 tip은 동일(`cd672b890`) — **default 이름만** `main`으로 바꾸면 됨.
-
-1. **가장 빠름 (30초):** https://github.com/k2000kor-bot/kakao/settings → **General** → **Default branch** → 연필(⇄) → **`main`** → Update
-2. 확인: `npm run repo:check-default-main` → `OK: default branch is main`
-3. (선택) Actions: `KAKAO_BOT_PAT` secret 등록 후 `npm run repo:dispatch-set-default-main`
+```bash
+git push origin --delete kakao
+```
 
 ## 로컬 검증
 
