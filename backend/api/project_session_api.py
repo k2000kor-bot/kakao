@@ -520,14 +520,18 @@ def _youtube_search_videos(query: str, max_videos: int = 5) -> List[Dict[str, An
 
 
 def _extract_youtube_video_id(url: str) -> Optional[str]:
-    """YouTube URL에서 video_id 추출. 지원: youtube.com/watch?v=ID, youtu.be/ID."""
+    """YouTube URL에서 video_id 추출."""
     url = (url or "").strip()
     if not url:
         return None
-    if "youtube.com/watch?v=" in url:
-        return url.split("watch?v=")[-1].split("&")[0].strip()
-    if "youtu.be/" in url:
-        return url.split("youtu.be/")[-1].split("?")[0].strip()
+    patterns = (
+        r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/|"
+        r"youtube-nocookie\.com/embed/|youtube\.com/shorts/|"
+        r"music\.youtube\.com/watch\?v=|m\.youtube\.com/watch\?v=)([\w\-]{6,})",
+    )
+    m = re.search(patterns[0], url, re.IGNORECASE)
+    if m:
+        return m.group(1).split("&")[0].strip()
     return None
 
 
