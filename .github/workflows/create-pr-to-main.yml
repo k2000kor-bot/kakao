@@ -1,12 +1,22 @@
-# dev-continue → main PR 자동 생성
+# feature/dev-continue → main PR 자동 생성
 # Secrets: KAKAO_BOT_PAT (권장) · Settings → Actions → Allow GitHub Actions to create PRs
 name: Create PR to main
 
 on:
   workflow_dispatch:
+    inputs:
+      head_branch:
+        description: PR head branch
+        required: false
+        default: feat/chat-composer-context-graph
+      pr_title:
+        description: PR title
+        required: false
+        default: 'fix(chat): 대화 삭제·초기화 후 첨부 맥락 + conversation graph handoff'
   push:
     branches:
       - dev-continue-2026-01-20
+      - feat/chat-composer-context-graph
     paths-ignore:
       - 'backend/**/*.db'
       - '**/*.db'
@@ -19,39 +29,66 @@ jobs:
   create-pr:
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve head branch and title
+        id: meta
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            BRANCH="${{ inputs.head_branch }}"
+            TITLE="${{ inputs.pr_title }}"
+          else
+            BRANCH="${GITHUB_REF#refs/heads/}"
+            if [[ "$BRANCH" == "feat/chat-composer-context-graph" ]]; then
+              TITLE='fix(chat): 대화 삭제·초기화 후 첨부 맥락 + conversation graph handoff'
+            else
+              TITLE='feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff'
+            fi
+          fi
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+          echo "Resolved: main ← $BRANCH"
+
       - uses: actions/checkout@v4
         with:
-          ref: dev-continue-2026-01-20
+          ref: ${{ steps.meta.outputs.branch }}
 
-      - name: Skip when main already synced with dev-continue
+      - name: Skip when head has nothing to merge into main
         id: sync
         uses: actions/github-script@v7
+        env:
+          HEAD_BRANCH: ${{ steps.meta.outputs.branch }}
         with:
           script: |
+            const head = process.env.HEAD_BRANCH;
             const { data } = await github.rest.repos.compareCommits({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              basehead: 'main...dev-continue-2026-01-20',
+              basehead: `main...${head}`,
             });
-            const skip = data.status === 'identical' || (data.ahead_by === 0 && data.behind_by === 0);
+            const skip = data.status === 'identical' || data.ahead_by === 0;
             core.setOutput('skip', skip ? 'true' : 'false');
+            core.setOutput('ahead_by', String(data.ahead_by ?? 0));
+            core.setOutput('behind_by', String(data.behind_by ?? 0));
             if (skip) {
-              core.summary.addRaw('## Skip\n`main` = `dev-continue-2026-01-20` — open PR 불필요');
-              core.notice('main and dev-continue in sync — skip PR create');
+              core.summary.addRaw(`## Skip\n\`main...${head}\` — open PR 불필요 (ahead=${data.ahead_by})`);
+            } else {
+              core.summary.addRaw(`## Compare\n\`main...${head}\` ahead **${data.ahead_by}** · behind ${data.behind_by}`);
             }
 
       - name: Find open PR
         if: steps.sync.outputs.skip != 'true'
         id: existing
         uses: actions/github-script@v7
+        env:
+          HEAD_BRANCH: ${{ steps.meta.outputs.branch }}
         with:
           script: |
+            const head = process.env.HEAD_BRANCH;
             const { data } = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
               base: 'main',
-              head: `${context.repo.owner}:dev-continue-2026-01-20`,
+              head: `${context.repo.owner}:${head}`,
             });
             const pr = data[0];
             const url = pr?.html_url ?? '';
@@ -94,25 +131,27 @@ jobs:
         uses: actions/github-script@v7
         env:
           USE_PAT: ${{ steps.pat.outputs.configured }}
+          HEAD_BRANCH: ${{ steps.meta.outputs.branch }}
+          PR_TITLE: ${{ steps.meta.outputs.title }}
         with:
           github-token: ${{ steps.pat.outputs.configured == 'true' && secrets.KAKAO_BOT_PAT || github.token }}
           script: |
             const fs = require('fs');
+            const head = process.env.HEAD_BRANCH;
+            const title = process.env.PR_TITLE;
             const path = 'docs/PR_COMPOSER_GRAPH_DRAFT.md';
-            let body = fs.readFileSync(path, 'utf8');
+            let body = fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '';
             if (body.length > 62000) {
               body = body.slice(0, 62000) + '\n\n…(truncated; see branch docs/PR_COMPOSER_GRAPH_DRAFT.md)';
             }
-            const title =
-              'feat: 관계도 문서 형식별 답변·컴포저 순차 생성·handoff';
-            const manual = `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/new?base=main&head=dev-continue-2026-01-20`;
+            const manual = `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/new?base=main&head=${head}`;
             const tokenLabel = process.env.USE_PAT === 'true' ? 'KAKAO_BOT_PAT' : 'GITHUB_TOKEN';
             try {
               const { data } = await github.rest.pulls.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title,
-                head: 'dev-continue-2026-01-20',
+                head,
                 base: 'main',
                 body,
                 draft: false,
@@ -134,7 +173,7 @@ jobs:
                   '2. **Settings → Secrets → Actions** → `KAKAO_BOT_PAT` (repo scope PAT), then re-run workflow',
                   '',
                   `**Manual PR (1 min):** ${manual}`,
-                  'Body: `docs/PR_COMPOSER_GRAPH_DRAFT.md` on branch `dev-continue-2026-01-20`',
+                  `Body: \`docs/PR_COMPOSER_GRAPH_DRAFT.md\` on branch \`${head}\``,
                 ].join('\n'),
               );
               core.setFailed(msg);
@@ -142,7 +181,9 @@ jobs:
 
       - name: Manual PR reminder (create failed)
         if: failure() && steps.existing.outputs.url == ''
+        env:
+          HEAD_BRANCH: ${{ steps.meta.outputs.branch }}
         run: |
-          MANUAL="https://github.com/k2000kor-bot/kakao/pull/new?base=main&head=dev-continue-2026-01-20"
+          MANUAL="https://github.com/k2000kor-bot/kakao/pull/new?base=main&head=${HEAD_BRANCH}"
           echo "::warning title=PR not auto-created::Open $MANUAL — enable Actions PR creation or set KAKAO_BOT_PAT (see workflow summary)."
           echo "Manual PR: $MANUAL"

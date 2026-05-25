@@ -8,5 +8,5 @@ echo "Workflow: $URL"
 echo "Settings (PR 권한): $SETTINGS"
 echo ""
 echo "1) Settings → Allow GitHub Actions to create and approve pull requests ✅"
-echo "2) Run workflow → Run workflow (branch: dev-continue-2026-01-20)"
+echo "2) Run workflow → head_branch: feat/chat-composer-context-graph (또는 dev-continue-2026-01-20)"
 command -v open >/dev/null 2>&1 && open "$SETTINGS" || true

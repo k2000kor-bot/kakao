@@ -87,6 +87,8 @@
     "repo:set-default-main": "bash scripts/set-github-default-branch-main.sh",
     "promote:main": "bash scripts/promote-dev-continue-to-main.sh",
     "pr:create": "bash scripts/create-github-pr.sh",
+    "pr:create:chat-composer-context": "PR_HEAD_BRANCH=feat/chat-composer-context-graph PR_TITLE='fix(chat): 대화 삭제·초기화 후 첨부 맥락 + conversation graph handoff' bash scripts/create-github-pr.sh",
+    "pr:open-compare:chat-composer-context": "PR_HEAD_BRANCH=feat/chat-composer-context-graph bash scripts/open-github-pr-compare.sh",
     "pr:ensure-gh": "bash scripts/ensure-gh-cli.sh",
     "pr:copy-body": "bash scripts/pr-copy-body.sh",
     "pr:ready": "bash scripts/pr-ready.sh",
