@@ -1,15 +1,15 @@
 ## Push Block Manifest
 
-- generated_at: 2026-05-23 15:49:13 KST
+- generated_at: 2026-05-23 17:47:58 KST
 - branch: `dev-continue-2026-01-20`
-- latest_commit: `9e93ae07a docs: handoff manifest pre-push sync`
+- latest_commit: `cd672b890 fix(docs): default branch 설정 URL을 Settings → General로 수정`
 
 ### Artifacts
 
 - bundle_path: `/Users/a0/kakao-frontend/kakao-frontend-dev-continue-2026-05-19.bundle`
 - bundle_exists: yes
-- bundle_size_bytes: 788042280
-- bundle_sha256: `602237b697dbf2c86ccc2571f28f6aaec913c68fdf813f8162116cfe42aa1712`
+- bundle_size_bytes: 788058790
+- bundle_sha256: `f4ef1671de0377baacdaa41464094cdeba7949d2ee98bdc3dcfddcdc36816200`
 
 - patch_path: `/Users/a0/kakao-frontend/0001-feat-chat-composer-multi-request-pipeline-and-conver.patch`
 - patch_exists: yes
@@ -24,14 +24,14 @@
 - patch_series_dir: `/Users/a0/kakao-frontend/patches-dev-continue-2026-05-19`
 - patch_series_exists: yes
 - patch_series_count: 0
-- patch_series_expected: 0 (`9e93ae07a3da827a71b30c733c459995695330e3..HEAD`)
+- patch_series_expected: 0 (`cd672b890cdadb2339cbd32b0a46e9ca54a10684..HEAD`)
 
 ### Recent Commits
 
 ```
-9e93ae07a docs: handoff manifest pre-push sync
-ae5e82951 docs: PR #2 merge 완료 상태로 PR_CREATE_NOW 갱신
-b6a92576b docs: handoff manifest pre-push sync
-a39a98513 fix(ci): draft PR #2 자동 ready·pr:mark-ready 추가
-1f4a2d1e0 docs: handoff manifest pre-push sync
+cd672b890 fix(docs): default branch 설정 URL을 Settings → General로 수정
+49549cd62 chore: finish:post-merge 마무리 검증 스크립트 추가
+43dd48567 docs: clone -b main 안내·HEAD e5740991a 갱신
+e5740991a fix(ci): main=dev-continue일 때 create-pr 워크플로 skip
+0e5d5be45 docs: HEAD 갱신·default branch 확인 시 설정 페이지 자동 열기
 ```
