@@ -14,6 +14,20 @@ describe('composerSequentialSend', () => {
     else process.env.REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST_STREAM = prevStream;
   });
 
+  it('관계도 context면 순차·다중요청 플래그를 모두 끈다', () => {
+    process.env.REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST = 'true';
+    process.env.REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST_STREAM = 'true';
+    const flags = getComposerSequentialSendFlags(
+      '1. 첫 항목\n2. 둘째 항목',
+      { conversation_graph_analysis: true, multi_request_mode: true },
+      true,
+    );
+    expect(flags.items).toEqual([]);
+    expect(flags.runSequentialMultiRequest).toBe(false);
+    expect(flags.useSequentialStream).toBe(false);
+    expect(flags.runMultiStepMultiRequest).toBe(false);
+  });
+
   it('getComposerSequentialSendFlags는 다중 요청·순차 플래그를 계산한다', () => {
     process.env.REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST = 'true';
     const flags = getComposerSequentialSendFlags(
