@@ -997,6 +997,63 @@ describe('ChatGPTInterface', () => {
       expect(screen.queryByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_ATTACHED_FILE)).not.toBeInTheDocument();
       expect(screen.queryByTestId(TEST_IDS.CONVERSATION_GRAPH_CHAT_HANDOFF_BANNER)).not.toBeInTheDocument();
     });
+
+    it('관계도 답변 재생성 시 graph 파이프라인을 다시 호출한다', async () => {
+      jest.mocked(mockProjectService.getProjects).mockResolvedValue([]);
+      localStorage.removeItem(CHATGPT_CONVERSATIONS_STORAGE_KEY);
+      const store = createMockStore({ ui: { sidebarOpen: true } });
+      render(
+        <MemoryRouter initialEntries={[STANDALONE_CHAT_PATH]}>
+          <Provider store={store}>
+            <ChatGPTInterface />
+          </Provider>
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId(TEST_IDS.CHAT_INPUT)).toBeInTheDocument();
+      });
+
+      const csvBody = 'Date,User,Message\n2026-05-13,알파,regen-graph';
+      const fileInput = screen.getByLabelText('대화 파일 첨부 (TXT/CSV)');
+      await act(async () => {
+        fireEvent.change(fileInput, {
+          target: {
+            files: [new File([csvBody], 'regen.csv', { type: 'text/csv' })],
+          },
+        });
+      });
+
+      const chatInput = screen.getByTestId(TEST_IDS.CHAT_INPUT) as HTMLTextAreaElement;
+      await act(async () => {
+        fireEvent.change(chatInput, { target: { value: '관계도를 만들어줘' } });
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId(TEST_IDS.SEND_BUTTON));
+      });
+
+      await waitFor(() => {
+        expect(mockGenerateGraphAnswerViaChat).toHaveBeenCalledTimes(1);
+      }, { timeout: 12_000 });
+
+      await waitFor(() => {
+        expect(screen.getByText(/## 요약/)).toBeInTheDocument();
+      }, { timeout: 12_000 });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /응답 재생성/i }));
+      });
+
+      await waitFor(() => {
+        expect(mockGenerateGraphAnswerViaChat).toHaveBeenCalledTimes(2);
+      }, { timeout: 12_000 });
+
+      const [, regenCtx] = mockGenerateGraphAnswerViaChat.mock.calls[1] ?? [];
+      expect(regenCtx).toMatchObject({
+        [GRAPH_ANSWER_CONTEXT_FLAG]: true,
+        multi_request_mode: false,
+      });
+    });
   });
 
   describe('에이전트 라우트 세션', () => {

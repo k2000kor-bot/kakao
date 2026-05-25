@@ -3,7 +3,7 @@
  */
 .genspark-chat-column {
   width: 100%;
-  max-width: 52rem;
+  max-width: var(--composer-column-max, 52rem);
   margin-left: auto;
   margin-right: auto;
   display: flex;
@@ -16,7 +16,7 @@
 /* 메인 통합 대화(ChatGPTInterface): 메시지 스크롤 + 입력창 동일 읽기 폭 */
 .genspark-chat-messages-wrap {
   width: 100%;
-  max-width: 52rem;
+  max-width: var(--composer-column-max, 52rem);
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
@@ -24,7 +24,7 @@
 
 .genspark-chat-input-wrap {
   width: 100%;
-  max-width: 52rem;
+  max-width: var(--composer-column-max, 52rem);
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
@@ -224,7 +224,7 @@ article.message.genspark-qa-article.user-message .message-text {
   gap: 10px 14px;
   padding: 10px 16px;
   margin: 0 auto;
-  max-width: 52rem;
+  max-width: var(--composer-column-max, 52rem);
   width: 100%;
   box-sizing: border-box;
   border-bottom: 1px solid var(--border-color, #e5e7eb);
@@ -375,4 +375,115 @@ article.message.genspark-qa-article.user-message .message-text {
 
 .genspark-generation-status--embedded .genspark-generation-status__pulse {
   display: none;
+}
+
+/* ---------- 워크스페이스 스테이지: 웰컴 중앙(히어로+입력) / 대화 하단 도크 ---------- */
+.chat-main-stage {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-main-stage__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chat-main-stage > .chat-input-dock,
+.chat-main-stage > .input-container.genspark-chat-input-wrap {
+  flex-shrink: 0;
+}
+
+.chat-main-stage--welcome .chat-main-stage__scroll.chat-welcome-scroll {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.chat-welcome-center {
+  width: 100%;
+  max-width: var(--composer-column-max, 52rem);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) var(--spacing-md);
+  box-sizing: border-box;
+}
+
+.chat-input-dock--inline {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.chat-input-dock--inline .chat-input-dock-inner {
+  width: 100%;
+  max-width: 100%;
+}
+
+
+.chat-input-dock-inner {
+  width: 100%;
+  max-width: var(--composer-column-max, 52rem);
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-sm);
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.chat-input-dock-inner > .wq-composer {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+section.input-container.genspark-chat-input-wrap.chat-input-dock {
+  width: 100%;
+  background: var(--bg-primary);
+  border-top: var(--border-width) solid var(--border-color);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-lg) var(--spacing-md);
+  padding-bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+.chat-input-dock--welcome {
+  padding-bottom: calc(var(--spacing-xl) + env(safe-area-inset-bottom, 0px));
+}
+
+.chat-input-dock .bw-input-dock-disclaimer {
+  width: 100%;
+  max-width: var(--composer-column-max, 52rem);
+  margin: var(--spacing-xs) auto 0;
+  box-sizing: border-box;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.chat-main-stage:not(.chat-main-stage--welcome) > .chat-input-dock,
+.chat-main-stage:not(.chat-main-stage--welcome) > section.input-container.genspark-chat-input-wrap {
+  margin-top: auto;
+}
+
+.brainwave-chat-route-shell--genspark-marketing-home .brainwave-chat-route-body {
+  overflow: hidden;
 }

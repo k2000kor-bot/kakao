@@ -800,10 +800,112 @@ body {
 }
 
 .conversation-graph-answer-panel {
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) 0 0;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
+}
+
+.conversation-graph-answer-panel__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.conversation-graph-answer-panel__title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.conversation-graph-answer-panel__format-hint {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.conversation-graph-answer-panel__unpin {
+  font-size: 11px;
+  padding: 2px 6px;
+  vertical-align: baseline;
+}
+
+.conversation-graph-answer-panel__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(240px, 0.85fr);
+  gap: var(--spacing-md);
+  min-height: min(56vh, 560px);
+  align-items: stretch;
+}
+
+.conversation-graph-answer-panel__output,
+.conversation-graph-answer-panel__input {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.conversation-graph-answer-panel__output {
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.conversation-graph-answer-panel__input {
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.conversation-graph-answer-panel__empty {
+  margin: auto 0;
+  text-align: center;
+  padding: var(--spacing-lg) var(--spacing-sm);
+}
+
+.conversation-graph-answer-panel__result-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin-right: auto;
+}
+
+.conversation-graph-answer-panel__format-details summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.conversation-graph-answer-panel__prompt-history {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.conversation-graph-answer-panel__history-label {
+  margin: 0;
+  font-size: var(--font-size-xs);
+}
+
+@media (max-width: 900px) {
+  .conversation-graph-answer-panel__layout {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .conversation-graph-answer-panel__output {
+    order: 1;
+  }
+
+  .conversation-graph-answer-panel__input {
+    order: 0;
+  }
 }
 
 .conversation-graph-answer-panel__presets,
@@ -833,6 +935,8 @@ body {
 }
 
 .conversation-graph-answer-turns {
+  flex: 1;
+  min-height: 120px;
   max-height: min(52vh, 520px);
   overflow-y: auto;
   overflow-x: hidden;
@@ -844,6 +948,27 @@ body {
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
+}
+
+.conversation-graph-answer-turns--output {
+  background: var(--bg-primary);
+}
+
+.conversation-graph-answer-turns--input {
+  max-height: min(28vh, 240px);
+  flex: 0 1 auto;
+}
+
+.conversation-graph-answer-turn--question-only {
+  margin-bottom: 8px;
+}
+
+.conversation-graph-answer-turn--question-only:last-child {
+  margin-bottom: 0;
+}
+
+.conversation-graph-answer-turn--answer-only {
+  margin-bottom: 14px;
 }
 
 /* 관계도 답변 — 메인 대화와 동일한 젠스파이크 Q&A·마크다운 타이포 */

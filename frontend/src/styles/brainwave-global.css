@@ -607,8 +607,8 @@
 .bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) {
   width: min(100%, 1200px);
   margin: 0 auto;
-  padding: var(--spacing-lg);
-  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+  gap: var(--spacing-md);
   height: auto;
   min-height: 100%;
   overflow: visible;
@@ -637,9 +637,26 @@
 }
 
 .bw-tool-view > .bw-detail-header-left {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
   border-bottom: var(--border-width) solid var(--border-color);
   margin-bottom: 0;
+}
+
+/* 도구 상세: 헤더 설명·카드 여백 축소 — 본문 영역 최대 활용 */
+.bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) .bw-detail-header-left .bw-detail-desc {
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) .bw-detail-section-title {
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-xs);
+}
+
+.bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]):not([data-testid="conversation-graph-view"]) .bw-features-card.bw-detail-scroll {
+  padding: var(--spacing-md);
+  box-shadow: none;
 }
 
 /* 본문 섹션들을 감싸는 스크롤 영역 (헤더 고정, 본문 스크롤) */
@@ -657,7 +674,7 @@
 }
 
 .bw-tool-view > .bw-detail-section {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
 }
 
 .bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) .bw-detail-header-left {
@@ -686,7 +703,7 @@
   min-width: 0;
 }
 
-.bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]) .bw-features-card.bw-detail-scroll {
+.bw-detail-root[data-testid$="-view"]:not([data-testid="project-detail-view"]):not([data-testid="conversation-graph-view"]) .bw-features-card.bw-detail-scroll {
   flex: initial;
   overflow: visible;
   min-height: 0;

@@ -1,6 +1,6 @@
 /**
  * 루트(/) 홈 포털
- * 입력창만 표시 (탭 서브페이지 없음)
+ * 웰컴: 히어로+입력창 세로 중앙 · 대화(/chat) 시작 후 입력 하단 고정
  */
 import React, {
   useCallback,
@@ -9,6 +9,7 @@ import React, {
   useState,
 } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { ChatInputDock } from '../components/ChatInputDock';
 import { WorkspaceQueryComposer } from '../components/WorkspaceQueryComposer';
 import {
   MARKETING_HOME_COMPOSER_AUTOSEND_STATE_KEY,
@@ -22,7 +23,7 @@ import {
   WORKSPACE_MARKETING_DOCUMENT_TITLE,
 } from '../constants/workspaceHomeCopy';
 import { coerceTrimmedString } from '../utils/chatInputUtils';
-/* import './GensparkMarketingHomeView.css'; */
+import './GensparkMarketingHomeView.css';
 
 export const OFFICIAL_GENSPARK_HOME_URL = 'https://www.genspark.ai/';
 
@@ -101,57 +102,73 @@ export default function GensparkMarketingHomeView() {
     } : undefined);
   }, [prompt, chatPath, navigate]);
 
+  const composer = (
+    <WorkspaceQueryComposer
+      value={prompt}
+      onChange={handlePromptChange}
+      onCommit={() => {
+        try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+        goChat();
+      }}
+      textareaId="gs-home-prompt"
+      formAriaLabel={WORKSPACE_COMPOSER_FORM_ARIA_LABEL}
+      dataTestId={TEST_IDS.GENSPARK_MARKETING_COMPOSER}
+      primaryAction={
+        <NavLink to={chatPath} state={chatNavState} className="wq-composer__chat-cta">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <rect x="2" y="8" width="3" height="8" rx="1" />
+            <rect x="8" y="4" width="3" height="16" rx="1" />
+            <rect x="14" y="6" width="3" height="12" rx="1" />
+            <rect x="20" y="9" width="3" height="6" rx="1" />
+          </svg>
+          대화
+        </NavLink>
+      }
+    />
+  );
+
   return (
     <main
-      className="gs-home"
+      className="gs-home chat-main-stage chat-main-stage--welcome"
       id="chat-main-content"
       tabIndex={-1}
       role="main"
       aria-labelledby="gs-home-heading"
       data-testid={TEST_IDS.GENSPARK_MARKETING_HOME}
     >
-      <div className="gs-home__input-zone">
-        <header className="gs-home__masthead">
-          <h1 id="gs-home-heading" className="gs-home__title">{WORKSPACE_HOME_HEADLINE}</h1>
-          <p className="gs-home__subtitle">{WORKSPACE_MARKETING_HOME_SUBTITLE}</p>
-        </header>
+      <div className="chat-main-stage__scroll genspark-chat-messages-wrap chat-welcome-scroll">
+        <div className="chat-welcome-center">
+          <header className="gs-home__masthead welcome-content brainwave-welcome-content">
+            <div className="brainwave-welcome-inner brainwave-welcome-inner--workspace">
+              <h1 id="gs-home-heading" className="gs-home__title brainwave-welcome-headline">
+                {WORKSPACE_HOME_HEADLINE}
+              </h1>
+              <p className="gs-home__subtitle brainwave-welcome-sub">{WORKSPACE_MARKETING_HOME_SUBTITLE}</p>
+            </div>
+          </header>
 
-        <WorkspaceQueryComposer
-          value={prompt}
-          onChange={handlePromptChange}
-          onCommit={() => {
-            try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
-            goChat();
-          }}
-          textareaId="gs-home-prompt"
-          formAriaLabel={WORKSPACE_COMPOSER_FORM_ARIA_LABEL}
-          dataTestId={TEST_IDS.GENSPARK_MARKETING_COMPOSER}
-          primaryAction={
-            <NavLink to={chatPath} state={chatNavState} className="wq-composer__chat-cta">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <rect x="2" y="8" width="3" height="8" rx="1" />
-                <rect x="8" y="4" width="3" height="16" rx="1" />
-                <rect x="14" y="6" width="3" height="12" rx="1" />
-                <rect x="20" y="9" width="3" height="6" rx="1" />
-              </svg>
-              대화
-            </NavLink>
-          }
-        />
-
-        {prompt.trim().length > 0 && (
-          <p className="gs-home__draft-hint" aria-live="polite">
-            임시저장된 내용이 복원되었습니다.{' '}
-            <button
-              type="button"
-              className="gs-home__draft-clear"
-              onClick={() => { handlePromptChange(''); }}
-              aria-label="임시저장 삭제"
-            >지우기</button>
-          </p>
-        )}
+          <ChatInputDock
+            placement="inline"
+            variant="welcome"
+            showDisclaimer={false}
+            composer={composer}
+          >
+            {prompt.trim().length > 0 ? (
+              <p className="gs-home__draft-hint" aria-live="polite">
+                임시저장된 내용이 복원되었습니다.{' '}
+                <button
+                  type="button"
+                  className="gs-home__draft-clear"
+                  onClick={() => { handlePromptChange(''); }}
+                  aria-label="임시저장 삭제"
+                >
+                  지우기
+                </button>
+              </p>
+            ) : null}
+          </ChatInputDock>
+        </div>
       </div>
-
     </main>
   );
 }

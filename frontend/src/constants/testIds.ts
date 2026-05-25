@@ -140,6 +140,7 @@ export const TEST_IDS = {
   CONVERSATION_GRAPH_ANSWER_TURN: 'conversation-graph-answer-turn',
   /** /chat → /conversation-graph handoff (ChatGPTInterface) */
   CONVERSATION_GRAPH_CHAT_ATTACHED_FILE: 'conversation-graph-chat-attached-file',
+  CONVERSATION_GRAPH_CHAT_FILE_INPUT: 'conversation-graph-chat-file-input',
   CONVERSATION_GRAPH_CHAT_HANDOFF_BANNER: 'conversation-graph-chat-handoff-banner',
   CONVERSATION_GRAPH_CHAT_HANDOFF_OPEN: 'conversation-graph-chat-handoff-open',
   /** ChatGPTInterface 입력 도크 위 빠른/추천 질문 칩 */
