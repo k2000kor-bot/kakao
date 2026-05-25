@@ -15,6 +15,8 @@ GENERIC_CHAT_MARKERS = (
     "Python으로 [원하는 기능]",
 )
 
+MIN_GRAPH_LLM_ANSWER_CHARS = 480
+
 
 def _coerce_str(value: Any, max_len: int = 0) -> str:
     if not isinstance(value, str):
@@ -48,11 +50,16 @@ def attach_conversation_graph_instruction(ctx: Optional[Dict[str, Any]]) -> None
         "- 일반 채팅 안내나 '더 구체적으로 말씀해 주세요'류 응답은 금지합니다.",
         "- 아래 스냅샷·요약·원문·지시만 근거로 **정돈된 한국어** 보고서를 작성하세요.",
         "- 경어체(~습니다)로 통일하고, ## 한 줄 요약 → (시스템 표·Mermaid) → ## 해석·갈등 축·실행 제안 순을 지키세요.",
+        "- 전체 600자 이상, 섹션당 3문장 이상. 한 줄·불릿만 있는 빈약한 답변은 금지합니다.",
         "- 글 유형은 answer_quality_instruction·conversation_graph_writing_style에 맞추세요(보고서/갈등 분석/실행 제안/참여자 중심/관계도 작성).",
         "- 관계도 생성 요청이면: (1) 한 줄 요약 (2) 참여자 표 (3) 연결 표 (4) Mermaid flowchart TB (5) 갈등·시공사 반응(데이터 있을 때만).",
         "- 수치·스냅샷·근거 발언에 없는 참여자·연결은 추가하지 마세요.",
         "- [다중 요청], [혁신적 답변·글쓰기 품질], [답변 다양성], [가이드라인] 등 시스템 태그·빈 불릿(• .)을 본문에 출력하지 마세요.",
     ]
+
+    min_chars = ctx.get("conversation_graph_min_answer_chars")
+    if isinstance(min_chars, int) and min_chars > 0:
+        lines.append(f"- 최소 분량 목표: {min_chars}자 이상(문단·소제목 포함).")
 
     title = _coerce_str(ctx.get("conversation_graph_title"))
     period = _coerce_str(ctx.get("conversation_graph_period"))
@@ -94,7 +101,9 @@ def attach_conversation_graph_instruction(ctx: Optional[Dict[str, Any]]) -> None
 
     two_pass = _coerce_str(ctx.get("conversation_graph_two_pass_phase"))
     if two_pass == "outline":
-        lines.append("- 1차 개요 단계: ## 한 줄 요약·해석·갈등·실행 제안만 짧게. 표·Mermaid 금지.")
+        lines.append(
+            "- 1차 개요 단계: ## 한 줄 요약·해석·갈등·실행 제안을 각 3~5문장으로. 표·Mermaid 금지."
+        )
 
     structured = _coerce_str(ctx.get("conversation_graph_structured_sections"), 12000)
     if structured and not ctx.get("conversation_graph_omit_structured_in_instruction"):
@@ -136,6 +145,37 @@ def is_generic_chat_fallback(text: str) -> bool:
     if not t:
         return True
     return any(marker in t for marker in GENERIC_CHAT_MARKERS)
+
+
+def is_sparse_graph_llm_answer(text: str) -> bool:
+    """관계도 답변이 너무 짧거나 섹션·문단이 부족한지."""
+    t = (text or "").strip()
+    if len(t) < MIN_GRAPH_LLM_ANSWER_CHARS:
+        return True
+    if not re.search(r"#{1,6}\s*(해석|갈등|실행|핵심|요약|분석|권고|결론)", t, re.IGNORECASE):
+        return True
+    bullet_lines = len(re.findall(r"^[\-*•]\s+.+$", t, re.MULTILINE))
+    paragraphs = [
+        b.strip()
+        for b in re.split(r"\n{2,}", t)
+        if len(b.strip()) > 36
+        and not re.match(r"^#{1,6}\s", b.strip())
+        and not b.strip().startswith("```")
+        and not b.strip().startswith("|")
+        and not re.match(r"^[\-*•]\s", b.strip())
+    ]
+    if bullet_lines >= 4 and len(paragraphs) < 2:
+        return True
+    return False
+
+
+def should_use_graph_fallback_for_llm(content: str, ctx: Dict[str, Any]) -> bool:
+    """프론트 합성 블록이 없을 때만 빈약 LLM을 구조화 폴백으로 대체."""
+    if not content or is_generic_chat_fallback(content):
+        return True
+    if _coerce_str(ctx.get("conversation_graph_structured_sections")):
+        return False
+    return is_sparse_graph_llm_answer(content)
 
 
 def seal_context_for_conversation_graph_chat(ctx: Dict[str, Any]) -> Dict[str, Any]:
@@ -272,6 +312,27 @@ def build_structured_graph_answer_fallback(ctx: Dict[str, Any]) -> Optional[str]
     mermaid_lines.append("```")
 
     parts.extend(["", "## Mermaid 관계도 (족보형)", ""] + mermaid_lines)
+    parts.extend(
+        [
+            "",
+            "## 해석·갈등 축·실행 제안",
+            "",
+            "### 해석",
+            "",
+            "제공된 스냅샷·연결 정보를 바탕으로 참여자 간 동조·반대·발화 흐름을 정리했습니다. "
+            "수치·스냅샷에 없는 참여자·연결은 추가하지 않았습니다.",
+            "",
+            "### 갈등 축",
+            "",
+            "반대·대립 연결이 두드러지는 구간과 관여 참여자를 중심으로, 대화에서 반복되는 이견 축을 짧게 정리합니다.",
+            "",
+            "### 실행 제안",
+            "",
+            "1. 갈등·반대 연결이 두드러지는 구간을 먼저 공유하고, 당사자별 우세 입장을 짧게 확인합니다.",
+            "2. 동조 축이 강한 참여자 쌍을 중심으로 합의 문안을 정리한 뒤, 이견 축은 별도 안건으로 분리합니다.",
+            "3. 다음 회의 전까지 실행 가능한 조치 1~2가지를 합의하고, 근거 발언·관계도 스냅샷을 기록해 둡니다.",
+        ]
+    )
     parts.append("")
     parts.append(
         "*성향·선호는 추정이며, 스냅샷·근거 발언에 없는 내용은 포함하지 않았습니다.*"

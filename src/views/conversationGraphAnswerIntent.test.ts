@@ -5,7 +5,12 @@ import {
   isCreateGraphAnswerRequest,
   resolveGraphAnswerUserMessage,
 } from './conversationGraphAnswerIntent';
-import { buildGraphAnswerChatContext, prepareGraphAnswerGenerationMessage } from './conversationGraphAnswerGeneration';
+import {
+  buildGraphAnswerChatContext,
+  GRAPH_ANSWER_CONTEXT_FLAG,
+  prepareGraphAnswerGenerationMessage,
+  resolveUnifiedChatGraphOutboundMessage,
+} from './conversationGraphAnswerGeneration';
 import type { GraphAiAnalysis } from './conversationGraphAiAnalyzer';
 
 const analysis: GraphAiAnalysis = {
@@ -89,5 +94,26 @@ describe('conversationGraphAnswerIntent', () => {
     });
     expect(ctx.multi_request_mode).toBe(false);
     expect(ctx.conversation_graph_analysis).toBe(true);
+  });
+
+  it('resolveUnifiedChatGraphOutboundMessage는 관계도가 아니면 fallback을 유지한다', () => {
+    const longFallback = '[다중 요청 1/2]\n1. 긴 프롬프트 본문';
+    expect(
+      resolveUnifiedChatGraphOutboundMessage('일반 질문', {}, longFallback),
+    ).toBe(longFallback);
+  });
+
+  it('resolveUnifiedChatGraphOutboundMessage는 재생성·편집 시 짧은 API message로 정규화한다', () => {
+    const graphCtx = {
+      [GRAPH_ANSWER_CONTEXT_FLAG]: true,
+      conversation_graph_has_data: true,
+    };
+    const apiMessage = resolveUnifiedChatGraphOutboundMessage(
+      CREATE_GRAPH_ANSWER_PRESET.prompt,
+      graphCtx,
+      CREATE_GRAPH_ANSWER_PRESET.prompt,
+    );
+    expect(apiMessage).toBe(CREATE_GRAPH_API_USER_MESSAGE);
+    expect(apiMessage).not.toContain('1)');
   });
 });

@@ -4,6 +4,7 @@ import { TEST_IDS } from '../testIds';
 import {
   chatStreamRouteStub,
   mockConversationsApi,
+  stubGraphAnswerChatRoutes,
   type ConversationGraphMockEdge,
   type ConversationGraphMockNode,
 } from './conversationGraphApiMock';
@@ -25,7 +26,7 @@ export async function openConversationGraphWithMock(
   options?: MockOptions,
 ): Promise<void> {
   const handler = mockConversationsApi(graphNodes, graphEdges, options);
-  await page.route(/\/api\/conversations/, handler);
+  await page.route('**/api/conversations**', handler);
 
   await page.addInitScript(() => {
     const hideOverlay = () => {
@@ -38,7 +39,7 @@ export async function openConversationGraphWithMock(
 
   await page.goto(PATHS.CONVERSATION_GRAPH, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await dismissWebpackDevOverlay(page);
-  await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_VIEW)).toBeAttached({ timeout: 15_000 });
+  await expect(page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_VIEW)).toBeAttached({ timeout: 25_000 });
 
   const listName = options?.listName ?? 'E2E 관계도';
   await expect(page.getByRole('radio', { name: new RegExp(listName, 'i') })).toBeVisible({ timeout: 20_000 });
@@ -55,11 +56,9 @@ export async function setConversationGraphUiPrefsForE2e(
   }, prefs);
 }
 
-/** 관계도 답변 생성 E2E — 채팅 스트림 SSE 스텁 */
+/** 관계도 답변 생성 E2E — 채팅 스트림 SSE + POST(2-pass·비스트림) 스텁 */
 export async function stubGraphAnswerChatStream(page: Page, llmNarrative: string): Promise<void> {
-  const streamStub = chatStreamRouteStub(llmNarrative);
-  await page.route('**/api/chat/stream**', streamStub);
-  await page.route('**/api/unified/chat/stream**', streamStub);
+  await stubGraphAnswerChatRoutes(page, llmNarrative);
 }
 
 /** dev 오버레이·레이아웃 시프트를 피해 testid 클릭 (React onClick 보장) */

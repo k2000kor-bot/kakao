@@ -56,6 +56,7 @@ import {
 } from './conversationGraphAiNarrative';
 import { ConversationGraphAiPanel } from './ConversationGraphAiPanel';
 import { ConversationGraphAnswerPanel } from './ConversationGraphAnswerPanel';
+import './ConversationGraphView.css';
 import { ConversationGraphDashboardPanel } from './ConversationGraphDashboardPanel';
 import { ConversationGraphEvidencePanel } from './ConversationGraphEvidencePanel';
 import { ConversationGraphExpertLayerBar } from './ConversationGraphExpertLayerBar';
@@ -143,7 +144,7 @@ function ConversationGraphView() {
   );
   const [useStreamAnswer, setUseStreamAnswer] = useState(() => initialUiPrefs.useStreamAnswer ?? true);
   const [useTwoPassAnswer, setUseTwoPassAnswer] = useState(
-    () => initialUiPrefs.useTwoPassAnswer ?? process.env.REACT_APP_GRAPH_ANSWER_TWO_PASS === '1',
+    () => initialUiPrefs.useTwoPassAnswer ?? true,
   );
   const [participantSearchQuery, setParticipantSearchQuery] = useState('');
   const [participantSortMode, setParticipantSortMode] = useState<ParticipantSortMode>('influence');
@@ -1040,25 +1041,25 @@ function ConversationGraphView() {
 
   return (
     <div
-      className="bw-detail-root bw-tool-view"
+      className="bw-detail-root bw-tool-view conversation-graph-view"
       role="main"
       aria-label="대화 관계도"
       data-testid={TEST_IDS.CONVERSATION_GRAPH_VIEW}
+      aria-describedby="conversation-graph-heading"
     >
-      <header className="bw-detail-header-left" id="conversation-graph-heading">
-          <p className="bw-detail-desc">
-            카카오톡 대화를 업로드하면 족보형 관계도·입장·시공사 반응 신호·근거 발언을 분석합니다. 통합 답변 생성으로 기획서 형식의 보고서를 만들 수 있으며, 모든 성향·선호는 추정값입니다.
-          </p>
-      </header>
+      <p className="sr-only" id="conversation-graph-heading">
+        카카오톡 대화 업로드 후 관계도·답변 생성. 성향·선호는 추정값입니다.
+      </p>
 
       <div className="bw-tool-view-body" data-testid="conversation-graph-tool-body">
+        <div className="conversation-graph-view__setup">
         <section className="bw-detail-section" aria-labelledby="upload-heading">
           <h2 id="upload-heading" className="bw-detail-section-title">
             대화 업로드
           </h2>
           <div className="bw-features-card bw-detail-scroll">
-            <p className="bw-features-card-desc">
-              카카오톡 내보내기 형식(.txt, .csv) 또는 동일 형식 텍스트를 업로드하세요. CSV는 날짜·시간·유저·메시지 컬럼을 지원합니다. 동조/반대는 메시지 내용으로 자동 분류됩니다.
+            <p className="sr-only">
+              카카오톡 TXT·CSV 또는 동일 형식 텍스트를 업로드합니다.
             </p>
             <label className="bw-label-block bw-mt-sm" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <input
@@ -1250,8 +1251,8 @@ function ConversationGraphView() {
             기간 지정 (선택)
           </h2>
           <div className="bw-features-card bw-detail-scroll">
-            <p className="bw-features-card-desc">
-              특정 기간·시간을 지정하면 해당 구간의 대화만 사용해 관계도를 그립니다. 비우면 전체 기간입니다.
+            <p className="sr-only">
+              특정 기간·시간을 지정하면 해당 구간의 대화만 사용해 관계도를 그립니다.
             </p>
             <label
               className="bw-detail-meta-text bw-mt-sm"
@@ -1328,8 +1329,9 @@ function ConversationGraphView() {
             </form>
           </div>
         </section>
+        </div>
 
-        <section ref={graphSectionRef} className="bw-detail-section" aria-labelledby="graph-heading">
+        <section ref={graphSectionRef} className="bw-detail-section conversation-graph-view__graph-section" aria-labelledby="graph-heading">
           <h2 id="graph-heading" className="bw-detail-section-title">
             대화 관계도
           </h2>
@@ -1342,7 +1344,7 @@ function ConversationGraphView() {
           >
             {graphStatusMessage}
           </div>
-          <div className="bw-features-card bw-detail-scroll" aria-busy={loadingGraph}>
+          <div className="bw-features-card bw-detail-scroll conversation-graph-view__graph-card" aria-busy={loadingGraph}>
             {loadingGraph && (
               <p className="bw-label-block bw-detail-meta-text" aria-hidden="true">
                 관계도 생성 중…
@@ -1455,8 +1457,9 @@ function ConversationGraphView() {
                       매트릭스
                     </button>
                   </div>
-                  <span className="bw-detail-meta-text">노드·목록을 눌러 연결을 확인하세요. 휠 확대·드래그 이동.</span>
+                  <span className="conversation-graph-view__graph-toolbar-hint">노드·목록을 눌러 연결을 확인하세요. 휠 확대·드래그 이동.</span>
                 </div>
+                <div className="conversation-graph-view__filters">
                 <fieldset
                   className="bw-mt-sm"
                   data-testid="conversation-graph-stance-filter"
@@ -1524,6 +1527,7 @@ function ConversationGraphView() {
                     ))}
                   </div>
                 </fieldset>
+                </div>
                 <ConversationGraphExpertLayerBar value={expertLayer} onChange={setExpertLayer} />
                 {timelineSegments.length > 0 ? (
                   <div

@@ -32,6 +32,8 @@ describe('generateGraphAnswerViaChat', () => {
 
   beforeEach(() => {
     process.env.REACT_APP_GRAPH_ANSWER_SELF_IMPROVE = '0';
+    process.env.REACT_APP_GRAPH_ANSWER_TWO_PASS = '0';
+    localStorage.removeItem('corbu.conversationGraph.uiPrefs');
     mockStream.mockReset();
     mockSend.mockReset();
     mockStreamingSupported.mockReturnValue(true);
@@ -267,10 +269,15 @@ describe('generateGraphAnswerViaChat', () => {
         '참여자 표',
         '|이름|입장|',
         '|알파|동조|',
+        '|베타|반대|',
         '```mermaid',
         'flowchart TB',
         '  A[알파] --> B[베타]',
         '```',
+        '## 해석',
+        '알파와 베타의 관계를 스냅샷 근거만으로 정리했습니다. 동조·반대 축을 명시했습니다.',
+        '갈등 완화를 위해 중재자 역할이 필요할 수 있습니다(추정).',
+        '참여자 간 발화 빈도와 연결 강도는 표·Mermaid에서 확인할 수 있습니다.',
       ].join('\n');
     });
 
@@ -286,6 +293,7 @@ describe('generateGraphAnswerViaChat', () => {
       },
       {
         preferStream: true,
+        twoPass: false,
         onSelfImproveRetry: (attempt) => {
           retries.push(attempt);
         },
@@ -296,6 +304,44 @@ describe('generateGraphAnswerViaChat', () => {
     expect(retries).toEqual([1]);
     expect(result).toContain('flowchart');
     expect(mockStream).toHaveBeenCalledTimes(2);
+  });
+
+  it('LLM 응답이 비어도 구조화 블록이 있으면 해석 골격과 합성해 반환한다', async () => {
+    process.env.REACT_APP_GRAPH_ANSWER_SELF_IMPROVE = '0';
+    process.env.REACT_APP_GRAPH_ANSWER_TWO_PASS = '0';
+    mockStream.mockResolvedValue('');
+    mockSend.mockResolvedValue({ success: false } as Awaited<ReturnType<typeof sendChatMessage>>);
+
+    const analysis: GraphAiAnalysis = {
+      analyzedAt: '2026-05-16',
+      trustScore: 70,
+      trustLabel: '보통',
+      methodology: [],
+      stanceSummary: '',
+      exchangeSummary: '',
+      alignmentSummary: '',
+      participants: [],
+      topInfluencers: [],
+      exchangeLeaders: [],
+      agreementHubs: [],
+    };
+    const ctx = buildGraphAnswerChatContext({
+      analysis,
+      graph: {
+        upload_id: 'g1',
+        nodes: [{ id: 'a', label: '알파', message_count: 2, dominant_stance: '동조' }],
+        edges: [],
+      },
+    });
+
+    const result = await generateGraphAnswerViaChat('관계도 보고서', ctx, {
+      preferStream: true,
+      twoPass: false,
+    });
+
+    expect(result).toContain('## 참여자 표');
+    expect(result).toContain('## 해석');
+    expect(result).toContain('실행 제안');
   });
 
   it('abort 시 null을 반환한다', async () => {

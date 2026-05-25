@@ -69,7 +69,9 @@ try:
         attach_conversation_graph_instruction,
         build_structured_graph_answer_fallback,
         is_generic_chat_fallback,
+        is_sparse_graph_llm_answer,
         seal_context_for_conversation_graph_chat,
+        should_use_graph_fallback_for_llm,
     )
 except ImportError:
     def attach_conversation_graph_instruction(ctx: Optional[Dict[str, Any]]) -> None:
@@ -79,6 +81,12 @@ except ImportError:
         return ctx
 
     def is_generic_chat_fallback(text: str) -> bool:
+        return False
+
+    def is_sparse_graph_llm_answer(text: str) -> bool:
+        return False
+
+    def should_use_graph_fallback_for_llm(content: str, ctx: Dict[str, Any]) -> bool:
         return False
 
     def build_structured_graph_answer_fallback(ctx: Dict[str, Any]) -> Optional[str]:
@@ -360,8 +368,13 @@ async def _generate_conversation_graph_response_early(
             content = (llm_result or {}).get("content") or ""
             content = content.strip()
             if content and len(content) >= 80 and not is_generic_chat_fallback(content):
-                logger.info("✅ 관계도 전용 LLM 응답: %d자", len(content))
-                return content
+                if not should_use_graph_fallback_for_llm(content, graph_ctx):
+                    logger.info("✅ 관계도 전용 LLM 응답: %d자", len(content))
+                    return content
+                logger.warning(
+                    "관계도 LLM 응답이 빈약함(%d자) — 구조화 폴백 시도",
+                    len(content),
+                )
             if content and is_generic_chat_fallback(content):
                 logger.warning("관계도 LLM 응답이 일반 채팅 템플릿 — 구조화 폴백 사용")
         except asyncio.TimeoutError:
@@ -593,10 +606,13 @@ async def unified_chat(request: UnifiedChatRequest):
                 f"⚠️ 응답이 너무 짧거나 기본 메시지: response_length={len(response_text) if response_text else 0}, 재생성 시도"
             )
             if enhanced_context.get("conversation_graph_analysis") is True:
-                graph_retry = build_structured_graph_answer_fallback(
-                    seal_context_for_conversation_graph_chat(enhanced_context)
-                )
-                response_text = graph_retry or response_text
+                sealed_graph = seal_context_for_conversation_graph_chat(enhanced_context)
+                if (
+                    len(response_text.strip()) < 20
+                    or should_use_graph_fallback_for_llm(response_text, sealed_graph)
+                ):
+                    graph_retry = build_structured_graph_answer_fallback(sealed_graph)
+                    response_text = graph_retry or response_text
             else:
                 response_text = generate_default_response(message, enhanced_context)
             logger.info(
@@ -666,7 +682,13 @@ async def unified_chat(request: UnifiedChatRequest):
             or response_text.strip().startswith("응답:")
             or (
                 enhanced_context.get("conversation_graph_analysis") is True
-                and is_generic_chat_fallback(response_text or "")
+                and (
+                    is_generic_chat_fallback(response_text or "")
+                    or should_use_graph_fallback_for_llm(
+                        response_text or "",
+                        seal_context_for_conversation_graph_chat(enhanced_context),
+                    )
+                )
             )
         ):
             logger.warning(

@@ -3,7 +3,10 @@ import {
   isCreateGraphAnswerRequest,
   truncateRawConversationForAnswer,
 } from './conversationGraphAnswerIntent';
-import { GRAPH_ANSWER_CONTEXT_FLAG } from './conversationGraphAnswerGeneration';
+import {
+  applyGraphAnswerQualityDefaults,
+  GRAPH_ANSWER_CONTEXT_FLAG,
+} from './conversationGraphAnswerGeneration';
 
 export type MergeConversationGraphChatContextOptions = {
   conversationFileContent?: string;
@@ -44,34 +47,32 @@ export function mergeConversationGraphCreateIntentIntoChatContext(
   );
 
   if (!fileText && !hasHandoff && !hasSnapshot) {
-    return {
+    return applyGraphAnswerQualityDefaults({
       ...base,
       [GRAPH_ANSWER_CONTEXT_FLAG]: true,
       multi_request_mode: false,
       input_intent_hint: 'conversation_graph_create',
-      prefer_informed_answer: true,
       conversation_graph_has_data: false,
       conversation_graph_create_from_chat: true,
       conversation_graph_page_path: '/conversation-graph',
       conversation_graph_create_hint:
         '관계도 작성을 요청했습니다. 카카오톡 대화 TXT/CSV를 첨부하거나 /conversation-graph 에서 대화를 붙여넣은 뒤 「관계도 만들기」 답변 생성을 이용해 주세요.',
       answer_quality_instruction: buildCreateGraphAnswerInstruction(false, false),
-    };
+    });
   }
 
   const hasGraphNodes = base.conversation_graph_has_data === true || hasSnapshot || hasHandoff;
   const instruction = buildCreateGraphAnswerInstruction(hasGraphNodes, Boolean(fileText));
 
-  return {
+  return applyGraphAnswerQualityDefaults({
     ...base,
     [GRAPH_ANSWER_CONTEXT_FLAG]: true,
     multi_request_mode: false,
     input_intent_hint: 'conversation_graph_create',
-    prefer_informed_answer: true,
     conversation_graph_has_data: hasGraphNodes,
     ...(fileText && !hasSnapshot ? { conversation_graph_raw_conversation: fileText } : {}),
     answer_quality_instruction: instruction,
     conversation_graph_create_from_chat: true,
     conversation_graph_page_path: '/conversation-graph',
-  };
+  });
 }

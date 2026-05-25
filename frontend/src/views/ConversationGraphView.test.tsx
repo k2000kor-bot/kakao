@@ -147,7 +147,7 @@ describe('ConversationGraphView', () => {
       </MemoryRouter>
     );
     expect(screen.getByTestId('conversation-graph-view')).toBeInTheDocument();
-    expect(screen.getByText(/족보형 관계도·입장·시공사 반응 신호/)).toBeInTheDocument();
+    expect(screen.getByText(/관계도·답변 생성/)).toBeInTheDocument();
     await screen.findByText(/업로드된 대화가 없습니다/); // list fetch 완료 대기
   });
 

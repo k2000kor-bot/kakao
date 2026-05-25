@@ -318,6 +318,30 @@ describe('ConversationGraphAnswerPanel', () => {
     expect(markdown.textContent).not.toMatch(/flowchart\s+TB/);
   });
 
+  it('기본값으로 twoPass=true를 generateGraphAnswerViaChat에 전달한다', async () => {
+    jest.mocked(generateGraphAnswerViaChat).mockResolvedValue('합성 답변');
+
+    render(
+      <ConversationGraphAnswerPanel
+        analysis={analysis}
+        narrative="해석"
+        graph={{
+          upload_id: 'g1',
+          nodes: [{ id: 'p1', label: '알파', message_count: 1, dominant_stance: '동조' }],
+          edges: [],
+        }}
+        onOpenInChat={jest.fn()}
+      />,
+    );
+
+    clickIntentPreset('report');
+    clickGenerate();
+
+    await waitFor(() => expect(generateGraphAnswerViaChat).toHaveBeenCalled());
+    const opts = jest.mocked(generateGraphAnswerViaChat).mock.calls.at(-1)?.[2];
+    expect(opts?.twoPass).toBe(true);
+  });
+
   it('2-pass 체크박스를 켜면 generateGraphAnswerViaChat에 twoPass를 전달한다', async () => {
     jest.mocked(generateGraphAnswerViaChat).mockResolvedValue('합성 답변');
     const onTwoPass = jest.fn();

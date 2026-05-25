@@ -1,0 +1,184 @@
+/**
+ * 대화 관계도 상세 (/conversation-graph)
+ * ToolPageShell 안에서 전체 폭·높이 활용, 업로드/그래프/답변 생성 통일 스타일
+ */
+
+/* 라우트 셸: 이중 박스·중복 힌트 제거 */
+.brainwave-chat-route-shell--tool:has([data-testid='conversation-graph-view']) .bw-tool-page-strip {
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.brainwave-chat-route-shell--tool:has([data-testid='conversation-graph-view']) .bw-tool-page-strip__hint {
+  display: none;
+}
+
+.brainwave-chat-route-shell--tool:has([data-testid='conversation-graph-view']) .brainwave-tool-route-body {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 루트: bw-detail-root 기본 테두리·그림자 제거(셸과 중복) */
+.bw-detail-root.conversation-graph-view {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  overflow: hidden;
+}
+
+.conversation-graph-view .bw-tool-view-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-md) var(--spacing-md);
+  box-sizing: border-box;
+}
+
+.conversation-graph-view .bw-detail-section {
+  padding: 0;
+  min-width: 0;
+}
+
+.conversation-graph-view .bw-detail-section-title {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+
+.conversation-graph-view .bw-features-card.bw-detail-scroll {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  background: var(--bg-primary);
+  min-width: 0;
+}
+
+.conversation-graph-view .bw-features-card.bw-detail-scroll:hover {
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+/* 상단: 업로드·목록·기간 — 좁은 가로 그리드 */
+.conversation-graph-view__setup {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.conversation-graph-view__setup .bw-features-card.bw-detail-scroll {
+  height: 100%;
+}
+
+.conversation-graph-view__setup .conversation-graph-upload-textarea {
+  min-height: 4.5rem;
+}
+
+/* 관계도 본문: 남은 높이 최대 활용 */
+.conversation-graph-view__graph-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.conversation-graph-view__graph-section .bw-detail-section-title {
+  flex-shrink: 0;
+}
+
+.conversation-graph-view__graph-card {
+  flex: 1;
+  min-height: min(52vh, 640px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.conversation-graph-view__graph-card .conversation-graph-graph-stage {
+  flex: 1;
+  min-height: min(44vh, 520px);
+  overflow: auto;
+  margin-top: var(--spacing-xs);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  padding: var(--spacing-sm);
+  box-sizing: border-box;
+}
+
+.conversation-graph-view__graph-card .conversation-graph-graph-stage svg {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+}
+
+/* 툴바·필터 컴팩트 */
+.conversation-graph-view__graph-toolbar-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.conversation-graph-view__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.conversation-graph-view__filters fieldset {
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  min-width: 0;
+}
+
+.conversation-graph-view__filters legend.bw-label-block {
+  font-size: var(--font-size-xs);
+  margin-bottom: var(--spacing-xs);
+  padding: 0;
+}
+
+/* 답변 생성 패널: 그래프 카드와 동일 톤 */
+.conversation-graph-view .conversation-graph-answer-panel {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: var(--border-width) solid var(--border-color);
+}
+
+.conversation-graph-view .conversation-graph-answer-panel__layout {
+  min-height: min(48vh, 520px);
+}
+
+@media (max-width: 900px) {
+  .conversation-graph-view .bw-tool-view-body {
+    padding: 0 var(--spacing-sm) var(--spacing-sm);
+  }
+
+  .conversation-graph-view__setup {
+    grid-template-columns: 1fr;
+  }
+
+  .conversation-graph-view__graph-card {
+    min-height: min(44vh, 480px);
+  }
+}

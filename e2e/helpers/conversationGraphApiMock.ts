@@ -1,4 +1,4 @@
-import type { Route } from '@playwright/test';
+import type { Page, Route } from '@playwright/test';
 
 export type ConversationGraphMockNode = {
   id: string;
@@ -94,7 +94,7 @@ export function buildChatStreamSseBody(answerText: string, generationPhase = 'an
   ].join('');
 }
 
-export function chatStreamRouteStub(answerText: string, delayMs = 1200) {
+export function chatStreamRouteStub(answerText: string, delayMs = 200) {
   const body = buildChatStreamSseBody(answerText);
   return async (route: Route) => {
     await new Promise((r) => setTimeout(r, delayMs));
@@ -104,6 +104,31 @@ export function chatStreamRouteStub(answerText: string, delayMs = 1200) {
       body,
     });
   };
+}
+
+/** 스트림·비스트림(2-pass 개요·자가검증 재시도) 공통 스텁 */
+export async function stubGraphAnswerChatRoutes(
+  page: Page,
+  answerText: string,
+  metrics?: { chatCallCount: number },
+): Promise<void> {
+  const bump = () => {
+    if (metrics) metrics.chatCallCount += 1;
+  };
+  const streamStub = async (route: Route) => {
+    bump();
+    return chatStreamRouteStub(answerText, 150)(route);
+  };
+  const postStub = async (route: Route) => {
+    const url = route.request().url();
+    if (route.request().method() === 'POST' && !url.includes('/stream')) bump();
+    return chatPostRouteStub(answerText, 150)(route);
+  };
+  // Playwright는 마지막 등록 route가 우선 — POST를 먼저, stream을 나중에 등록
+  await page.route('**/api/chat**', postStub);
+  await page.route('**/api/unified/chat**', postStub);
+  await page.route('**/api/chat/stream**', streamStub);
+  await page.route('**/api/unified/chat/stream**', streamStub);
 }
 
 /** 비스트림 POST `/api/chat`·`/api/unified/chat` 스텁 */
