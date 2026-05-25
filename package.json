@@ -78,6 +78,8 @@
     "pr:open-new": "bash scripts/open-github-pr-new.sh",
     "pr:open-actions": "bash scripts/open-github-pr-actions.sh",
     "pr:status": "bash scripts/pr-status.sh",
+    "pr:status:chat-composer-context": "PR_HEAD_BRANCH=feat/chat-composer-context-graph bash scripts/pr-status.sh",
+    "pr:ready:chat-composer-context": "PR_HEAD_BRANCH=feat/chat-composer-context-graph PR_TITLE='fix(chat): 대화 삭제·초기화 후 첨부 맥락 + conversation graph handoff' bash scripts/pr-ready.sh",
     "repo:open-default-branch": "bash scripts/open-github-default-branch-settings.sh",
     "repo:dispatch-set-default-main": "bash scripts/open-set-default-branch-workflow.sh",
     "repo:open-actions-secrets": "bash scripts/open-github-actions-secrets.sh",
