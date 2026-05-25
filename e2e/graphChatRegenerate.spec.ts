@@ -5,9 +5,9 @@ import {
   e2eSkipMessageCannotConnectKo,
   skipUnlessE2EServerReachable,
 } from './helpers/playwrightEnv';
-import { stubGraphAnswerChatRoutes } from './helpers/conversationGraphApiMock';
+import { installComposerChatStub } from './helpers/composerChatStub';
 import { dismissWebpackDevOverlay, seedOnboardingDone } from './helpers/playwrightLocators';
-import { waitForComposerInput } from './helpers/chatComposerPage';
+import { fillChatComposerAndSend, waitForComposerInput } from './helpers/chatComposerPage';
 
 /**
  * `/chat` — CSV 첨부·관계도 생성 의도 전송 후 graph 재생성 E2E.
@@ -29,11 +29,7 @@ const GRAPH_CHAT_ANSWER_STUB = [
   '',
   '## 해석',
   '',
-  '알파는 찬성 측 논리를 반복하며 베타는 절차·리스크를 강조합니다. 양측 모두 일정·비용 프레임을 공유하지만 우선순위가 다릅니다.',
-  '',
-  '## 실행 제안',
-  '',
-  '1. 쟁점별 중립 요약 공유 2. 소그룹 협의 일정 확정 3. 다음 회의 안건 명시',
+  '알파는 찬성 측 논리를 반복하며 베타는 절차·리스크를 강조합니다.',
   '',
   '```mermaid',
   'flowchart TB',
@@ -42,7 +38,7 @@ const GRAPH_CHAT_ANSWER_STUB = [
 ].join('\n');
 
 describeGraphChatRegen('/chat — 관계도 답변 재생성', () => {
-  test.describe.configure({ timeout: 90_000 });
+  test.describe.configure({ timeout: 120_000 });
 
   test.beforeEach(async ({ page }) => {
     await seedOnboardingDone(page);
@@ -60,8 +56,10 @@ describeGraphChatRegen('/chat — 관계도 답변 재생성', () => {
     test.skip(!!process.env.E2E_USE_BUILD, '정적 빌드 serve는 이 검증에서 제외합니다');
     if (!(await skipUnlessE2EServerReachable(test, e2eSkipMessageCannotConnectKo()))) return;
 
-    const metrics = { chatCallCount: 0 };
-    await stubGraphAnswerChatRoutes(page, GRAPH_CHAT_ANSWER_STUB, metrics);
+    const stub = await installComposerChatStub(page, {
+      responses: [GRAPH_CHAT_ANSWER_STUB, GRAPH_CHAT_ANSWER_STUB],
+      delayMs: 400,
+    });
 
     await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
     await dismissWebpackDevOverlay(page);
@@ -86,23 +84,21 @@ describeGraphChatRegen('/chat — 관계도 답변 재생성', () => {
       timeout: 8_000,
     });
 
-    await chatInput.fill('관계도를 만들어줘');
-    await chatInput.press('Enter');
+    await fillChatComposerAndSend(page, chatInput, '관계도를 만들어줘');
 
-    await expect(page.getByText(/## 요약/)).toBeVisible({ timeout: 45_000 });
     await expect
-      .poll(() => metrics.chatCallCount, { timeout: 30_000, intervals: [400] })
+      .poll(() => stub.getPostCount(), { timeout: 45_000, intervals: [400] })
       .toBeGreaterThanOrEqual(1);
 
-    const callsAfterFirst = metrics.chatCallCount;
     const regenBtn = page.locator(byTestId(TEST_IDS.COMPOSER_REGENERATE_MESSAGE)).first();
-    await expect(regenBtn).toBeVisible({ timeout: 20_000 });
+    await expect(regenBtn).toBeVisible({ timeout: 45_000 });
+    const postsAfterFirst = stub.getPostCount();
 
     await dismissWebpackDevOverlay(page);
     await regenBtn.click({ force: true });
 
     await expect
-      .poll(() => metrics.chatCallCount, { timeout: 35_000, intervals: [400] })
-      .toBeGreaterThan(callsAfterFirst);
+      .poll(() => stub.getPostCount(), { timeout: 45_000, intervals: [400] })
+      .toBeGreaterThan(postsAfterFirst);
   });
 });

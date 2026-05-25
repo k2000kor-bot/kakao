@@ -90,7 +90,7 @@ export function buildChatStreamSseBody(answerText: string, generationPhase = 'an
   return [
     `data: ${JSON.stringify({ metadata: { generation_phase: generationPhase } })}\n\n`,
     `data: ${JSON.stringify({ content: answerText })}\n\n`,
-    `data: ${JSON.stringify({ done: true })}\n\n`,
+    `data: ${JSON.stringify({ done: true, fullContent: answerText })}\n\n`,
   ].join('');
 }
 
@@ -129,6 +129,14 @@ export async function stubGraphAnswerChatRoutes(
   await page.route('**/api/unified/chat**', postStub);
   await page.route('**/api/chat/stream**', streamStub);
   await page.route('**/api/unified/chat/stream**', streamStub);
+  await page.route('http://localhost:5002/api/chat/stream**', streamStub);
+  await page.route('http://127.0.0.1:5002/api/chat/stream**', streamStub);
+  await page.route('http://localhost:5002/api/unified/chat/stream**', streamStub);
+  await page.route('http://127.0.0.1:5002/api/unified/chat/stream**', streamStub);
+  await page.route('http://localhost:5002/api/chat**', postStub);
+  await page.route('http://127.0.0.1:5002/api/chat**', postStub);
+  await page.route('http://localhost:5002/api/unified/chat**', postStub);
+  await page.route('http://127.0.0.1:5002/api/unified/chat**', postStub);
 }
 
 /** 비스트림 POST `/api/chat`·`/api/unified/chat` 스텁 */
@@ -153,6 +161,7 @@ export function chatPostRouteStub(answerText: string, delayMs = 300) {
       contentType: 'application/json',
       body: JSON.stringify({
         success: true,
+        response: answerText,
         message: { content: answerText, role: 'assistant' },
       }),
     });
