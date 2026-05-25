@@ -59,19 +59,34 @@ jobs:
         with:
           script: |
             const head = process.env.HEAD_BRANCH;
-            const { data } = await github.rest.repos.compareCommits({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              basehead: `main...${head}`,
-            });
-            const skip = data.status === 'identical' || data.ahead_by === 0;
-            core.setOutput('skip', skip ? 'true' : 'false');
-            core.setOutput('ahead_by', String(data.ahead_by ?? 0));
-            core.setOutput('behind_by', String(data.behind_by ?? 0));
-            if (skip) {
-              core.summary.addRaw(`## Skip\n\`main...${head}\` — open PR 불필요 (ahead=${data.ahead_by})`);
-            } else {
-              core.summary.addRaw(`## Compare\n\`main...${head}\` ahead **${data.ahead_by}** · behind ${data.behind_by}`);
+            if (!head) {
+              core.setFailed('HEAD_BRANCH is empty');
+              return;
+            }
+            try {
+              const { data } = await github.rest.repos.compareCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                basehead: `main...${head}`,
+              });
+              const ahead = Number(data.ahead_by ?? 0);
+              const behind = Number(data.behind_by ?? 0);
+              const skip = data.status === 'identical' || ahead === 0;
+              core.setOutput('skip', skip ? 'true' : 'false');
+              core.setOutput('ahead_by', String(ahead));
+              core.setOutput('behind_by', String(behind));
+              if (skip) {
+                core.summary.addRaw(`## Skip\n\`main...${head}\` — open PR 불필요 (ahead=${ahead})`);
+              } else {
+                core.summary.addRaw(`## Compare\n\`main...${head}\` ahead **${ahead}** · behind ${behind}`);
+              }
+            } catch (e) {
+              // compare API 실패 시에도 PR 생성 단계는 시도 (권한·일시 오류 대비)
+              core.warning(`compareCommits failed: ${e.message || e}`);
+              core.setOutput('skip', 'false');
+              core.setOutput('ahead_by', '?');
+              core.setOutput('behind_by', '?');
+              core.summary.addRaw(`## Compare skipped\n\`main...${head}\` — compare API 오류, PR 생성 단계로 진행`);
             }
 
       - name: Find open PR
