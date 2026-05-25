@@ -137,3 +137,58 @@ export function shouldUseSimpleComposerOutboundMessage(rawInput: string): boolea
   if (/질문:|요구사항:/i.test(trimmed)) return false;
   return true;
 }
+
+const SUBSTANTIAL_COMPOSER_ATTACH_CHARS = 40;
+
+/** 일회·스레드 첨부에 실질 본문이 있는지 — 짧은 지시만 보내는 fast path 비활성화에 사용 */
+export function hasSubstantialComposerAttachmentContext(options: {
+  conversationFileContent?: string;
+  threadAttachedFileContents?: string | null;
+}): boolean {
+  const file = coerceTrimmedString(options.conversationFileContent ?? '', '');
+  const thread =
+    options.threadAttachedFileContents != null
+      ? coerceTrimmedString(String(options.threadAttachedFileContents), '')
+      : '';
+  return (
+    file.length > SUBSTANTIAL_COMPOSER_ATTACH_CHARS ||
+    thread.length > SUBSTANTIAL_COMPOSER_ATTACH_CHARS
+  );
+}
+
+export type SimpleComposerOutboundTurnOptions = {
+  trimmedInput: string;
+  /** 첨부 병합 후 프롬프트 — 입력창 원문과 다르면 simple path 생략 */
+  effectiveInput?: string;
+  conversationFileContent?: string;
+  threadAttachedFileContents?: string | null;
+};
+
+/**
+ * 전송 턴에서 simple composer(fast path·짧은 API message) 사용 여부.
+ * 첨부·붙여넣기 본문이 있으면 짧은 지시만 보내지 않도록 false.
+ */
+export function shouldUseSimpleComposerOutboundMessageForTurn(
+  options: SimpleComposerOutboundTurnOptions,
+): boolean {
+  if (
+    hasSubstantialComposerAttachmentContext({
+      conversationFileContent: options.conversationFileContent,
+      threadAttachedFileContents: options.threadAttachedFileContents,
+    })
+  ) {
+    return false;
+  }
+  const trimmed = coerceTrimmedString(options.trimmedInput, '');
+  const effective = coerceTrimmedString(options.effectiveInput ?? trimmed, '');
+  if (effective !== trimmed && effective.length > trimmed.length + 40) {
+    return false;
+  }
+  return shouldUseSimpleComposerOutboundMessage(trimmed);
+}
+
+/** flushSync 직후 stale conversations 클로저와 로컬 conversation.messages 중 더 긴 쪽 */
+export function pickComposerHistoryMessages<T>(localMessages: T[], storedMessages: T[] | undefined): T[] {
+  const stored = storedMessages ?? [];
+  return localMessages.length >= stored.length ? localMessages : stored;
+}

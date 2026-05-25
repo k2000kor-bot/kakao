@@ -2,9 +2,11 @@ import {
   finalizePipelineExtrasForAnswer,
   mergeAssistantPipelineExtrasForTurn,
   mergeStreamCompletionText,
+  pickComposerHistoryMessages,
   resolveAssistantAnswerDisplayText,
   shouldUseComposerStreamPreReveal,
   shouldUseSimpleComposerOutboundMessage,
+  shouldUseSimpleComposerOutboundMessageForTurn,
 } from '../composerStreamResponseText';
 import { ASSISTANT_PLACEHOLDER_DRAFT } from '../chatInputUtils';
 
@@ -23,6 +25,33 @@ describe('composerStreamResponseText', () => {
     expect(shouldUseSimpleComposerOutboundMessage('오늘 날씨 어때?')).toBe(true);
     expect(shouldUseSimpleComposerOutboundMessage('질문: A\n요구사항: B')).toBe(false);
     expect(shouldUseSimpleComposerOutboundMessage('x'.repeat(700))).toBe(false);
+  });
+
+  it('shouldUseSimpleComposerOutboundMessageForTurn은 첨부·병합 본문이 있으면 false', () => {
+    expect(
+      shouldUseSimpleComposerOutboundMessageForTurn({
+        trimmedInput: '위 내용 기준으로 요약해줘',
+        conversationFileContent: 'user: hello\nassistant: hi\n'.repeat(20),
+      }),
+    ).toBe(false);
+    expect(
+      shouldUseSimpleComposerOutboundMessageForTurn({
+        trimmedInput: '요약해줘',
+        effectiveInput: `[첨부 파일: chat.txt]\n${'대화 본문 '.repeat(30)}\n\n요약해줘`,
+      }),
+    ).toBe(false);
+    expect(
+      shouldUseSimpleComposerOutboundMessageForTurn({
+        trimmedInput: '오늘 날씨 어때?',
+      }),
+    ).toBe(true);
+  });
+
+  it('pickComposerHistoryMessages는 더 긴 메시지 목록을 선택한다', () => {
+    const local = [{ id: 1 }, { id: 2 }];
+    const stored = [{ id: 1 }];
+    expect(pickComposerHistoryMessages(local, stored)).toEqual(local);
+    expect(pickComposerHistoryMessages(stored, local)).toEqual(local);
   });
 
   it('finalizePipelineExtrasForAnswer는 generation phase를 제거한다', () => {

@@ -53,7 +53,7 @@
 - **스트리밍**: 기본 켜짐. 본문 청크는 플레이스홀더를 제거한 뒤 `GensparkAnswerMarkdown`으로 표시. 스트림 실패 시 비스트림 POST 폴백.
 - **프리셋**: **관계도 만들기**(참여자·연결 표·Mermaid `flowchart TB`)·관계도 보고서·갈등 요약·실행 제안·(참여자 선택 시) 참여자 분석.
 - **「관계도를 만들어줘」**: 답변 입력·프리셋·자연어에서 관계도 생성 의도를 감지합니다. 붙여넣은 대화가 있으면 **업로드 → 서버 관계도 API** 후 같은 흐름으로 답변을 생성하고, 화면 **족보형 SVG**도 갱신됩니다. 관계도가 없고 원문만 있으면 `conversation_graph_raw_conversation` 맥락으로 표·Mermaid 답변을 만듭니다.
-- **통합 대화(`/chat`)**: 첨부·붙여넣은 대화 파일과 함께 「관계도 만들어줘」를내면 `conversation_graph_create` intent·Mermaid 작성 지시가 `context`에 병합됩니다(`conversationGraphChatContextEnhancer`). TXT/CSV 첨부 시 입력창 위 **파일명 칩**이 표시되고, 관계도 생성 의도가 감지되면 **「관계도 화면에서 만들기」** 배너가 뜹니다(웰컴·대화 화면 공통). 배너로 `/conversation-graph`에 넘기면 붙여넣기·자동 「관계도 만들기」 답변 생성이 이어집니다(`conversationGraphNavigateHandoff`).
+- **통합 대화(`/chat`)**: 첨부·붙여넣은 대화 파일과 함께 「관계도 만들어줘」를내면 `conversation_graph_create` intent·Mermaid 작성 지시가 `context`에 병합됩니다(`conversationGraphChatContextEnhancer`). 전송 후 graph context는 `mergePersistedGraphComposerContext`로 ref에 누적되어 **같은 대화** 안에서 재생성·편집 시 첨부·handoff 맥락이 유지됩니다. **대화 전환·삭제·메시지 전체 삭제** 시 ref·첨부는 초기화됩니다. TXT/CSV 첨부 시 입력창 위 **파일명 칩**이 표시되고, 관계도 생성 의도가 감지되면 **「관계도 화면에서 만들기」** 배너가 뜹니다(웰컴·대화 화면 공통). 배너로 `/conversation-graph`에 넘기면 붙여넣기·자동 「관계도 만들기」 답변 생성이 이어집니다(`conversationGraphNavigateHandoff`).
 - **Mermaid 답변**: 생성 결과의 ` ```mermaid ` 블록은 답변 패널에서 별도 카드로 표시·복사·미리보기(lazy `mermaid` 렌더)할 수 있습니다. 렌더 실패 시 소스만 표시됩니다.
 - **대화 handoff**: 「대화에서 답변 생성」·「대화에서 바로 전송」 — `/chat`으로 `location.state`에 초안·`context`·선택적 `autosend` 전달 (`ChatGPTInterface`가 수신).
 - **자동 생성**: UI 설정 「관계도 생성 후 보고서 답변 자동 생성」 — 관계도·해석 준비 후 기본 보고서 프리셋으로 한 번 생성 시도.
@@ -104,10 +104,12 @@ REACT_APP_GRAPH_ANSWER_TWO_PASS=0
 - 뷰 테스트 TypeScript: `npm run typecheck:views-tests` — `src/views/tsconfig.json`(Jest 전역·`*.test.tsx`). `verify:conversation-graph`·`dev:check`에 선행 포함.
 - API 클라이언트 회귀: `src/services/__tests__/conversationGraphService.test.ts`는 `npm run test:p4:services`에 포함됩니다.
 - 뷰·답변 회귀: `npm run test:conversation-graph` — `ConversationGraphView.test.tsx`(43), `ConversationGraphAnswerPanel.test.tsx`(7), `conversationGraphDeterministicSections`·`AnswerSynthesis`·`AnswerLearning`, `generateGraphAnswerViaChat.test.ts`(구조화 합성), kakaoTalk·관계도 유틸 등(합계 195+). **한 번에**: `npm run verify:conversation-graph`(`typecheck:views-tests` + 유닛 + Chromium E2E).
+- **풀 스택(API 스모크 포함)**: `npm run verify:conversation-graph:full` — unit + `verify:conversation-graph-api`(백엔드 5002) + E2E 13 tests. 배포 전 선택: [FRONTEND_DEPLOYMENT.md](./FRONTEND_DEPLOYMENT.md) §5.
 - 뷰만: `npm test -- --testPathPattern='ConversationGraphView\\.test'`(업로드·목록·관계도 검색·재검색·답변 handoff 등).
 - 메인 통합 대화에서 **첨부·재생성·편집** 품질을 보려면(이 화면과 별도): [guides/CHAT_UI_TEST_SCENARIOS.md §14.5](./guides/CHAT_UI_TEST_SCENARIOS.md)·[guides/CHAT_ANSWER_FLOW_VERIFICATION.md §8](./guides/CHAT_ANSWER_FLOW_VERIFICATION.md) 행 9 — [FEATURE_LOGIC_AND_STRENGTHS.md](./FEATURE_LOGIC_AND_STRENGTHS.md) §3.5.
 - 저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · `npm run test:views`(확장 뷰·라우트) · (권장) `npm run test:sidebar-context`(수동 §14.5 [CHAT_UI_TEST_SCENARIOS](./guides/CHAT_UI_TEST_SCENARIOS.md)) · (선택) `npm run check:doc-verification-hub` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
 - **E2E**(dev 서버 `localhost:3000` 필요): `npm run test:e2e:conversation-graph:chromium` — 13 tests(관계도 검색·합성 답변·2-pass·Mermaid·handoff·`/chat` 이동). 헬퍼: `conversationGraphPage.ts`·`conversationGraphApiMock.ts`.
 - **백엔드**: `npm run test:backend:conversation-graph` — `test_conversation_graph.py` + `test_conversation_graph_chat_hint.py`(구조화 블록·폴백).
-- **전체**: `npm run verify:conversation-graph`(유닛 + 백엔드 + E2E).
+- **전체**: `npm run verify:conversation-graph`(유닛 + E2E) · **API 포함**: `npm run verify:conversation-graph:full`.
+- **`/chat` graph 재생성·편집**: `npm run test:conversation-graph:chat-handoff` — handoff·`mergePersistedGraphComposerContext`·`ChatGPTInterface` graph **재생성·편집** 단위. E2E graph 재생성: `npm run test:e2e:graph-chat-regenerate`(dev `:3000` + `E2E_SERVER_READY=1`). **삭제·초기화 후 첨부+짧은 지시**: `composerContextAfterClear.test` · E2E `test:e2e:composer-attach-context`. 일반 재생성: `test:e2e:composer-regenerate`.
 - **/chat handoff만**: `npm run test:conversation-graph:chat-handoff`(context 병합·배너·navigate·전송 context·`ChatGPTInterface` handoff).

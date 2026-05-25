@@ -113,6 +113,7 @@
 | 14.7 | 컴포저 다중 요청 | 입력에 `1. 첫 질문\n2. 둘째 요청` 입력(또는 **질문·요구·요청** 칩) → Enter 전송 | 전송 전 **미리보기**(`chat-composer-input-hint`). 생성 중 **5단계 UI**(`composer-genspark-generation-status`)·**체크리스트**(`composer-multi-request-checklist`, 「처리 중」). **재생성·편집 후 재전송**도 동일 UI·순차 API 적용. Jest: `npm run verify:composer-pipeline` · 배포 전: `npm run verify:final` 6단계 포함 · E2E(선택): `npm run test:e2e:composer-pipeline:all` · 순차 API(선택): `REACT_APP_COMPOSER_SEQUENTIAL_MULTI_REQUEST`(+ `..._STREAM` SSE). 다단계(선택): `REACT_APP_COMPOSER_MULTI_STEP_MULTI_REQUEST` — 항목별 `generateMultiStepResponse`(순차 API·SSE보다 우선순위 낮음). 전송·재생성·편집 공통. `multiStepResponseGenerator`는 동일 `multi_request_*` 컨텍스트로 복잡도 분석에도 반영. |
 | 14.8 | Council·자가 개발 | `질문: …\n요구사항: …` 또는 `1. …\n2. …` 등 복잡 입력 후 전송(스트림·비스트림) | 생성 중 Council 단계 UI(분석→개요→초안→교차검증→검증). 완료 후 **과업 메타**(`composer-pipeline-extras`) 펼치기 → **Composer Oversight Council v2**(`composer-oversight-council`)·(조건 시) **답변 자가 개발** 표시. `REACT_APP_COMPOSER_ANSWER_SELF_DEVELOP=0`이면 자가 개발만 생략. 메인·Ultimate·파일 분석 채팅 모두 동일 extras·자가 개발 경로. E2E(선택): `E2E_AGENTS_COMPOSER_PIPELINE=1` · Council 패널 케이스 포함. |
 | 14.9 | 답변 재생성 | 어시스턴트 답변 완료 후 **재생성** 클릭(`composer-regenerate-message`) | 동일 사용자 질문으로 API 재호출. 메인(`ChatGPTInterface`)은 스트림·비스트림·Council·순차 API 포함. **Ultimate**·**파일 분석**은 `resolveComposerRegenerateUserTurn` + Council extras. 파일 분석은 해당 턴 **파일 스냅샷** 유지. Jest: `composerRegenerateTurn.test` · `verify:composer-pipeline`. E2E(선택): `E2E_COMPOSER_REGENERATE=1` · `npm run test:e2e:composer-regenerate` (`/agents` 스트림 · `/ultimate` · `/file-analysis`). |
+| 14.10 | 삭제·초기화 후 첨부 | **메시지 전체 삭제** 또는 **대화 삭제** 후 이전 대화 `.txt`/`.csv` 첨부 → 「위 내용 기준으로…」 등 **짧은 지시**만 입력·전송 | API `context.conversation_file_content`에 첨부 본문 포함. `composer_simple_query`·`qa_pipeline_fast_path` **미설정**(full pipeline). 답변이 첨부 맥락 반영. Jest: `composerContextAfterClear.test` · `verify:composer-pipeline`. E2E(선택): `E2E_COMPOSER_ATTACH_CONTEXT=1` · `npm run test:e2e:composer-attach-context`. |
 
 ## 15. 다음 개선 후보
 
@@ -120,7 +121,7 @@
 
 ---
 
-*최종 업데이트: §14.8 Council·자가 개발 · §14.9 재생성(공통 유틸)*
+*최종 업데이트: §14.10 삭제·초기화 후 첨부 맥락 · §14.9 재생성(공통 유틸)*
 
 ## 개발자 검증
 

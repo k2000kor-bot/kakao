@@ -78,6 +78,17 @@ describe('buildUnifiedQaGensparkPipelineContextMerge', () => {
         expect(pipelineMerge.composer_oversight_enabled).toBeUndefined();
     });
 
+    it('짧은 지시 + 대화 파일 첨부면 fast path를 쓰지 않는다', () => {
+        const { pipelineMerge } = buildUnifiedQaGensparkPipelineContextMerge({
+            ...base,
+            trimmedInput: '위 내용 기준으로 요약해줘',
+            conversationFileContent: 'user: hello\nassistant: world\n'.repeat(30),
+            featureCtx: {},
+        });
+        expect(pipelineMerge.qa_pipeline_fast_path).toBeUndefined();
+        expect(pipelineMerge.use_pipeline_v2).toBe(true);
+    });
+
     it('관계도 답변 context면 composer oversight를 붙이지 않는다', () => {
         const { pipelineMerge } = buildUnifiedQaGensparkPipelineContextMerge({
             ...base,

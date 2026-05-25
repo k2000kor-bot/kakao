@@ -13,7 +13,7 @@ cd "${PROJECT_ROOT}"
 npm run sync:frontend-src
 npm run pretest
 CI=true react-scripts test \
-  --testPathPattern='composerAttachmentPayload|composerMultiRequestProgress|composerSequential|composerMultiStep|runComposerSequentialMultiRequest|runComposerMultiStep|chatGptComposerPayload|composerAssistantTurnFinalize|composerRegenerateTurn|composerOversight|composerStreamResponseText|GensparkPipelineExtrasPanel|WorkspaceQueryComposer.test|ChatGPTInterface.test' \
+  --testPathPattern='composerAttachmentPayload|composerMultiRequestProgress|composerSequential|composerMultiStep|runComposerSequentialMultiRequest|runComposerMultiStep|chatGptComposerPayload|composerAssistantTurnFinalize|composerRegenerateTurn|composerOversight|composerStreamResponseText|composerContextAfterClear|GensparkPipelineExtrasPanel|WorkspaceQueryComposer.test|ChatGPTInterface.test' \
   --watchAll=false
 
 if [ "${E2E_COMPOSER_PIPELINE:-}" = "1" ]; then

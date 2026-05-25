@@ -124,6 +124,7 @@
 | 6 | quality 전달 | 네트워크 탭에서 /api/chat·/api/chat/stream 요청 body 확인 | `quality`(basic \| enhanced \| ultimate) 필드 포함 시 파이프라인·max_tokens 적용. [ANSWER_QUALITY_AND_SEARCH §5](./ANSWER_QUALITY_AND_SEARCH.md#5-확인-포인트) 참고 |
 | 7 | **대화방 재진입·대화 이력** | (1) 한 대화에서 메시지 2~3턴 주고 받기 (2) 사이드바에서 다른 대화 선택 후 다시 해당 대화 클릭 (3) 새 질문 전송 | 이전 대화가 화면에 그대로 보이고, 전송 시 요청 body의 `context.conversation_history`에 이전 턴이 포함되는지 네트워크 탭에서 확인. 답변이 이전 맥락을 참고하는지 내용으로 확인. |
 | 8 | **요구·질문에 맞는 유연한 생성** | (1) 짧은 질문 입력(예: "뭐야?") → 답변이 간결한지 (2) "상세히 비교해서 설명해줘" 입력 → 답변이 충실한지 (3) "사건조사 형식으로 요약해줘" / "생성로직에 맞게 정리해줘" → 해당 구조·순서로 답하는지 | 요청 body의 `context.adapt_answer_to_request` 포함 여부 확인. [CHAT_CONTEXT_CONTRACT](./CHAT_CONTEXT_CONTRACT.md) §1, [ANSWER_QUALITY_AND_SEARCH §2.5](./ANSWER_QUALITY_AND_SEARCH.md) 참고. |
+| 9 | **삭제·초기화 후 첨부 맥락** | (1) 메시지 전체 삭제 또는 새 대화 (2) 이전 대화 `.txt`/`.csv` **첨부** (3) 「위 내용 기준으로…」 등 **짧은 지시**만 전송 | `context.conversation_file_content`에 첨부 본문 포함. `composer_simple_query`·`qa_pipeline_fast_path` **없음**. 답변이 첨부 내용 반영. Jest: `composerContextAfterClear.test` · 수동 §14.10 [CHAT_UI_TEST_SCENARIOS](./CHAT_UI_TEST_SCENARIOS.md). E2E(선택): `npm run test:e2e:composer-attach-context`. **재생성·편집**도 §14.5와 동일하게 스레드·일회 첨부 유지. |
 
 **이어서 진행 시**: 위 1~8번 수동 확인 후, 배포 전 `npm run deploy:check` 실행 → `build/` 배포. 추가 검증은 `npm run test:coverage`, E2E(Playwright) 등 선택.
 

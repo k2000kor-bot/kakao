@@ -55,13 +55,15 @@ import {
 import { getStandaloneChatPath, isGensparkPrimaryExperience, isMarketingDraftEligiblePath, isStandaloneChatPath } from '../config/uiPreferences';
 import { mergeConversationGraphCreateIntentIntoChatContext } from '../views/conversationGraphChatContextEnhancer';
 import {
-  generateGraphAnswerViaChat,
   GRAPH_ANSWER_CONTEXT_FLAG,
   resolveUnifiedChatGraphOutboundMessage,
 } from '../views/conversationGraphAnswerGeneration';
 import {
   finalizeComposerContextForGraphChat,
   isConversationGraphComposerContext,
+  mergePersistedGraphComposerContext,
+  resolveGraphComposerSendOptions,
+  runGraphComposerAnswerGeneration,
 } from '../views/conversationGraphComposerSend';
 import { isCreateGraphAnswerRequest } from '../views/conversationGraphAnswerIntent';
 import { buildConversationGraphPasteNavState } from '../views/conversationGraphNavigateHandoff';
@@ -184,6 +186,8 @@ import {
   resolveAssistantAnswerDisplayText,
   shouldUseComposerStreamPreReveal,
   shouldUseSimpleComposerOutboundMessage,
+  shouldUseSimpleComposerOutboundMessageForTurn,
+  pickComposerHistoryMessages,
 } from '../utils/composerStreamResponseText';
 import {
   applyComposerSelfDevelopIfEnabled,
@@ -1832,6 +1836,17 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     // 대화 전환 시 메시지 영역으로 포커스 이동 (키보드·스크린 리더 사용자)
     useEffect(() => {
         const id = currentConversation?.id ?? null;
+        const prevId = prevConversationIdRef.current;
+        if (prevId !== id) {
+            if (prevId != null && id != null && prevId !== id) {
+                pendingConversationGraphContextRef.current = null;
+                setAttachedConversationFile(null);
+                composerAttachRef.current?.clearAttachedFiles();
+            }
+            if (id == null) {
+                pendingConversationGraphContextRef.current = null;
+            }
+        }
         if (id !== prevConversationIdRef.current && id != null) {
             prevConversationIdRef.current = id;
             const timer = requestAnimationFrame(() => {
@@ -2788,9 +2803,12 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         // conversation 변수를 업데이트된 것으로 교체
         conversation = updatedConversation;
 
-        // 대화방 재진입 시에도 저장된 대화 스토리 반영 — conversations(로컬 스토리지 동기화) 우선 사용
+        // 대화방 재진입·flushSync 직후 stale conversations 클로저보다 로컬 messages 우선
         const conversationForHistory = conversations.find((c) => c.id === conversation.id);
-        const messagesForHistory = (conversationForHistory ?? conversation).messages;
+        const messagesForHistory = pickComposerHistoryMessages(
+            conversation.messages,
+            conversationForHistory?.messages,
+        );
         const historyMessages = messagesForHistory.map((m) =>
             toChatTurnWithPipelineExtras({
                 role: m.role,
@@ -2864,15 +2882,21 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         );
 
         const convForThread = conversationForHistory ?? conversation;
+        const threadAttachedForSimpleQuery =
+            typeof projectCtx?.thread_attached_file_contents === 'string'
+                ? projectCtx.thread_attached_file_contents
+                : undefined;
         const { parsedInput, pipelineMerge, selfDevelopFlags: composerSelfDevelopFlags } =
             buildComposerPipelineContextAppend({
                 trimmedInput,
+                effectiveInput,
                 featureCtx: featureCtx as Record<string, unknown>,
                 currentProjectId: currentProject?.id,
                 gensparkRouteAgentId,
                 composerResponseMode,
                 responseStyle,
                 conversationFileContent,
+                threadAttachedFileContents: threadAttachedForSimpleQuery,
                 conversationDeepseek: convForThread,
                 hasConversationThreadContext: conversationHasThreadInstructionsOrFiles(convForThread),
                 isGraphComposerAnswer: graphHandoffCtxEarly?.[GRAPH_ANSWER_CONTEXT_FLAG] === true,
@@ -2913,7 +2937,12 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 ? coerceTrimmedString(String(graphHandoffCtx.answer_quality_instruction), '')
                 : '';
 
-        const composerSimpleQuery = shouldUseSimpleComposerOutboundMessage(trimmedInput);
+        const composerSimpleQuery = shouldUseSimpleComposerOutboundMessageForTurn({
+            trimmedInput,
+            effectiveInput,
+            conversationFileContent,
+            threadAttachedFileContents: threadAttachedForSimpleQuery,
+        });
         const composerSelfDevelopActive = Object.keys(composerSelfDevelopFlags).length > 0;
 
         const chatContextWithHistory = {
@@ -3044,6 +3073,13 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             chatContextForRequest as Record<string, unknown>,
         );
 
+        if (isGraphComposerAnswer) {
+            mergePersistedGraphComposerContext(
+                pendingConversationGraphContextRef,
+                chatContextForRequest as Record<string, unknown>,
+            );
+        }
+
         const sequentialSendFlags = getComposerSequentialSendFlags(
             trimmedInput,
             chatContextForRequest as Record<string, unknown>,
@@ -3065,15 +3101,20 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             benchmarkGenspark: pipelineBenchmarkPacing,
             gensparkAgentRouteSession: isGensparkAgentRouteSession,
         });
-        const effectiveQuality: 'basic' | 'enhanced' | 'ultimate' = isGraphComposerAnswer
-            ? 'enhanced'
-            : useInformedOrSearch
-              ? composerQuality === 'basic'
-                  ? 'enhanced'
-                  : composerQuality === 'enhanced'
-                    ? 'ultimate'
-                    : composerQuality
-              : composerQuality;
+        const baseComposerQuality: 'basic' | 'enhanced' | 'ultimate' = useInformedOrSearch
+            ? composerQuality === 'basic'
+                ? 'enhanced'
+                : composerQuality === 'enhanced'
+                  ? 'ultimate'
+                  : composerQuality
+            : composerQuality;
+        const graphSendOptions = resolveGraphComposerSendOptions({
+            isGraph: isGraphComposerAnswer,
+            quality: baseComposerQuality,
+            responseStyle,
+        });
+        const effectiveQuality = graphSendOptions.quality;
+        const effectiveResponseStyle: ChatResponseStyleUi = graphSendOptions.responseStyle;
 
         // 딥러닝 연동: 프롬프트 분석·보강 후 전송 메시지 생성 (딥시크 백엔드와 동일 파이프라인으로 답변 품질 향상)
         const projectContext = currentProject
@@ -3156,7 +3197,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 buildComposerNonStreamChatExtras({
                     conversationId: conversation.id,
                     requestId: requestId,
-                    responseStyle,
+                    responseStyle: effectiveResponseStyle,
                     perspective,
                     diversityLevel: answerDiversityMode,
                     temperature: answerTemperature,
@@ -3393,7 +3434,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         buildComposerNonStreamChatExtras({
                             conversationId: conversation.id,
                             requestId: requestId,
-                            responseStyle,
+                            responseStyle: effectiveResponseStyle,
                             perspective,
                             diversityLevel: answerDiversityMode,
                             temperature: answerTemperature,
@@ -3659,7 +3700,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     conversationId: conversation.id,
                                     context: ctx,
                                     requestId: requestId,
-                                    responseStyle,
+                                    responseStyle: effectiveResponseStyle,
                                     perspective,
                                     diversityLevel: answerDiversityMode,
                                     temperature: answerTemperature,
@@ -3682,7 +3723,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     streamPreRevealActiveRef.current = false;
                     clearAssistantStreamPhases?.();
                     clearClientStreamingPhases?.();
-                    const graphResult = await generateGraphAnswerViaChat(
+                    const graphResult = await runGraphComposerAnswerGeneration(
                         messageToSend,
                         chatContextForRequest as Record<string, unknown>,
                         {
@@ -3723,7 +3764,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         conversationId: conversation.id,
                         context: chatContextForRequest,
                         requestId: requestId,
-                        responseStyle,
+                        responseStyle: effectiveResponseStyle,
                         perspective,
                         diversityLevel: answerDiversityMode,
                         temperature: answerTemperature,
@@ -3997,7 +4038,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 };
 
                 if (isGraphComposerAnswer) {
-                    const graphText = await generateGraphAnswerViaChat(
+                    const graphText = await runGraphComposerAnswerGeneration(
                         messageToSend,
                         chatContextForRequest as Record<string, unknown>,
                         {
@@ -4080,7 +4121,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         buildComposerNonStreamChatExtras({
                             conversationId: conversation.id,
                             requestId: requestId,
-                            responseStyle,
+                            responseStyle: effectiveResponseStyle,
                             perspective,
                             diversityLevel: answerDiversityMode,
                             temperature: answerTemperature,
@@ -4514,6 +4555,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         if (!deleteConfirmConversation) return;
 
         const id = deleteConfirmConversation.id;
+        if (currentConversation?.id === id) {
+            pendingConversationGraphContextRef.current = null;
+            setAttachedConversationFile(null);
+            composerAttachRef.current?.clearAttachedFiles();
+        }
         setConversations((prev) => {
             const updated = prev.filter((c) => c.id !== id);
             saveConversationsToStorage(updated);
@@ -4533,7 +4579,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         } catch {
             /* ignore */
         }
-    }, [deleteConfirmConversation, saveConversationsToStorage]);
+    }, [deleteConfirmConversation, saveConversationsToStorage, currentConversation?.id]);
 
     // 대화 삭제 취소
     const cancelDeleteConversation = useCallback(() => {
@@ -4898,6 +4944,10 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     const confirmClearMessages = useCallback(() => {
         setShowClearMessagesConfirm(false);
         if (!currentConversation) return;
+
+        pendingConversationGraphContextRef.current = null;
+        setAttachedConversationFile(null);
+        composerAttachRef.current?.clearAttachedFiles();
 
         const updated = {
             ...currentConversation,
@@ -7008,9 +7058,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             const conversation = updatedConversation;
             // 재생성 시에도 저장된 대화 목록(conversations) 우선으로 이력 구성 — 대화방 재진입 후 재생성 시 맥락 유지
             const convFromListForRegen = conversations.find((c) => c.id === currentConversation.id);
-            const regenHistoryMessages = convFromListForRegen
-                ? convFromListForRegen.messages.slice(0, messageIndex)
-                : messagesBeforeRegeneration;
+            const storedRegenSlice = convFromListForRegen?.messages.slice(0, messageIndex);
+            const regenHistoryMessages = pickComposerHistoryMessages(
+                messagesBeforeRegeneration,
+                storedRegenSlice,
+            );
             const regenHistoryForCtx = regenHistoryMessages.map((m) =>
                 toChatTurnWithPipelineExtras({
                     role: m.role,
@@ -7061,11 +7113,15 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 composerResponseMode,
                 responseStyle,
                 conversationFileContent: regenConversationFileContent,
+                threadAttachedFileContents: regenProjectCtx.thread_attached_file_contents as
+                    | string
+                    | undefined,
                 conversationDeepseek: regenDeepseekConv,
                 hasConversationThreadContext:
                     conversationHasThreadInstructionsOrFiles(regenDeepseekConv),
             });
             const regenContextWithHistory = {
+                ...(pendingConversationGraphContextRef.current ?? {}),
                 ...regenProjectCtx,
                 ...regenFeatureCtx,
                 ...regenPipelineMerge,
@@ -7117,9 +7173,22 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             });
             const regenAgentRouteSession = Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', ''));
             const regenEffectiveQuality: 'basic' | 'enhanced' | 'ultimate' =
-                regenUseInformed
-                    ? (composerQuality === 'basic' ? 'enhanced' : composerQuality === 'enhanced' ? 'ultimate' : composerQuality)
-                    : composerQuality;
+                resolveGraphComposerSendOptions({
+                    isGraph: regenIsGraphComposerAnswer,
+                    quality: regenUseInformed
+                        ? composerQuality === 'basic'
+                            ? 'enhanced'
+                            : composerQuality === 'enhanced'
+                              ? 'ultimate'
+                              : composerQuality
+                        : composerQuality,
+                    responseStyle,
+                }).quality;
+            const regenEffectiveResponseStyle: ChatResponseStyleUi = resolveGraphComposerSendOptions({
+                isGraph: regenIsGraphComposerAnswer,
+                quality: regenEffectiveQuality,
+                responseStyle,
+            }).responseStyle;
             const regenRequestId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
             const regenVariationInstruction = getVariationInstruction(regenRequestId, trimmedInput);
             const regenStyleInstruction = buildWritingStyleLearningInstruction(writingStyleProfile);
@@ -7140,7 +7209,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     buildComposerNonStreamChatExtras({
                         conversationId: conversation.id,
                         requestId: regenRequestId,
-                        responseStyle,
+                        responseStyle: regenEffectiveResponseStyle,
                         perspective,
                         diversityLevel: answerDiversityMode,
                         temperature: regenTemperature,
@@ -7171,12 +7240,21 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             const regenProjectContext = currentProject
                 ? { name: currentProject.name, instructions: typeof currentProject.instructions === 'string' ? currentProject.instructions : undefined }
                 : undefined;
-            const regenRaw = await buildMessageToSendForChat(regenRequestMessage, trimmedInput, regenProjectContext);
-            const regenMessageToSend = typeof regenRaw === 'string' ? regenRaw : regenRaw.messageToSend;
+            let regenMessageToSend: string;
+            if (regenIsGraphComposerAnswer) {
+                regenMessageToSend = resolveUnifiedChatGraphOutboundMessage(
+                    trimmedInput,
+                    regenContextForRequest as Record<string, unknown>,
+                    trimmedInput,
+                );
+            } else {
+                const regenRaw = await buildMessageToSendForChat(regenRequestMessage, trimmedInput, regenProjectContext);
+                regenMessageToSend = typeof regenRaw === 'string' ? regenRaw : regenRaw.messageToSend;
+            }
 
             const regenSequentialFlags = getComposerSequentialSendFlags(
                 trimmedInput,
-                regenFeatureCtx,
+                regenContextForRequest as Record<string, unknown>,
                 isStreamingSupported(),
             );
             const regenBuildSequentialItemOutbound = createComposerSequentialItemOutboundBuilder({
@@ -7541,7 +7619,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     conversationId: conversation.id,
                                     context: ctx,
                                     requestId: regenRequestId,
-                                    responseStyle,
+                                    responseStyle: regenEffectiveResponseStyle,
                                     perspective,
                                     diversityLevel: answerDiversityMode,
                                     temperature: regenTemperature,
@@ -7564,6 +7642,35 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     } finally {
                         setComposerMultiRequestLiveIndex(null);
                     }
+                } else if (regenIsGraphComposerAnswer) {
+                    regenStreamPreRevealActiveRef.current = false;
+                    clearRegenClientStreamingPhases?.();
+                    clearRegenClientStreamingPhases = undefined;
+                    clearRegenStreamPhases?.();
+                    clearRegenStreamPhases = undefined;
+                    const regenGraphResult = await runGraphComposerAnswerGeneration(
+                        regenMessageToSend,
+                        regenContextForRequestWithSd as Record<string, unknown>,
+                        {
+                            signal: abortController.signal,
+                            preferStream: true,
+                            onPhase: (ph) => patchRegenAssistantPipelinePhaseSlug(ph),
+                            onChunk: (_acc, displayText) => {
+                                if (displayText) {
+                                    accumulatedText = displayText;
+                                    flushRegenStreamSlotContent(displayText);
+                                }
+                            },
+                            onSelfImproveRetry: () => patchRegenAssistantPipelinePhaseSlug('retry'),
+                        },
+                    );
+                    if (regenGraphResult) {
+                        await finalizeRegenStreamResponse(regenGraphResult);
+                    } else {
+                        handleRegenStreamError(
+                            new Error('관계도 답변을 생성하지 못했습니다.'),
+                        );
+                    }
                 } else {
                 await streamChatMessage(regenMessageToSend, conversation.id, {
                     signal: abortController.signal,
@@ -7574,7 +7681,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         conversationId: conversation.id,
                         context: regenContextForRequestWithSd,
                         requestId: regenRequestId,
-                        responseStyle,
+                        responseStyle: regenEffectiveResponseStyle,
                         perspective,
                         diversityLevel: answerDiversityMode,
                         temperature: regenTemperature,
@@ -7676,7 +7783,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             buildComposerNonStreamChatExtras({
                                 conversationId: conversation.id,
                                 requestId: regenRequestId,
-                                responseStyle,
+                                responseStyle: regenEffectiveResponseStyle,
                                 perspective,
                                 diversityLevel: answerDiversityMode,
                                 temperature: regenTemperature,
@@ -7737,6 +7844,33 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 onPartialProgress: updateRegenGenerationStep,
                             });
                             responseContent = multiStep.merged;
+                        } else if (regenIsGraphComposerAnswer) {
+                            const regenGraphText = await runGraphComposerAnswerGeneration(
+                                regenMessageToSend,
+                                regenContextForRequestWithSd as Record<string, unknown>,
+                                {
+                                    preferStream: false,
+                                    onPhase: (ph) => {
+                                        const label =
+                                            ph === 'analyze'
+                                                ? ASSISTANT_PLACEHOLDER_ANALYZING
+                                                : ph === 'outline'
+                                                  ? ASSISTANT_PLACEHOLDER_OUTLINE
+                                                  : ph === 'draft'
+                                                    ? ASSISTANT_PLACEHOLDER_DRAFT
+                                                    : ph === 'crosscheck'
+                                                      ? ASSISTANT_PLACEHOLDER_CROSSCHECK
+                                                      : ph === 'retry'
+                                                        ? ASSISTANT_PLACEHOLDER_RETRY_NONSTREAM
+                                                        : ASSISTANT_PLACEHOLDER_VERIFY;
+                                        updateRegenGenerationStep(label);
+                                    },
+                                },
+                            );
+                            if (!regenGraphText) {
+                                throw new Error('관계도 답변을 생성하지 못했습니다.');
+                            }
+                            responseContent = regenGraphText;
                         } else {
                             const response = await postRegenNonStreamPayload(
                                 regenMessageToSend,
@@ -7890,7 +8024,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
     }, []);
 
     // 메시지 편집 저장 및 재전송
-    const saveEditedMessage = useCallback(async (messageId: string) => {
+    const saveEditedMessage = useCallback((messageId: string) => {
         if (!currentConversation || isLoading || isStreaming) return;
 
         const trimmedContent = coerceTrimmedString(editingContent, '');
@@ -7932,6 +8066,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
 
         const explicitTitleConciseFromEditedInput = getConciseConversationTitleFromUserInput(trimmedContent);
 
+        // 재생성과 동일 — React 상태 반영 후 graph·일반 API 분기 실행
+        setTimeout(async () => {
         // 새 응답 생성
         setIsLoading(true);
         setLastOutboundUserTextForStepUi(trimmedContent);
@@ -7978,9 +8114,25 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
         });
         const editAgentRouteSession = Boolean(coerceTrimmedString(gensparkRouteAgentId ?? '', ''));
 
+        const editContextForSequential = finalizeComposerContextForGraphChat(
+            withGraphCreateIntentInChatContext(
+                trimmedContent,
+                {
+                    ...(pendingConversationGraphContextRef.current ?? {}),
+                    ...editCtxMerged,
+                    ...editFeatureCtx,
+                    ...(editConversationFileContent !== undefined && {
+                        conversation_file_content: editConversationFileContent,
+                        conversation_file_name: editConversationFileName,
+                    }),
+                },
+                editConversationFileContent,
+            ),
+        );
+
         const editSequentialFlags = getComposerSequentialSendFlags(
             trimmedContent,
-            editFeatureCtx,
+            editContextForSequential as Record<string, unknown>,
             isStreamingSupported(),
         );
         const editUseSequentialStream = editSequentialFlags.useSequentialStream;
@@ -8172,10 +8324,6 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 })
             );
             const editStreamUseInformed = !!(editFeatureCtx.enable_web_research || editFeatureCtx.prefer_informed_answer);
-            const editStreamEffectiveQuality: 'basic' | 'enhanced' | 'ultimate' =
-                editStreamUseInformed
-                    ? (composerQuality === 'basic' ? 'enhanced' : composerQuality === 'enhanced' ? 'ultimate' : composerQuality)
-                    : composerQuality;
 
             const { pipelineMerge: editStreamPipelineMerge } = buildComposerPipelineMerge({
                 trimmedInput: trimmedContent,
@@ -8185,6 +8333,9 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 composerResponseMode,
                 responseStyle,
                 conversationFileContent: editConversationFileContent,
+                threadAttachedFileContents: editCtxMerged.thread_attached_file_contents as
+                    | string
+                    | undefined,
                 conversationDeepseek: editThreadForDeepseek,
                 hasConversationThreadContext:
                     conversationHasThreadInstructionsOrFiles(updatedConversation),
@@ -8192,6 +8343,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             const editStreamContextBase = withGraphCreateIntentInChatContext(
                 trimmedContent,
                 {
+                    ...(pendingConversationGraphContextRef.current ?? {}),
                     ...mergeProjectAndThreadChatContext(
                         buildChatContext(currentProject ?? null, { conversation_history: conversationHistory }),
                         updatedConversation,
@@ -8233,8 +8385,29 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 ...editStreamComposerSelfDevelopFlags,
             };
             const editStreamIsGraphComposerAnswer = isConversationGraphComposerContext(
-                editStreamContext as Record<string, unknown>,
+                editStreamContextForRequest as Record<string, unknown>,
             );
+            const editStreamBaseQuality: 'basic' | 'enhanced' | 'ultimate' = editStreamUseInformed
+                ? composerQuality === 'basic'
+                    ? 'enhanced'
+                    : composerQuality === 'enhanced'
+                      ? 'ultimate'
+                      : composerQuality
+                : composerQuality;
+            const editStreamSendOptions = resolveGraphComposerSendOptions({
+                isGraph: editStreamIsGraphComposerAnswer,
+                quality: editStreamBaseQuality,
+                responseStyle,
+            });
+            const editStreamEffectiveQuality = editStreamSendOptions.quality;
+            const editStreamEffectiveResponseStyle: ChatResponseStyleUi = editStreamSendOptions.responseStyle;
+            const editGraphMessageToSend = editStreamIsGraphComposerAnswer
+                ? resolveUnifiedChatGraphOutboundMessage(
+                      trimmedContent,
+                      editStreamContextForRequest as Record<string, unknown>,
+                      editMessageToSend,
+                  )
+                : editMessageToSend;
             const requestEditRefinedAnswer = async (
                 outboundMessage: string,
                 contextForBody: Record<string, unknown>,
@@ -8246,7 +8419,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     buildComposerNonStreamChatExtras({
                         conversationId: conversation.id,
                         requestId: editRequestId,
-                        responseStyle,
+                        responseStyle: editStreamEffectiveResponseStyle,
                         perspective,
                         diversityLevel: answerDiversityMode,
                         temperature: editTemperature,
@@ -8474,7 +8647,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                 conversationId: conversation.id,
                                 context: ctx,
                                 requestId: editRequestId,
-                                responseStyle,
+                                responseStyle: editStreamEffectiveResponseStyle,
                                 perspective,
                                 diversityLevel: answerDiversityMode,
                                 temperature: editTemperature,
@@ -8498,8 +8671,35 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 } finally {
                     setComposerMultiRequestLiveIndex(null);
                 }
+            } else if (editStreamIsGraphComposerAnswer) {
+                editStreamPreRevealActiveRef.current = false;
+                clearEditClientStreamingPhases?.();
+                clearEditClientStreamingPhases = undefined;
+                clearEditStreamPhases?.();
+                clearEditStreamPhases = undefined;
+                const editGraphResult = await runGraphComposerAnswerGeneration(
+                    editGraphMessageToSend,
+                    editStreamContextForRequest as Record<string, unknown>,
+                    {
+                        signal: abortController.signal,
+                        preferStream: true,
+                        onPhase: (ph) => patchEditAssistantPipelinePhaseSlug(ph),
+                        onChunk: (_acc, displayText) => {
+                            if (displayText) {
+                                accumulatedText = displayText;
+                                flushEditStreamSlotContent(displayText);
+                            }
+                        },
+                        onSelfImproveRetry: () => patchEditAssistantPipelinePhaseSlug('retry'),
+                    },
+                );
+                if (editGraphResult) {
+                    await finalizeEditStreamResponse(editGraphResult);
+                } else {
+                    handleEditStreamError(new Error('관계도 답변을 생성하지 못했습니다.'));
+                }
             } else {
-            await streamChatMessage(editMessageToSend, conversation.id, {
+            await streamChatMessage(editGraphMessageToSend, conversation.id, {
                 signal: abortController.signal,
                 messagesForScenarioInherit: editStreamScenarioInherit,
                 mergeApiChatContextOptions: editStreamMergeDeepseek,
@@ -8508,7 +8708,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     conversationId: conversation.id,
                     context: editStreamContextForRequest,
                     requestId: editRequestId,
-                    responseStyle,
+                    responseStyle: editStreamEffectiveResponseStyle,
                     perspective,
                     diversityLevel: answerDiversityMode,
                     temperature: editTemperature,
@@ -8568,11 +8768,15 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 composerResponseMode,
                 responseStyle,
                 conversationFileContent: editConversationFileContent,
+                threadAttachedFileContents: editCtxMerged.thread_attached_file_contents as
+                    | string
+                    | undefined,
                 conversationDeepseek: editThreadForDeepseek,
                 hasConversationThreadContext:
                     conversationHasThreadInstructionsOrFiles(updatedConversation),
             });
             const editContextWithHistory = {
+                ...(pendingConversationGraphContextRef.current ?? {}),
                 ...editCtxMerged,
                 ...editFeatureCtx,
                 ...editNsPipelineMerge,
@@ -8614,13 +8818,23 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 ...editNsComposerSelfDevelopFlags,
             };
             const editNsIsGraphComposerAnswer = isConversationGraphComposerContext(
-                editContextForRequest as Record<string, unknown>,
+                editContextForRequestWithSd as Record<string, unknown>,
             );
             const editUseInformed = !!((editContextWithHistory as Record<string, unknown>).enable_web_research || (editContextWithHistory as Record<string, unknown>).prefer_informed_answer);
-            const editEffectiveQuality: 'basic' | 'enhanced' | 'ultimate' =
-                editUseInformed
-                    ? (composerQuality === 'basic' ? 'enhanced' : composerQuality === 'enhanced' ? 'ultimate' : composerQuality)
-                    : composerQuality;
+            const editBaseQuality: 'basic' | 'enhanced' | 'ultimate' = editUseInformed
+                ? composerQuality === 'basic'
+                    ? 'enhanced'
+                    : composerQuality === 'enhanced'
+                      ? 'ultimate'
+                      : composerQuality
+                : composerQuality;
+            const editNsSendOptions = resolveGraphComposerSendOptions({
+                isGraph: editNsIsGraphComposerAnswer,
+                quality: editBaseQuality,
+                responseStyle,
+            });
+            const editEffectiveQuality = editNsSendOptions.quality;
+            const editEffectiveResponseStyle: ChatResponseStyleUi = editNsSendOptions.responseStyle;
             const editRequestId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
             const editVariationInstruction = getVariationInstruction(editRequestId, trimmedContent);
             const editStyleInstruction = buildWritingStyleLearningInstruction(writingStyleProfile);
@@ -8641,7 +8855,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     buildComposerNonStreamChatExtras({
                         conversationId: conversation.id,
                         requestId: editRequestId,
-                        responseStyle,
+                        responseStyle: editEffectiveResponseStyle,
                         perspective,
                         diversityLevel: answerDiversityMode,
                         temperature: editTemperature,
@@ -8673,7 +8887,15 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 ? { name: currentProject.name, instructions: typeof currentProject.instructions === 'string' ? currentProject.instructions : undefined }
                 : undefined;
             const editRawNonStream = await buildMessageToSendForChat(editRequestMessage, trimmedContent, editProjectCtx);
-            const editMessageToSend = typeof editRawNonStream === 'string' ? editRawNonStream : editRawNonStream.messageToSend;
+            const editMessageToSend = editNsIsGraphComposerAnswer
+                ? resolveUnifiedChatGraphOutboundMessage(
+                      trimmedContent,
+                      editContextForRequestWithSd as Record<string, unknown>,
+                      typeof editRawNonStream === 'string' ? editRawNonStream : editRawNonStream.messageToSend,
+                  )
+                : typeof editRawNonStream === 'string'
+                  ? editRawNonStream
+                  : editRawNonStream.messageToSend;
 
             const editNsPlaceholderId = `msg-${Date.now() + 1}`;
             const editNsPlaceholder: Message = {
@@ -8746,7 +8968,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                         buildComposerNonStreamChatExtras({
                             conversationId: conversation.id,
                             requestId: editRequestId,
-                            responseStyle,
+                            responseStyle: editEffectiveResponseStyle,
                             perspective,
                             diversityLevel: answerDiversityMode,
                             temperature: editTemperature,
@@ -8809,6 +9031,33 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             onPartialProgress: updateEditNonStreamStep,
                         });
                         responseContent = multiStep.merged;
+                    } else if (editNsIsGraphComposerAnswer) {
+                        const editGraphText = await runGraphComposerAnswerGeneration(
+                            editMessageToSend,
+                            editContextForRequestWithSd as Record<string, unknown>,
+                            {
+                                preferStream: false,
+                                onPhase: (ph) => {
+                                    const label =
+                                        ph === 'analyze'
+                                            ? ASSISTANT_PLACEHOLDER_ANALYZING
+                                            : ph === 'outline'
+                                              ? ASSISTANT_PLACEHOLDER_OUTLINE
+                                              : ph === 'draft'
+                                                ? ASSISTANT_PLACEHOLDER_DRAFT
+                                                : ph === 'crosscheck'
+                                                  ? ASSISTANT_PLACEHOLDER_CROSSCHECK
+                                                  : ph === 'retry'
+                                                    ? ASSISTANT_PLACEHOLDER_RETRY_NONSTREAM
+                                                    : ASSISTANT_PLACEHOLDER_VERIFY;
+                                    updateEditNonStreamStep(label);
+                                },
+                            },
+                        );
+                        if (!editGraphText) {
+                            throw new Error('관계도 답변을 생성하지 못했습니다.');
+                        }
+                        responseContent = editGraphText;
                     } else {
                         const response = await postEditNonStreamPayload(
                             editMessageToSend,
@@ -8910,6 +9159,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                 setIsLoading(false);
             });
         }
+        }, 0);
     }, [
         answerDiversityMode,
         buildStructuredGenerationPrompt,
@@ -9453,6 +9703,14 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             </div>
         ) : null;
 
+    const chatInputDockAboveComposerEl = (
+        <>
+            {inputDockSuggestionsEl}
+            {conversationGraphAttachedFileEl}
+            {conversationGraphHandoffBannerEl}
+        </>
+    );
+
     const hideEmptyStateSuggestedQuestions =
         inputDockSuggestionItems.length > 0 &&
         suggestedQuestionsFromSource.length > 0 &&
@@ -9483,6 +9741,11 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
             </div>
         );
 
+    const showWelcomeInlineComposer =
+        !currentConversation && (!currentProject || projectContentTab === 'chat');
+    const showBottomInputDock =
+        !!currentConversation || (!!currentProject && projectContentTab === 'sources');
+
     return (
         <div
             className={`chatgpt-interface ${theme}${gensparkRouteAgentId ? ' chatgpt-interface--genspark-agent-session' : ''}`}
@@ -9509,8 +9772,8 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                     type="file"
                     accept=".txt,.csv"
                     className="sr-only"
-                    aria-hidden
                     aria-label="대화 파일 첨부 (TXT/CSV)"
+                    data-testid={TEST_IDS.CONVERSATION_GRAPH_CHAT_FILE_INPUT}
                     onChange={handleConversationFileSelect}
                 />
                 {/* 상단 바: 좌(문서/편집) · 우(업로드·공유) — 타이틀 텍스트 제거 */}
@@ -11533,7 +11796,18 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     {projectContentTab === 'sources' ? (
                                         projectSourcesPanelSection
                                     ) : (
-                                        <WelcomeWorkspacePanel showHero={!compactWorkspaceWelcome} />
+                                        <div className="chat-welcome-center">
+                                            <WelcomeWorkspacePanel showHero={!compactWorkspaceWelcome} />
+                                            {showWelcomeInlineComposer ? (
+                                                <ChatInputDock
+                                                    placement="inline"
+                                                    variant="welcome"
+                                                    composer={chatWorkspaceComposer}
+                                                >
+                                                    {chatInputDockAboveComposerEl}
+                                                </ChatInputDock>
+                                            ) : null}
+                                        </div>
                                     )}
                                 </div>
                             ) : (
@@ -11549,7 +11823,18 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                                     ref={messagesContainerRef}
                                     data-testid={TEST_IDS.MESSAGES_CONTAINER}
                                 >
-                                    <WelcomeWorkspacePanel showHero={!compactWorkspaceWelcome} />
+                                    <div className="chat-welcome-center">
+                                        <WelcomeWorkspacePanel showHero={!compactWorkspaceWelcome} />
+                                        {showWelcomeInlineComposer ? (
+                                            <ChatInputDock
+                                                placement="inline"
+                                                variant="welcome"
+                                                composer={chatWorkspaceComposer}
+                                            >
+                                                {chatInputDockAboveComposerEl}
+                                            </ChatInputDock>
+                                        ) : null}
+                                    </div>
                                 </div>
                             )}
                     </>
@@ -11560,6 +11845,7 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             </p>
                         )}
                         {projectSourcesTabInputHint}
+                        {showBottomInputDock ? (
                         <ChatInputDock
                             composer={chatWorkspaceComposer}
                             variant={currentConversation ? 'conversation' : 'welcome'}
@@ -11818,10 +12104,9 @@ const ChatGPTInterface: React.FC<ChatGPTInterfaceProps> = ({ initialProjectId, g
                             </details>
                             </>
                             ) : null}
-                            {inputDockSuggestionsEl}
-                            {conversationGraphAttachedFileEl}
-                            {conversationGraphHandoffBannerEl}
+                            {chatInputDockAboveComposerEl}
                         </ChatInputDock>
+                        ) : null}
                             </div>
                         </div>
                 )}
