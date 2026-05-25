@@ -1,44 +1,35 @@
-# PR #2 — merge·검증 완료 (2026-05-23)
+# PR #3 — feat/chat-composer-context-graph (2026-05-25)
 
-**PR:** https://github.com/k2000kor-bot/kakao/pull/2 · **merged**  
-**HEAD:** `ebe0e9083` · `origin/main` = `origin/dev-continue-2026-01-20`
+**PR:** https://github.com/k2000kor-bot/kakao/pull/3 · **open**  
+**브랜치:** `feat/chat-composer-context-graph` → `main`  
+**HEAD:** `03b870679`
 
-## 완료 체크리스트
+## Summary
 
-| 항목 | 상태 |
-|------|------|
-| PR #2 merge | ✅ |
-| main · dev-continue 동기화 | ✅ |
-| GitHub default branch → `main` | ✅ |
-| `finish:post-merge` | ✅ |
-| `verify:pre-deploy` | ✅ |
-| `verify:completion` · `deploy:check` | ✅ |
-| `verify:final` (백엔드 :5002 포함) | ✅ |
-| E2E CI (`test:e2e:pipelines:ci:all`) | ✅ |
-| `deploy:package` | ✅ |
-| 로컬 `:3000` · `:5002` | ✅ |
-| `verify:handoff-artifacts` | ✅ |
+- 대화 삭제·초기화 후 첨부+짧은 지시 맥락 API 반영
+- conversation graph handoff·sparse 폴백·E2E
+- 컴포저 dock·UI · backend YouTube/workspace intent
 
-## 로컬 동기화
+## CI (PR #3)
 
-```bash
-git checkout main && git pull origin main
-npm run sync:frontend-src
-npm run verify:handoff-artifacts
-npm run repo:check-default-main
-```
+| Job | 상태 |
+|-----|------|
+| 컴포저 파이프라인 E2E | ✅ |
+| 컴포저 재생성 E2E | ✅ |
+| 대화 관계도 (Jest·백엔드) | ✅ |
+| 대화 관계도 E2E | ✅ |
+| 코드 품질 검사 | doc hub 수정 후 재실행 |
+| test-coverage | doc hub 수정 후 재실행 |
 
-## 풀 스택 검증 (선택)
+## 로컬 검증
 
 ```bash
-npm run restart:backend    # :5002
-npm run verify:final
-CI=1 npm run test:e2e:pipelines:ci:all
+npm run verify:pre-deploy
+npm run verify:composer-pipeline
+npm run test:composer-context-after-clear
+E2E_COMPOSER_ATTACH_CONTEXT=1 E2E_SERVER_READY=1 npm run test:e2e:composer-attach-context
 ```
 
-## 핵심 기능 (graph-answer)
+PR 본문: [PR_COMPOSER_GRAPH_DRAFT.md](./PR_COMPOSER_GRAPH_DRAFT.md)
 
-- 14종 문서 형식 · 컴포저 순차 생성 · handoff
-- 상세: [CONVERSATION_GRAPH_ANSWER_FORMATS.md](./CONVERSATION_GRAPH_ANSWER_FORMATS.md)
-
-검증: [TESTING_GUIDE.md](../TESTING_GUIDE.md) · [PUSH_NEXT_STEPS.md](./PUSH_NEXT_STEPS.md)
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).

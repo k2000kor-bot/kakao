@@ -44,3 +44,5 @@
 
 - [ ] 대화 삭제 또는 초기화 → txt/csv 첨부 → 「위 내용 기준으로 요약해줘」 전송 → 답변이 첨부 본문을 반영하는지
 - [ ] `/chat` CSV 첨부 → 「관계도를 만들어줘」 → handoff 배너·답변 패널
+
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
