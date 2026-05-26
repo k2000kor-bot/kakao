@@ -9,10 +9,11 @@
 import { execSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const MARKER = "저장소 루트 검증 허브";
 const MARKER_NFC = MARKER.normalize("NFC");
-const REPO_ROOT = path.resolve(import.meta.dirname, "..");
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function hasHubMarker(body) {
   return body.normalize("NFC").includes(MARKER_NFC);

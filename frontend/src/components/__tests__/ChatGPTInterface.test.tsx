@@ -159,7 +159,11 @@ jest.mock('../ProjectManagement/AddSourceModal', () => {
           type="button"
           data-testid={TIDS.ADD_SOURCE_MODAL_UPLOAD}
           onClick={() => {
-            onFilesSelected?.([new File(['hello'], 'unit-source.txt', { type: 'text/plain' })]);
+            const FileCtor = globalThis.File;
+            if (!FileCtor) return;
+            onFilesSelected?.([
+              new FileCtor(['hello'], 'unit-source.txt', { type: 'text/plain' }),
+            ]);
           }}
         >
           업로드
