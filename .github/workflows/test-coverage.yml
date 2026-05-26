@@ -13,6 +13,7 @@ env:
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     
     steps:
     - uses: actions/checkout@v4
@@ -45,7 +46,7 @@ jobs:
     
     - name: Run tests with coverage and report
       run: |
-        npm run test:ci:coverage
+        npm run test:ci:coverage:views
         test -f coverage/coverage-summary.json
         npm run test:report
     

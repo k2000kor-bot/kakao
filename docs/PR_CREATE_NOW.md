@@ -18,7 +18,9 @@
 | 컴포저 파이프라인 (Jest) | ✅ |
 | 대화 관계도 (Jest·백엔드) | ✅ |
 | 컴포저·재생성·관계도 E2E | ✅ (별도 job) |
-| Test Coverage | `test:ci:coverage` — 재실행 중 |
+**HEAD:** `a75dbdfcb` (+ views coverage CI push 예정)
+
+| Test Coverage | `test:ci:coverage:views` (68 suites) — push 후 재실행 |
 | E2E Tests (e2e-tests job) | `test:e2e:ci:smoke` — 재실행 중 |
 
 ## 로컬 검증
