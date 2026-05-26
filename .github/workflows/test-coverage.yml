@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 env:
   CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
 
@@ -59,6 +63,7 @@ jobs:
     
     - name: Comment PR with coverage
       if: github.event_name == 'pull_request'
+      continue-on-error: true
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         message: |
