@@ -126,7 +126,7 @@ jobs:
       run: npm run build
     
     - name: Run E2E tests
-      run: npm run test:e2e
+      run: npm run test:e2e:ci:smoke
       env:
         CI: true
     

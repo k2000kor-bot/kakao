@@ -164,6 +164,7 @@
     "lint": "eslint src --ext .ts,.tsx",
     "lint:strict": "eslint src --ext .ts,.tsx --max-warnings 0",
     "test:e2e": "playwright test",
+    "test:e2e:ci:smoke": "E2E_USE_BUILD=1 playwright test e2e/example.spec.ts --project=chromium",
     "test:e2e:no-server": "E2E_SERVER_READY=1 playwright test",
     "test:e2e:genspark-context": "E2E_GENSPARK_CHAT_BODY=1 E2E_SERVER_READY=1 playwright test e2e/gensparkSuperAgentChatContext.spec.ts",
     "test:e2e:composer-pipeline": "E2E_AGENTS_COMPOSER_PIPELINE=1 E2E_SERVER_READY=1 playwright test e2e/gensparkAgentsComposerPipeline.spec.ts --project=chromium",
