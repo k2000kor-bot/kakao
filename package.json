@@ -116,6 +116,7 @@
     "test:watch": "npm run pretest && react-scripts test --watch",
     "test:coverage": "npm run pretest && react-scripts test --coverage",
     "test:ci": "npm run pretest && CI=true react-scripts test --coverage --watchAll=false",
+    "test:ci:coverage": "npm run pretest && CI=true react-scripts test --coverage --watchAll=false --testPathIgnorePatterns=TeamView.test --testPathIgnorePatterns=AutomationView.test --testPathIgnorePatterns=DevStatusView.test --testPathIgnorePatterns=AnalyticsView.test --testPathIgnorePatterns=ProjectHub.test --testPathIgnorePatterns=ChatView.test",
     "test:report": "node scripts/generate-test-report.js",
     "test:quality": "node scripts/test-quality-checker.js",
     "test:all": "npm test -- --watchAll=false && npm run test:report && npm run test:quality",
