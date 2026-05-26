@@ -12,6 +12,8 @@ env:
   PYTHON_VERSION: '3.11'
   REGISTRY: ghcr.io
   IMAGE_NAME: corbu-ai
+  # PR CI는 merge 커밋이 아니라 head SHA 기준 (doc hub·Jest가 브랜치 트리와 일치)
+  CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   # 1. 코드 품질 검사
@@ -22,7 +24,10 @@ jobs:
     steps:
     - name: 체크아웃
       uses: actions/checkout@v4
-      
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
+
     - name: Node.js 설정
       uses: actions/setup-node@v4
       with:
@@ -36,7 +41,9 @@ jobs:
       run: npm run check:test-imports
 
     - name: 문서 검증 허브 단락 점검 (strict)
-      run: DOC_HUB_STRICT=1 npm run check:doc-verification-hub
+      run: |
+        echo "checkout HEAD=$(git rev-parse HEAD)"
+        DOC_HUB_STRICT=1 npm run check:doc-verification-hub
       
     - name: TypeScript 타입 검사
       run: npx tsc --noEmit
@@ -55,11 +62,15 @@ jobs:
 
   composer-pipeline:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     name: 컴포저 파이프라인 (Jest)
 
     steps:
     - name: 체크아웃
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
 
     - name: Node.js 설정
       uses: actions/setup-node@v4
@@ -80,6 +91,9 @@ jobs:
     steps:
     - name: 체크아웃
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
 
     - name: Node.js 설정
       uses: actions/setup-node@v4
@@ -119,6 +133,9 @@ jobs:
     steps:
     - name: 체크아웃
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
       
     - name: Node.js 설정
       uses: actions/setup-node@v4
@@ -176,6 +193,9 @@ jobs:
     steps:
     - name: 체크아웃
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
       
     - name: Python 설정
       uses: actions/setup-python@v4
@@ -203,6 +223,9 @@ jobs:
     steps:
     - name: 체크아웃
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
       
     - name: Node.js 설정
       uses: actions/setup-node@v4
@@ -234,6 +257,9 @@ jobs:
     steps:
     - name: 체크아웃
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
       
     - name: npm 감사
       run: npm audit --audit-level moderate || true
@@ -258,6 +284,9 @@ jobs:
     steps:
     - name: 체크아웃
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
       
     - name: 빌드 아티팩트 다운로드
       uses: actions/download-artifact@v4
@@ -308,6 +337,9 @@ jobs:
     steps:
     - name: 체크아웃
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
       
     - name: 스테이징 서버 배포
       run: |
@@ -326,6 +358,9 @@ jobs:
     steps:
     - name: 체크아웃
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
       
     - name: 프로덕션 서버 배포
       run: |
@@ -343,6 +378,9 @@ jobs:
     steps:
     - name: 체크아웃
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
       
     - name: 성능 테스트 시뮬레이션
       run: |

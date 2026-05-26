@@ -8,6 +8,9 @@ on:
     branches: [ main, develop ]
   workflow_dispatch:
 
+env:
+  CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   composer-pipeline-e2e:
     timeout-minutes: 25
@@ -16,6 +19,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
 
     - uses: actions/setup-node@v4
       with:
@@ -40,6 +46,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
 
     - uses: actions/setup-node@v4
       with:
@@ -64,6 +73,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
 
     - uses: actions/setup-node@v4
       with:
@@ -87,6 +99,9 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
     
     - uses: actions/setup-node@v4
       with:
@@ -100,7 +115,9 @@ jobs:
       run: npm run check:test-imports
 
     - name: 문서 검증 허브 단락 점검 (strict)
-      run: DOC_HUB_STRICT=1 npm run check:doc-verification-hub
+      run: |
+        echo "checkout HEAD=$(git rev-parse HEAD)"
+        DOC_HUB_STRICT=1 npm run check:doc-verification-hub
     
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium
