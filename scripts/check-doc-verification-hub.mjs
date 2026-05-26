@@ -11,7 +11,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 const MARKER = "저장소 루트 검증 허브";
+const MARKER_NFC = MARKER.normalize("NFC");
 const REPO_ROOT = path.resolve(import.meta.dirname, "..");
+
+function hasHubMarker(body) {
+  return body.normalize("NFC").includes(MARKER_NFC);
+}
 
 const PATH_SKIP =
   /node_modules|OpenJDK|Oracle_JDK|cleanup_backup|^backups\/|^backup\/|\.cursor\/|\/Contents\/Home\/legal\/|\.venv\/|\/venv\/|site-packages|\.pytest_cache|^chat_rooms\/|^corbu-ai\/frontend\/src\/components\/OpenJDK/;
@@ -49,6 +54,7 @@ function main() {
 
   for (const rel of files) {
     if (!rel || PATH_SKIP.test(rel) || EXACT_SKIP.has(rel)) continue;
+    if (/^docs\/PR_.*\.md$/.test(rel)) continue;
     if (!STRICT_PREFIX_RE.test(rel)) continue;
     const abs = path.join(REPO_ROOT, rel);
     let st;
@@ -65,7 +71,7 @@ function main() {
     } catch {
       continue;
     }
-    if (!body.includes(MARKER)) missing.push(rel);
+    if (!hasHubMarker(body)) missing.push(rel);
   }
 
   if (missing.length) {

@@ -2,7 +2,7 @@
 
 **PR:** https://github.com/k2000kor-bot/kakao/pull/3 · **open**  
 **브랜치:** `feat/chat-composer-context-graph` → `main`  
-**HEAD:** `03b870679`
+**HEAD:** `a5073e760` (CI 수정 커밋 push 후 갱신)
 
 ## Summary
 

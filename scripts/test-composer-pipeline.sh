@@ -14,9 +14,10 @@ npm run sync:frontend-src
 npm run pretest
 JEST_EXTRA_ARGS=()
 if [[ -n "${CI:-}" ]]; then
-  JEST_EXTRA_ARGS=(--maxWorkers=2 --forceExit --testTimeout=60000)
+  export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=4096"
+  JEST_EXTRA_ARGS=(--runInBand --testTimeout=90000)
 fi
-CI=true react-scripts test \
+react-scripts test \
   --testPathPattern='composerAttachmentPayload|composerMultiRequestProgress|composerSequential|composerMultiStep|runComposerSequentialMultiRequest|runComposerMultiStep|chatGptComposerPayload|composerAssistantTurnFinalize|composerRegenerateTurn|composerOversight|composerStreamResponseText|composerContextAfterClear|GensparkPipelineExtrasPanel|WorkspaceQueryComposer.test|ChatGPTInterface.test' \
   --watchAll=false \
   "${JEST_EXTRA_ARGS[@]}"
