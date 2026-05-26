@@ -95,6 +95,7 @@
     "pr:copy-body": "bash scripts/pr-copy-body.sh",
     "pr:ready": "bash scripts/pr-ready.sh",
     "pr:mark-ready": "bash scripts/mark-pr-ready.sh",
+    "pr:mark-ready:3": "PR_NUMBER=3 PR_HEAD_BRANCH=feat/chat-composer-context-graph bash scripts/mark-pr-ready.sh",
     "ship:preflight": "bash scripts/ship-dev-continue-preflight.sh",
     "ship:release-check": "bash scripts/ship-release-check.sh",
     "local:verify": "npm run sync:frontend-src && npx tsc --noEmit && npm run verify:conversation-graph:unit && npm run test:composer-pipeline",

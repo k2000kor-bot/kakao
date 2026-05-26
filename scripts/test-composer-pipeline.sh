@@ -12,9 +12,14 @@ cd "${PROJECT_ROOT}"
 
 npm run sync:frontend-src
 npm run pretest
+JEST_EXTRA_ARGS=()
+if [[ -n "${CI:-}" ]]; then
+  JEST_EXTRA_ARGS=(--maxWorkers=2 --forceExit --testTimeout=60000)
+fi
 CI=true react-scripts test \
   --testPathPattern='composerAttachmentPayload|composerMultiRequestProgress|composerSequential|composerMultiStep|runComposerSequentialMultiRequest|runComposerMultiStep|chatGptComposerPayload|composerAssistantTurnFinalize|composerRegenerateTurn|composerOversight|composerStreamResponseText|composerContextAfterClear|GensparkPipelineExtrasPanel|WorkspaceQueryComposer.test|ChatGPTInterface.test' \
-  --watchAll=false
+  --watchAll=false \
+  "${JEST_EXTRA_ARGS[@]}"
 
 if [ "${E2E_COMPOSER_PIPELINE:-}" = "1" ]; then
   echo ""

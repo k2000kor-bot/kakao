@@ -8,6 +8,9 @@ on:
     branches: [ main, develop ]
   workflow_dispatch:
 
+env:
+  CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   composer-pipeline-e2e:
     timeout-minutes: 25
@@ -16,6 +19,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ env.CHECKOUT_REF }}
 
     - uses: actions/setup-node@v4
       with:
@@ -40,6 +45,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ env.CHECKOUT_REF }}
 
     - uses: actions/setup-node@v4
       with:
@@ -64,6 +71,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ env.CHECKOUT_REF }}
 
     - uses: actions/setup-node@v4
       with:
@@ -87,6 +96,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        ref: ${{ env.CHECKOUT_REF }}
     
     - uses: actions/setup-node@v4
       with:
