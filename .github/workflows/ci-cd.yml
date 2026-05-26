@@ -246,8 +246,9 @@ jobs:
       run: npx playwright install chromium --with-deps
       
     - name: E2E 테스트 실행
-      run: E2E_USE_BUILD=1 npx playwright test --project=chromium
-      continue-on-error: true
+      run: npm run test:e2e:ci:smoke
+      env:
+        CI: true
 
   # 5. 보안 스캔
   security-scan:
@@ -320,7 +321,7 @@ jobs:
       with:
         context: .
         platforms: linux/amd64
-        push: true
+        push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha

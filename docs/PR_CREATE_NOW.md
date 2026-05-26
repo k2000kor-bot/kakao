@@ -2,7 +2,7 @@
 
 **PR:** https://github.com/k2000kor-bot/kakao/pull/3 · **open** (Draft)  
 **브랜치:** `feat/chat-composer-context-graph` → `main`  
-**HEAD:** `417fdd093`
+**HEAD:** `6e37cd1e5` (+ CI docker/e2e push 예정)
 
 ## Summary
 
@@ -10,29 +10,19 @@
 - conversation graph handoff·sparse 폴백·E2E
 - 컴포저 dock·UI · backend YouTube/workspace intent
 
-## CI (PR #3)
+## CI (`6e37cd1e5`)
 
 | Job | 상태 |
 |-----|------|
-| 코드 품질 검사 (doc hub) | ✅ |
-| 컴포저 파이프라인 (Jest) | ✅ |
-| 대화 관계도 (Jest·백엔드) | ✅ |
-| 컴포저·재생성·관계도 E2E | ✅ (별도 job) |
-| Test Coverage (tests+report+codecov) | ✅ (`417fdd093`) — PR 코멘트만 권한 실패 → 수정 push |
-| E2E Tests (smoke) | 재실행 중 |
+| 코드 품질 검사 · 컴poser Jest · 관계도 · 백엔드 · 프론트 빌드 | ✅ |
+| Test Coverage Report | ✅ |
+| 컴poser·재생성·관계도 E2E (별도 job) | ✅ |
+| E2E Tests (e2e-tests smoke) | 실행 중 |
+| Docker 이미지 빌드 | PR push 실패 → `push: false` on PR 수정 예정 |
 
-## 로컬 검증
+## 수동 (머지 전)
 
-```bash
-npm run verify:pre-deploy
-npm run verify:composer-pipeline
-npm run test:composer-context-after-clear
-E2E_COMPOSER_ATTACH_CONTEXT=1 E2E_SERVER_READY=1 npm run test:e2e:composer-attach-context
-```
+1. **Ready for review** (Draft 해제)
+2. 본문: [PR_COMPOSER_GRAPH_DRAFT.md](./PR_COMPOSER_GRAPH_DRAFT.md)
 
-## 수동 (PR 머지 전)
-
-1. GitHub PR #3 → **Ready for review** (Draft 해제)
-2. 본문: [PR_COMPOSER_GRAPH_DRAFT.md](./PR_COMPOSER_GRAPH_DRAFT.md) 붙여넣기
-
-저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run test:routes` · (권장) `npm run test:sidebar-context` · 마무리 `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md) · 배포 직전 [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md)(`npm run verify:final`) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md).
