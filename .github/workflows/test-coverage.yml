@@ -43,11 +43,11 @@ jobs:
     - name: 적응형 학습 테스트 타입 검사 (src·frontend)
       run: npm run typecheck:adaptive-learning-tests:all
     
-    - name: Run tests with coverage
-      run: npm run test:ci:coverage
-    
-    - name: Generate coverage report
-      run: npm run test:report
+    - name: Run tests with coverage and report
+      run: |
+        npm run test:ci:coverage
+        test -f coverage/coverage-summary.json
+        npm run test:report
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

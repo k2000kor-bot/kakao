@@ -57,19 +57,22 @@ function analyzeCoverage(coverage) {
   const files = Object.keys(coverage).filter(key => key !== 'total');
   
   // 파일별 커버리지 분석
-  const fileAnalysis = files.map(file => ({
-    file,
-    statements: coverage[file].statements.pct,
-    branches: coverage[file].branches.pct,
-    functions: coverage[file].functions.pct,
-    lines: coverage[file].lines.pct,
-    total: (
-      coverage[file].statements.pct +
-      coverage[file].branches.pct +
-      coverage[file].functions.pct +
-      coverage[file].lines.pct
-    ) / 4,
-  })).sort((a, b) => b.total - a.total);
+  const fileAnalysis = files.map(file => {
+    const entry = coverage[file] || {};
+    const pct = (key) => (entry[key] && typeof entry[key].pct === 'number' ? entry[key].pct : 0);
+    const statements = pct('statements');
+    const branches = pct('branches');
+    const functions = pct('functions');
+    const lines = pct('lines');
+    return {
+      file,
+      statements,
+      branches,
+      functions,
+      lines,
+      total: (statements + branches + functions + lines) / 4,
+    };
+  }).sort((a, b) => b.total - a.total);
 
   // 우선순위 파일 (커버리지가 낮은 중요 파일)
   const priorityFiles = fileAnalysis
@@ -78,11 +81,16 @@ function analyzeCoverage(coverage) {
 
   return {
     total: {
-      statements: total.statements.pct,
-      branches: total.branches.pct,
-      functions: total.functions.pct,
-      lines: total.lines.pct,
-      percentage: (total.statements.pct + total.branches.pct + total.functions.pct + total.lines.pct) / 4,
+      statements: total.statements?.pct ?? 0,
+      branches: total.branches?.pct ?? 0,
+      functions: total.functions?.pct ?? 0,
+      lines: total.lines?.pct ?? 0,
+      percentage:
+        ((total.statements?.pct ?? 0) +
+          (total.branches?.pct ?? 0) +
+          (total.functions?.pct ?? 0) +
+          (total.lines?.pct ?? 0)) /
+        4,
     },
     fileAnalysis,
     priorityFiles,
