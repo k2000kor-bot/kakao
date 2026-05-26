@@ -24,7 +24,6 @@ function wqAttachmentKindLabel(mime: string): string {
 
 export const WORKSPACE_QUERY_COMPOSER_DEFAULT_PLACEHOLDER = WORKSPACE_COMPOSER_PLACEHOLDER;
 
-const MAX_CHARS = 2000;
 const WQ_SNIPPETS_KEY = 'corbu.wq.snippets';
 const MAX_SNIPPETS = 20;
 const WQ_INPUT_HISTORY_KEY = 'corbu.wq.inputHistory';
@@ -335,12 +334,12 @@ function WorkspaceQueryComposer(
     setSlashIdx(0);
   }, [slashFiltered.length]);
 
-  /** 텍스트 내용에 따라 textarea 높이 자동 조절 */
+  /** 텍스트 내용에 따라 textarea 높이 자동 조절 (상한은 CSS max-height) */
   const autoResize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 320)}px`;
+    el.style.height = `${el.scrollHeight}px`;
   }, [textareaRef]);
 
   useEffect(() => {
@@ -370,8 +369,6 @@ function WorkspaceQueryComposer(
   };
 
   const charCount = value.length;
-  const charWarn = charCount > MAX_CHARS * 0.85;
-  const charOver = charCount > MAX_CHARS;
   const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
   const lineCount = value ? value.split('\n').length : 0;
 
@@ -686,12 +683,12 @@ function WorkspaceQueryComposer(
         {/* 문자 / 단어 / 줄 카운터 */}
         {charCount > 0 && (
           <span
-            className={`wq-char-counter${charWarn ? ' wq-char-counter--warn' : ''}${charOver ? ' wq-char-counter--over' : ''}`}
+            className="wq-char-counter"
             aria-live="polite"
             aria-label={`${charCount}자, ${wordCount}단어 입력됨`}
             title={`글자: ${charCount.toLocaleString()} / 단어: ${wordCount.toLocaleString()} / 줄: ${lineCount}`}
           >
-            {charCount.toLocaleString()}<span className="wq-char-sep">/</span>{MAX_CHARS.toLocaleString()}
+            {charCount.toLocaleString()}자
             {wordCount > 0 && <span className="wq-word-count"> · {wordCount}단어</span>}
             {lineCount > 1 && <span className="wq-line-count"> · {lineCount}줄</span>}
           </span>

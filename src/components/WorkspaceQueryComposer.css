@@ -118,7 +118,7 @@
   border: none;
   resize: none;
   min-height: 77px;
-  max-height: 320px;
+  max-height: min(65dvh, 720px);
   overflow-y: auto;
   overflow-x: hidden;
   transition: height 0.1s ease;
