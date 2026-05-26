@@ -2,7 +2,7 @@
 
 **PR:** https://github.com/k2000kor-bot/kakao/pull/3 · **open** (Draft)  
 **브랜치:** `feat/chat-composer-context-graph` → `main`  
-**HEAD:** `f10cc7ad2`
+**HEAD:** `43b2002bc`
 
 ## Summary
 
@@ -10,7 +10,7 @@
 - conversation graph handoff·sparse 폴백·E2E
 - 컴포저 dock·UI · backend YouTube/workspace intent
 
-## CI (PR #3, `baa754c48` 기준)
+## CI (PR #3)
 
 | Job | 상태 |
 |-----|------|
@@ -18,8 +18,8 @@
 | 컴포저 파이프라인 (Jest) | ✅ |
 | 대화 관계도 (Jest·백엔드) | ✅ |
 | 컴포저·재생성·관계도 E2E | ✅ (별도 job) |
-| Test Coverage | `test:ci:coverage`로 수정 후 재실행 |
-| E2E Tests (전체 job) | doc hub 수정 후 통과 예상 |
+| Test Coverage | `test:ci:coverage` — 재실행 중 |
+| E2E Tests (e2e-tests job) | `test:e2e:ci:smoke` — 재실행 중 |
 
 ## 로컬 검증
 
