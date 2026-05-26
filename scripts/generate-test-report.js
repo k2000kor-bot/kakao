@@ -14,15 +14,18 @@ const HTML_REPORT_DIR = path.join(REPORT_DIR, 'lcov-report');
 console.log('🚀 혁신적인 테스트 커버리지 리포트 생성 중...\n');
 
 try {
-  // 테스트 커버리지 실행
-  console.log('📊 테스트 커버리지 측정 중...');
-  execSync('npm test -- --coverage --watchAll=false --testPathIgnorePatterns="App.test"', {
-    stdio: 'inherit',
-    cwd: path.join(__dirname, '..'),
-  });
-
-  // 커버리지 데이터 읽기
   const coverageSummaryPath = path.join(REPORT_DIR, 'coverage-summary.json');
+
+  if (fs.existsSync(coverageSummaryPath)) {
+    console.log('📊 기존 coverage-summary.json 사용 (test:ci:coverage 산출물)');
+  } else {
+    console.log('📊 테스트 커버리지 측정 중...');
+    execSync('npm run test:ci:coverage', {
+      stdio: 'inherit',
+      cwd: path.join(__dirname, '..'),
+    });
+  }
+
   if (fs.existsSync(coverageSummaryPath)) {
     const coverage = JSON.parse(fs.readFileSync(coverageSummaryPath, 'utf8'));
     
@@ -40,6 +43,9 @@ try {
     console.log(`   Branches: ${analysis.total.branches}%`);
     console.log(`   Functions: ${analysis.total.functions}%`);
     console.log(`   Lines: ${analysis.total.lines}%`);
+  } else {
+    console.error('❌ coverage-summary.json 없음 — test:ci:coverage를 먼저 실행하세요.');
+    process.exit(1);
   }
 } catch (error) {
   console.error('❌ 리포트 생성 실패:', error.message);
