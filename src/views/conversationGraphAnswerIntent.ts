@@ -66,12 +66,17 @@ export function resolveGraphAnswerUserMessage(
   return { message: trimmed, isCreateGraph: false };
 }
 
+const GRAPH_CREATE_QUALITY_SUFFIX =
+  '전체 600자 이상, 섹션당 3문장 이상. 한 줄·불릿만 있는 빈약한 답변은 금지합니다.';
+
 export function buildCreateGraphAnswerInstruction(hasGraphNodes: boolean, hasRawConversation: boolean): string {
   if (hasGraphNodes) {
     return [
       '요청은 대화 관계도 작성입니다.',
       'conversation_graph_snapshot·근거 발언·KPI만 근거로 참여자 표·연결 표·Mermaid flowchart TB를 출력하세요.',
       '화면 관계도(족보형)와 일치하도록 위→아래 계층을 유지하세요.',
+      '## 한 줄 요약·## 해석·갈등 축·실행 제안을 각 3문장 이상으로 작성하세요.',
+      GRAPH_CREATE_QUALITY_SUFFIX,
     ].join(' ');
   }
   if (hasRawConversation) {
@@ -79,9 +84,14 @@ export function buildCreateGraphAnswerInstruction(hasGraphNodes: boolean, hasRaw
       '요청은 대화 관계도 작성입니다. 서버 관계도가 아직 없으므로 conversation_graph_raw_conversation 원문에서',
       '참여자·발화 흐름·동조/반대를 추출해 참여자 표·연결 표·Mermaid flowchart TB를 작성하세요.',
       '확실하지 않은 연결은 추측하지 마세요.',
+      '## 해석·갈등 축·실행 제안을 각 3문장 이상으로 작성하세요.',
+      GRAPH_CREATE_QUALITY_SUFFIX,
     ].join(' ');
   }
-  return '요청은 대화 관계도 작성입니다. 데이터가 부족하면 필요한 입력(대화 붙여넣기·파일 업로드)을 안내하세요.';
+  return [
+    '요청은 대화 관계도 작성입니다. 데이터가 부족하면 필요한 입력(대화 붙여넣기·파일 업로드)을 안내하세요.',
+    GRAPH_CREATE_QUALITY_SUFFIX,
+  ].join(' ');
 }
 
 export function createPlaceholderGraphAnalysis(): GraphAiAnalysis {

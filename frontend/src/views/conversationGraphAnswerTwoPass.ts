@@ -8,12 +8,13 @@ export const GRAPH_ANSWER_SKIP_STRUCTURED_MERGE_KEY = 'conversation_graph_skip_s
 /** 2차 보고서에 실을 1차 개요 */
 export const GRAPH_ANSWER_OUTLINE_KEY = 'conversation_graph_answer_outline';
 
-/** env 기본값 */
+/** env로 2-pass 명시 비활성화 여부 (`0`이면 끔) */
 export function isGraphAnswerTwoPassEnvDefault(): boolean {
-  return process.env.REACT_APP_GRAPH_ANSWER_TWO_PASS === '1';
+  if (process.env.REACT_APP_GRAPH_ANSWER_TWO_PASS === '0') return false;
+  return true;
 }
 
-/** UI prefs → env 순으로 2-pass 사용 여부 */
+/** UI prefs → env 순으로 2-pass 사용 여부 (기본: 켜짐) */
 export function isGraphAnswerTwoPassEnabled(): boolean {
   const prefs = loadConversationGraphUiPrefs();
   if (prefs.useTwoPassAnswer !== undefined) return prefs.useTwoPassAnswer;
@@ -59,7 +60,7 @@ export function buildGraphAnswerReportContext(
     answer_quality_instruction: [
       prev,
       '[2차 보고서 — 1차 개요 확장]',
-      `아래 1차 개요를 바탕으로 각 섹션을 3~6문장으로 확장하세요. 표·Mermaid는 시스템 생성 블록을 유지하므로 다시 만들지 마세요.\n\n[1차 개요]\n${trimmedOutline}`,
+      `아래 1차 개요를 바탕으로 각 섹션을 4~8문장으로 확장하고, ### 소제목(해석·갈등 축·실행 제안) 아래 문단을 풍부하게 작성하세요. 전체 분량은 최소 600자 이상을 목표로 하세요. 표·Mermaid는 시스템 생성 블록을 유지하므로 다시 만들지 마세요.\n\n[1차 개요]\n${trimmedOutline}`,
     ]
       .filter(Boolean)
       .join(' '),

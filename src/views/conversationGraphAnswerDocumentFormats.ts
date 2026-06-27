@@ -323,7 +323,7 @@ export function buildGraphAnswerDocumentFormatInstruction(
     `권장 제목 골격:\n${def.scaffoldOutline}`,
     `[내장 우수 출력 예시 — 구조·밀도만 참고, 내용은 반드시 스냅샷·발언 근거로 채우세요]\n${def.builtinExemplar}`,
     dataNote,
-    '수치·참여자·발언에 없는 사실은 추측하지 마세요. 빈 목록·한 줄 답변·플레이스홀더 금지.',
+    '수치·참여자·발언에 없는 사실은 추측하지 마세요. 빈 목록·한 줄 답변·플레이스홀더 금지. 전체 600자 이상, 각 섹션 3문장 이상으로 작성하세요.',
   ]
     .filter(Boolean)
     .join(' ');

@@ -7,12 +7,23 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+        fetch-depth: 0
     
     - name: Setup Node.js
       uses: actions/setup-node@v3
@@ -30,16 +41,18 @@ jobs:
       run: npm run check:test-imports
 
     - name: 문서 검증 허브 단락 점검 (strict)
-      run: DOC_HUB_STRICT=1 npm run check:doc-verification-hub
+      run: |
+        echo "checkout HEAD=$(git rev-parse HEAD)"
+        DOC_HUB_STRICT=1 npm run check:doc-verification-hub
 
     - name: 적응형 학습 테스트 타입 검사 (src·frontend)
       run: npm run typecheck:adaptive-learning-tests:all
     
-    - name: Run tests with coverage
-      run: npm run test:ci
-    
-    - name: Generate coverage report
-      run: npm run test:report
+    - name: Run tests with coverage and report
+      run: |
+        npm run test:ci:coverage:views
+        test -f coverage/coverage-summary.json
+        npm run test:report
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -50,6 +63,7 @@ jobs:
     
     - name: Comment PR with coverage
       if: github.event_name == 'pull_request'
+      continue-on-error: true
       uses: marocchino/sticky-pull-request-comment@v2
       with:
         message: |

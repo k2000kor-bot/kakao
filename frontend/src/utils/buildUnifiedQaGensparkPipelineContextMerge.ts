@@ -13,7 +13,7 @@ import {
     mergeComposerOversightIntoContext,
 } from './composerOversightPipeline';
 import { isComposerAnswerSelfDevelopEnabled } from './composerAnswerSelfDevelopment';
-import { shouldUseSimpleComposerOutboundMessage } from './composerStreamResponseText';
+import { shouldUseSimpleComposerOutboundMessageForTurn } from './composerStreamResponseText';
 import { GRAPH_ANSWER_CONTEXT_FLAG } from '../views/conversationGraphAnswerGeneration';
 
 /** 대화별 딥시크 플래그 — 컴포넌트 `Conversation`과 호환되는 최소 형태 */
@@ -24,12 +24,15 @@ export type UnifiedQaPipelineConversationDeepseek = Pick<
 
 export type BuildUnifiedQaGensparkPipelineContextMergeOptions = {
     trimmedInput: string;
+    /** 첨부 병합 후 프롬프트 — 미지정 시 trimmedInput과 동일 */
+    effectiveInput?: string;
     featureCtx: Record<string, unknown>;
     currentProjectId?: string;
     gensparkRouteAgentId?: string;
     composerResponseMode: string;
     responseStyle: string;
     conversationFileContent?: string;
+    threadAttachedFileContents?: string | null;
     /** 대화별 딥시크 — 미저장 필드는 전역 기본 */
     conversationDeepseek?: UnifiedQaPipelineConversationDeepseek;
     /** 이 대화 지침·대화 전용 첨부가 있으면 프로젝트 없이도 구조화·파이프라인 우선 */
@@ -56,12 +59,14 @@ export function buildUnifiedQaGensparkPipelineContextMerge(
 ): BuildUnifiedQaGensparkPipelineContextMergeResult {
     const {
         trimmedInput,
+        effectiveInput,
         featureCtx,
         currentProjectId,
         gensparkRouteAgentId,
         composerResponseMode,
         responseStyle,
         conversationFileContent,
+        threadAttachedFileContents,
         conversationDeepseek,
         hasConversationThreadContext: hasThreadCtxOpt,
     } = options;
@@ -110,7 +115,12 @@ export function buildUnifiedQaGensparkPipelineContextMerge(
     const isSimpleComposerQuery =
         !hasThreadCtx &&
         (featureCtx.composer_simple_query === true ||
-            shouldUseSimpleComposerOutboundMessage(trimmedInput));
+            shouldUseSimpleComposerOutboundMessageForTurn({
+                trimmedInput,
+                effectiveInput,
+                conversationFileContent,
+                threadAttachedFileContents,
+            }));
 
     const skipWriterPolish =
         typeof process !== 'undefined' && process.env.REACT_APP_PIPELINE_SKIP_WRITER_POLISH === 'true';

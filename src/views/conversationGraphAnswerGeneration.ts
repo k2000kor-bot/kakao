@@ -7,6 +7,7 @@ import {
   type AssistantGenerationPhase,
 } from '../utils/chatInputUtils';
 import { isStreamingSupported, streamChatMessage } from '../utils/streamingClient';
+import type { ChatResponseStyleUi } from '../utils/modernChatUrlStyle';
 import {
   CONVERSATION_GRAPH_CHAT_AUTOSEND_STATE_KEY,
   CONVERSATION_GRAPH_CHAT_CONTEXT_STATE_KEY,
@@ -68,6 +69,23 @@ import {
 } from './conversationGraphAnswerProse';
 
 export { resolveGraphAnswerDisplayText } from './conversationGraphAnswerPipeline';
+
+/** 관계도 답변 API 기본 품질·스타일 */
+export const GRAPH_ANSWER_API_QUALITY = 'ultimate' as const;
+export const GRAPH_ANSWER_API_RESPONSE_STYLE: ChatResponseStyleUi = 'comprehensive';
+export const GRAPH_ANSWER_MIN_ANSWER_CHARS = 600;
+
+/** context·API 요청에 공통 품질 기본값 적용 */
+export function applyGraphAnswerQualityDefaults(
+  context: Record<string, unknown>,
+): Record<string, unknown> {
+  return {
+    ...context,
+    prefer_informed_answer: true,
+    answer_mode: 'expert',
+    conversation_graph_min_answer_chars: GRAPH_ANSWER_MIN_ANSWER_CHARS,
+  };
+}
 
 /** 통합 대화 API `context`에 실을 관계도 분석 키 */
 export const GRAPH_ANSWER_CONTEXT_FLAG = 'conversation_graph_analysis';
@@ -194,14 +212,13 @@ export function buildGraphAnswerChatContext(input: GraphAnswerGenerationInput): 
   );
   const formatCurriculum = buildGraphAnswerFormatCurriculumPrompt();
   const synthesisHint = structuredSections
-    ? ' [구조화 데이터 블록]에 참여자 표·연결 표·Mermaid가 이미 포함되어 있습니다. 표·Mermaid를 다시 만들지 말고, 선택한 문서 형식의 제목 골격에 맞게 서술·해석·권고를 풍부하게 작성하세요.'
+    ? ' [구조화 데이터 블록]에 참여자 표·연결 표·Mermaid가 이미 포함되어 있습니다. 표·Mermaid를 다시 만들지 말고, 선택한 문서 형식의 제목 골격에 맞게 서술·해석·권고를 풍부하게 작성하세요. 한 줄 요약·불릿만으로 끝내지 말고 ## 해석·갈등 축·실행 제안(또는 형식별 본문 섹션)을 각 3~6문장 이상으로 채우세요.'
     : '';
   const defaultInstruction =
-    '대화 관계도·성향·족보 계층·시공사 반응 신호·근거 발언 샘플만 근거로 답하세요. 시공사 선호는 확정이 아닌 추정임을 밝히고, 수치·참여자·발언 인용에 없는 사실은 추측하지 마세요. 사용자가 요청한 문서 형식(보고서·논문·문학·회의록 등)에 맞는 마크다운만 출력하세요.';
+    '대화 관계도·성향·족보 계층·시공사 반응 신호·근거 발언 샘플만 근거로 답하세요. 시공사 선호는 확정이 아닌 추정임을 밝히고, 수치·참여자·발언 인용에 없는 사실은 추측하지 마세요. 사용자가 요청한 문서 형식(보고서·논문·문학·회의록 등)에 맞는 마크다운만 출력하세요. [품질] 전체 600자 이상, 섹션당 3문장 이상, 한 줄·불릿만 있는 빈약한 답변은 금지합니다.';
   const nodeCount = input.graph?.nodes?.length ?? 0;
   const edgeCount = input.graph?.edges?.length ?? 0;
-  return {
-    prefer_informed_answer: true,
+  return applyGraphAnswerQualityDefaults({
     multi_request_mode: false,
     [GRAPH_ANSWER_CONTEXT_FLAG]: true,
     input_intent_hint: isCreateGraph ? 'conversation_graph_create' : 'conversation_graph_answer',
@@ -255,7 +272,7 @@ export function buildGraphAnswerChatContext(input: GraphAnswerGenerationInput): 
     ]
       .filter(Boolean)
       .join(' '),
-  };
+  });
 }
 
 /** API 전송용 메시지·관계도 생성 의도 여부 */
@@ -277,7 +294,7 @@ export function sealConversationGraphChatContext(
   const next: Record<string, unknown> = { ...context, multi_request_mode: false };
   delete next.multi_request_items;
   delete next.multi_request_adaptation_instruction;
-  return next;
+  return applyGraphAnswerQualityDefaults(next);
 }
 
 /** 통합 `/chat` POST·스트리밍 본문 `message` — 관계도 맥락이면 짧은 사용자 문장만 */
@@ -333,9 +350,9 @@ function buildGraphAnswerRequestBody(
 ): Record<string, unknown> {
   return buildUnifiedApiChatRequestBody({
     message,
-    quality: 'enhanced',
+    quality: GRAPH_ANSWER_API_QUALITY,
     context,
-    response_style: 'detailed',
+    response_style: GRAPH_ANSWER_API_RESPONSE_STYLE,
     perspective: 'practical',
   });
 }
@@ -373,6 +390,14 @@ function finalizeGraphAnswerFromStream(
   );
 }
 
+function previewGraphAnswerDisplay(
+  displayText: string,
+  context: Record<string, unknown>,
+): string {
+  if (!displayText) return '';
+  return finalizeGraphAnswerRaw(displayText, context) ?? displayText;
+}
+
 async function runGraphAnswerGenerationOnce(
   trimmed: string,
   context: Record<string, unknown>,
@@ -402,7 +427,10 @@ async function runGraphAnswerGenerationOnce(
             streamFollowUpStarted = true;
             pipeline.startStreamFollowUpPhases();
           }
-          opts?.onChunk?.(accumulated, displayText);
+          opts?.onChunk?.(
+            accumulated,
+            previewGraphAnswerDisplay(displayText, context),
+          );
         },
       });
       pipeline.cancel();
@@ -419,9 +447,9 @@ async function runGraphAnswerGenerationOnce(
   pipeline.startNonStreamTimers();
   const res = await sendChatMessage({
     message: trimmed,
-    quality: 'enhanced',
+    quality: GRAPH_ANSWER_API_QUALITY,
     context,
-    response_style: 'detailed',
+    response_style: GRAPH_ANSWER_API_RESPONSE_STYLE,
     perspective: 'practical',
   });
   pipeline.cancel();
@@ -445,6 +473,18 @@ async function runGraphAnswerGenerationOnce(
       return finalized;
     }
   }
+
+  const structuredOnly = getStructuredSectionsFromContext(context);
+  if (structuredOnly) {
+    const synthesized = finalizeGraphAnswerDraft('', context, trimmed, false);
+    if (synthesized) {
+      await maybeRunGraphAnswerPostPhases(opts);
+      if (opts?.signal?.aborted) return null;
+      opts?.onChunk?.('', synthesized);
+      return synthesized;
+    }
+  }
+
   return null;
 }
 
@@ -456,10 +496,16 @@ function finalizeGraphAnswerDraft(
 ): string {
   const structured = getStructuredSectionsFromContext(context);
   const merged = mergeGraphAnswerWithDeterministicSections(draft, structured);
-  if (verificationPass && merged) {
-    recordGraphAnswerLessonFromContext(merged, context, userMessage);
+  const userMsg = coerceTrimmedString(
+    String(context.conversation_graph_user_message ?? userMessage),
+    userMessage,
+  );
+  const body = merged || draft;
+  const polished = polishGraphAnswerMarkdownForContext(body, userMsg, context) || body;
+  if (verificationPass && polished) {
+    recordGraphAnswerLessonFromContext(polished, context, userMessage);
   }
-  return merged || draft;
+  return polished;
 }
 
 /** 관계도 분석 맥락으로 통합 채팅 API 답변 생성 (스트리밍 우선, 검증 실패 시 1회 자동 재생성) */
@@ -497,7 +543,11 @@ export async function generateGraphAnswerViaChat(
         buildGraphAnswerOutlineContext(workingContext),
         {
           ...opts,
-          onChunk: undefined,
+          onChunk: opts?.onChunk
+            ? (_accumulated, displayText) => {
+                if (displayText) opts.onChunk?.(_accumulated, displayText);
+              }
+            : undefined,
           preferStream: false,
           skipPostPhases: true,
           selfImprove: false,
@@ -532,7 +582,10 @@ export async function generateGraphAnswerViaChat(
 
       if (!draft) {
         const structuredOnly = getStructuredSectionsFromContext(workingContext);
-        return structuredOnly || null;
+        if (structuredOnly) {
+          return finalizeGraphAnswerDraft('', workingContext, trimmed, false);
+        }
+        return null;
       }
 
       if (!selfImprove) {

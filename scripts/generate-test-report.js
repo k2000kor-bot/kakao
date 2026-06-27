@@ -14,15 +14,18 @@ const HTML_REPORT_DIR = path.join(REPORT_DIR, 'lcov-report');
 console.log('🚀 혁신적인 테스트 커버리지 리포트 생성 중...\n');
 
 try {
-  // 테스트 커버리지 실행
-  console.log('📊 테스트 커버리지 측정 중...');
-  execSync('npm test -- --coverage --watchAll=false --testPathIgnorePatterns="App.test"', {
-    stdio: 'inherit',
-    cwd: path.join(__dirname, '..'),
-  });
-
-  // 커버리지 데이터 읽기
   const coverageSummaryPath = path.join(REPORT_DIR, 'coverage-summary.json');
+
+  if (fs.existsSync(coverageSummaryPath)) {
+    console.log('📊 기존 coverage-summary.json 사용 (test:ci:coverage 산출물)');
+  } else {
+    console.log('📊 테스트 커버리지 측정 중...');
+    execSync('npm run test:ci:coverage', {
+      stdio: 'inherit',
+      cwd: path.join(__dirname, '..'),
+    });
+  }
+
   if (fs.existsSync(coverageSummaryPath)) {
     const coverage = JSON.parse(fs.readFileSync(coverageSummaryPath, 'utf8'));
     
@@ -40,6 +43,9 @@ try {
     console.log(`   Branches: ${analysis.total.branches}%`);
     console.log(`   Functions: ${analysis.total.functions}%`);
     console.log(`   Lines: ${analysis.total.lines}%`);
+  } else {
+    console.error('❌ coverage-summary.json 없음 — test:ci:coverage를 먼저 실행하세요.');
+    process.exit(1);
   }
 } catch (error) {
   console.error('❌ 리포트 생성 실패:', error.message);
@@ -51,19 +57,22 @@ function analyzeCoverage(coverage) {
   const files = Object.keys(coverage).filter(key => key !== 'total');
   
   // 파일별 커버리지 분석
-  const fileAnalysis = files.map(file => ({
-    file,
-    statements: coverage[file].statements.pct,
-    branches: coverage[file].branches.pct,
-    functions: coverage[file].functions.pct,
-    lines: coverage[file].lines.pct,
-    total: (
-      coverage[file].statements.pct +
-      coverage[file].branches.pct +
-      coverage[file].functions.pct +
-      coverage[file].lines.pct
-    ) / 4,
-  })).sort((a, b) => b.total - a.total);
+  const fileAnalysis = files.map(file => {
+    const entry = coverage[file] || {};
+    const pct = (key) => (entry[key] && typeof entry[key].pct === 'number' ? entry[key].pct : 0);
+    const statements = pct('statements');
+    const branches = pct('branches');
+    const functions = pct('functions');
+    const lines = pct('lines');
+    return {
+      file,
+      statements,
+      branches,
+      functions,
+      lines,
+      total: (statements + branches + functions + lines) / 4,
+    };
+  }).sort((a, b) => b.total - a.total);
 
   // 우선순위 파일 (커버리지가 낮은 중요 파일)
   const priorityFiles = fileAnalysis
@@ -72,11 +81,16 @@ function analyzeCoverage(coverage) {
 
   return {
     total: {
-      statements: total.statements.pct,
-      branches: total.branches.pct,
-      functions: total.functions.pct,
-      lines: total.lines.pct,
-      percentage: (total.statements.pct + total.branches.pct + total.functions.pct + total.lines.pct) / 4,
+      statements: total.statements?.pct ?? 0,
+      branches: total.branches?.pct ?? 0,
+      functions: total.functions?.pct ?? 0,
+      lines: total.lines?.pct ?? 0,
+      percentage:
+        ((total.statements?.pct ?? 0) +
+          (total.branches?.pct ?? 0) +
+          (total.functions?.pct ?? 0) +
+          (total.lines?.pct ?? 0)) /
+        4,
     },
     fileAnalysis,
     priorityFiles,

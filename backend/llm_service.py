@@ -450,6 +450,8 @@ class LLMService:
         if context and isinstance(context, dict):
             if context.get("_user_message_priority_hint"):
                 prefix_parts.append(str(context["_user_message_priority_hint"]))
+            if context.get("_user_question_instruction"):
+                prefix_parts.append(str(context["_user_question_instruction"]))
             # 다중 요청을 adapt 지시보다 먼저 두어 항목별 처리가 우선되게 함
             if context.get("_multi_request_instruction"):
                 prefix_parts.append(

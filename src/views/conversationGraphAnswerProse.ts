@@ -175,7 +175,7 @@ export function polishGraphAnswerMarkdown(
   return reshapeGraphAnswerDraftToFormat(enriched, formatId);
 }
 
-const MIN_RICH_ANSWER_CHARS = 280;
+const MIN_RICH_ANSWER_CHARS = 520;
 
 /** 짧거나 제목만 있는 답변에 형식별 골격을 보강(표시용, 추측 사실 추가 없음) */
 export function enrichSparseGraphAnswerMarkdown(
@@ -192,7 +192,12 @@ export function enrichSparseGraphAnswerMarkdown(
 
   const lead = paragraphs[0] ?? body.replace(/^#{1,6}\s+[^\n]+\n?/gm, '').trim();
 
-  if (body.length >= MIN_RICH_ANSWER_CHARS) {
+  const lacksInterpretation = !/#{1,6}\s*(해석|갈등|실행|분석|권고|결론|핵심|서론|논의)/i.test(body);
+  const needsEnrichment =
+    body.length < MIN_RICH_ANSWER_CHARS ||
+    (lacksInterpretation && body.length < MIN_RICH_ANSWER_CHARS + 200);
+
+  if (!needsEnrichment) {
     return reshapeGraphAnswerDraftToFormat(body, formatId);
   }
 

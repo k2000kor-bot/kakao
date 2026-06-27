@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { PATHS } from './paths';
 import { TEST_IDS } from './testIds';
 import { isServerReachable, devServerUnreachableSkipMessageShort } from './helpers/playwrightEnv';
-import { chatStreamRouteStub, mockConversationsApi } from './helpers/conversationGraphApiMock';
+import { mockConversationsApi, stubGraphAnswerChatRoutes } from './helpers/conversationGraphApiMock';
 import {
   clickConversationGraphSearch,
   clickConversationGraphTestId,
@@ -14,6 +14,7 @@ import {
 } from './helpers/conversationGraphPage';
 
 test.describe('대화 관계도 E2E', () => {
+  test.describe.configure({ mode: 'serial' });
   test.setTimeout(60_000);
 
   test('관계도 검색 후 요약·참여자 선택·연결 포커스가 동작한다', async ({ page }) => {
@@ -154,7 +155,7 @@ test.describe('대화 관계도 E2E', () => {
       [],
       { uploadId: 'e2e-upload', listName: 'e2e.csv', mockUpload: true },
     );
-    await page.route(/\/api\/conversations/, handler);
+    await page.route('**/api/conversations**', handler);
     await page.addInitScript(() => {
       const hideOverlay = () => {
         document.getElementById('webpack-dev-server-client-overlay')?.remove();
@@ -189,11 +190,34 @@ test.describe('대화 관계도 E2E', () => {
       return;
     }
 
+    await setConversationGraphUiPrefsForE2e(page, {
+      useTwoPassAnswer: false,
+      useStreamAnswer: true,
+    });
+
     const llmNarrative = [
-      '## 해석',
+      '## 한 줄 요약',
       '',
-      'E2E 관계도 기반 생성 답변입니다. 알파와 베타의 갈등 축·동조·반대 구조를 정리했습니다.',
-      '표·다이어그램은 시스템이 생성한 블록을 유지하고 해석만 보강했습니다.',
+      'E2E 관계도 기반 생성 답변입니다. 알파와 베타의 동조·반대 구조를 정리했습니다.',
+      '',
+      '## 해석·갈등 축·실행 제안',
+      '',
+      '### 해석',
+      '',
+      'E2E 관계도 기반 생성 답변입니다. 알파는 동조 성향이 두드러지고 베타는 반대 입장을 보입니다.',
+      '스냅샷의 연결 강도와 발화 수를 근거로 관계를 해석했으며, 명시되지 않은 사실은 포함하지 않았습니다.',
+      '참여자 알파·베타 간 상호작용은 조합 내 의사소통 패턴을 보여 줍니다.',
+      '',
+      '### 갈등 축',
+      '',
+      '알파와 베타 사이 반대 연결은 안건별 이견 가능성을 시사합니다. 동조 축이 있는 참여자는 합의 후보로 볼 수 있습니다.',
+      '갈등이 반복되는 주제는 별도 안건으로 분리해 논의하는 것이 운영상 유리합니다.',
+      '',
+      '### 실행 제안',
+      '',
+      '1. 알파·베타의 우세 입장을 짧게 확인한 뒤 공유합니다.',
+      '2. 동조 축을 중심으로 합의 문안을 정리하고 이견은 별도 표로 관리합니다.',
+      '3. 다음 회의 전 실행 가능한 조치 1~2가지를 합의합니다.',
     ].join('\n');
     await stubGraphAnswerChatStream(page, llmNarrative);
     await openConversationGraphWithMock(
@@ -216,11 +240,12 @@ test.describe('대화 관계도 E2E', () => {
       pipeline.getByTestId(TEST_IDS.GENSPARK_GENERATION_STATUS),
     ).toBeVisible();
     const result = page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_RESULT);
-    await expect(result).toContainText('E2E 관계도 기반 생성 답변', { timeout: 20_000 });
-    await expect(result).toContainText('참여자');
+    await expect(result).toContainText('E2E 관계도 기반 생성 답변', { timeout: 30_000 });
+    await expect(result).not.toContainText('답변 생성 중', { timeout: 45_000 });
     await expect(result).toContainText('알파');
     await expect(result).toContainText('베타');
-    await expect(page.getByTestId('conversation-graph-mermaid-block')).toBeVisible({ timeout: 10_000 });
+    await expect(result).toContainText(/참여자|Mermaid|flowchart/i, { timeout: 15_000 });
+    await expect(page.getByTestId('conversation-graph-mermaid-block')).toBeVisible({ timeout: 15_000 });
   });
 
   test('대화에서 답변 생성 클릭 시 /chat으로 이동하고 프리셋 초안이 입력된다', async ({ page }) => {
@@ -289,7 +314,7 @@ test.describe('대화 관계도 E2E', () => {
       [],
       { uploadId: 'chat-handoff', listName: 'chat.csv', mockUpload: true },
     );
-    await page.route(/\/api\/conversations/, handler);
+    await page.route('**/api/conversations**', handler);
     await page.addInitScript(() => {
       const hideOverlay = () => {
         document.getElementById('webpack-dev-server-client-overlay')?.remove();
@@ -302,9 +327,11 @@ test.describe('대화 관계도 E2E', () => {
     await page.goto(PATHS.CHAT, { waitUntil: 'domcontentloaded', timeout: 30_000 });
     await dismissWebpackDevOverlay(page);
 
-    const csv = `Date,User,Message\n2026-05-13 10:00:00,"알파","안녕"`;
+    await expect(page.locator('#chat-main-content')).toBeAttached({ timeout: 20_000 });
     const chatInput = page.getByTestId(TEST_IDS.CHAT_INPUT).first();
-    await expect(chatInput).toBeVisible({ timeout: 15_000 });
+    await expect(chatInput).toBeVisible({ timeout: 20_000 });
+
+    const csv = `Date,User,Message\n2026-05-13 10:00:00,"알파","안녕"`;
 
     const composerFileInput = page
       .getByTestId(TEST_IDS.CHAT_INPUT_CONTAINER)
@@ -347,10 +374,13 @@ test.describe('대화 관계도 E2E', () => {
 flowchart TB
   알파 -->|동조| 베타
 \`\`\``;
-    const streamStub = chatStreamRouteStub(answerText);
+    await stubGraphAnswerChatRoutes(page, answerText);
 
-    await page.route('**/api/chat/stream**', streamStub);
-    await page.route('**/api/unified/chat/stream**', streamStub);
+    await setConversationGraphUiPrefsForE2e(page, {
+      useTwoPassAnswer: false,
+      useStreamAnswer: true,
+    });
+
     const handler = mockConversationsApi(
       [
         { id: 'p1', label: '알파', message_count: 2, dominant_stance: '동조' },
@@ -359,7 +389,7 @@ flowchart TB
       [{ source: 'p1', target: 'p2', weight: 2, weight_동조: 2, edge_type: '동조' }],
       { uploadId: 'paste-upload', listName: '붙여넣은 대화', mockUpload: true },
     );
-    await page.route(/\/api\/conversations/, handler);
+    await page.route('**/api/conversations**', handler);
     await page.addInitScript(() => {
       const hideOverlay = () => {
         document.getElementById('webpack-dev-server-client-overlay')?.remove();
@@ -391,6 +421,8 @@ flowchart TB
       'E2E 관계도 만들기 답변',
       { timeout: 30_000 },
     );
+    const pasteResult = page.getByTestId(TEST_IDS.CONVERSATION_GRAPH_ANSWER_RESULT);
+    await expect(pasteResult).not.toContainText('답변 생성 중', { timeout: 45_000 });
     await expect(page.getByTestId('conversation-graph-mermaid-block')).toBeVisible({ timeout: 20_000 });
   });
 

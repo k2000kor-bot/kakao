@@ -11,7 +11,7 @@ export type GraphAnswerVerifyResult = {
   issues: string[];
 };
 
-export const GRAPH_ANSWER_SELF_IMPROVE_MAX_ATTEMPTS = 2;
+export const GRAPH_ANSWER_SELF_IMPROVE_MAX_ATTEMPTS = 3;
 
 const GENERIC_CHAT_MARKERS = [
   '[다중 요청]',
@@ -20,8 +20,9 @@ const GENERIC_CHAT_MARKERS = [
   '구체적으로 말씀해 주시면',
 ];
 
-const MIN_REPORT_LENGTH = 100;
-const MIN_CREATE_GRAPH_LENGTH = 150;
+const MIN_REPORT_LENGTH = 480;
+const MIN_CREATE_GRAPH_LENGTH = 200;
+const MIN_INTERPRETATION_PARAGRAPHS = 2;
 
 /** 스냅샷·연결 표에서 참여자 라벨 후보 추출 */
 export function extractParticipantLabelsFromGraphContext(ctx: Record<string, unknown>): string[] {
@@ -60,6 +61,24 @@ export function extractParticipantLabelsFromGraphContext(ctx: Record<string, unk
   return [...labels];
 }
 
+function countSubstantiveParagraphs(text: string): number {
+  return text
+    .split(/\n{2,}/)
+    .map((b) => b.trim())
+    .filter(
+      (b) =>
+        b.length > 36 &&
+        !/^#{1,6}\s/.test(b) &&
+        !/^```/.test(b) &&
+        !/^\|/.test(b) &&
+        !/^[-*•]\s/.test(b),
+    ).length;
+}
+
+function hasInterpretationSection(text: string): boolean {
+  return /#{1,6}\s*(해석|갈등|실행|분석|권고|결론|핵심)/i.test(text);
+}
+
 function isCreateGraphContext(ctx: Record<string, unknown>, draft: string): boolean {
   const hint = coerceTrimmedString(String(ctx.input_intent_hint ?? ''), '');
   if (hint === 'conversation_graph_create') return true;
@@ -88,15 +107,34 @@ export function verifyGraphAnswerAgainstContext(
   const createGraph = isCreateGraphContext(ctx, text);
   const minLen = createGraph ? MIN_CREATE_GRAPH_LENGTH : MIN_REPORT_LENGTH;
   if (text.length < minLen) {
-    issues.push(`답변이 너무 짧습니다(최소 ${minLen}자 권장). 요약·표·근거를 보강하세요.`);
+    issues.push(`답변이 너무 짧습니다(최소 ${minLen}자 권장). 요약·해석·실행 제안을 문단으로 보강하세요.`);
+  }
+
+  if (!createGraph) {
+    if (!hasInterpretationSection(text)) {
+      issues.push('해석·갈등·실행 제안(또는 형식별 본문) 섹션 제목(## 또는 ###)이 없습니다.');
+    }
+    const paragraphs = countSubstantiveParagraphs(text);
+    const bulletLines = (text.match(/^[-*•]\s+.+$/gm) ?? []).length;
+    if (paragraphs < MIN_INTERPRETATION_PARAGRAPHS && text.length < minLen + 120) {
+      issues.push(
+        `본문 문단이 ${paragraphs}개로 부족합니다. 불릿만 나열하지 말고 섹션마다 3문장 이상의 문단을 작성하세요.`,
+      );
+    }
+    if (bulletLines >= 4 && paragraphs < 2) {
+      issues.push('불릿만 있는 빈약한 답변입니다. 각 항목을 문단으로 풀어 설명하세요.');
+    }
   }
 
   if (createGraph) {
-    const low = text.toLowerCase();
-    if (!low.includes('mermaid') && !low.includes('flowchart')) {
+    const hasMermaidBlock =
+      /```mermaid[\s\S]*?```/i.test(text) &&
+      (/flowchart/i.test(text) || /graph\s/i.test(text));
+    if (!hasMermaidBlock) {
       issues.push('Mermaid flowchart 다이어그램(```mermaid … flowchart TB)이 없습니다.');
     }
-    if (!text.includes('|') && !/참여자\s*표/i.test(text)) {
+    const tableRows = (text.match(/^\|.+\|$/gm) ?? []).length;
+    if (tableRows < 2 && !/참여자\s*표/i.test(text)) {
       issues.push('참여자 표(마크다운 표)가 없습니다.');
     }
   }

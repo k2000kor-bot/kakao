@@ -8,9 +8,14 @@ from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# YouTube URL 패턴 (공유 링크 포함)
+# YouTube URL 패턴 (watch·youtu.be·shorts·embed·music·m.)
 _YOUTUBE_URL_PATTERN = re.compile(
-    r"https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[\w\-]+(?:\?[^\s]*)?",
+    r"https?://(?:www\.|m\.)?(?:"
+    r"youtube\.com/(?:watch\?v=[\w\-]+(?:[^\s\])\"']*)?|embed/[\w\-]+|shorts/[\w\-]+(?:[^\s\])\"']*)?)|"
+    r"music\.youtube\.com/watch\?v=[\w\-]+(?:[^\s\])\"']*)?|"
+    r"youtu\.be/[\w\-]+(?:[^\s\])\"']*)?|"
+    r"www\.youtube-nocookie\.com/embed/[\w\-]+(?:[^\s\])\"']*)?"
+    r")",
     re.IGNORECASE,
 )
 

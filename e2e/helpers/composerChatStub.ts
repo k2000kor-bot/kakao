@@ -4,6 +4,8 @@ export type ComposerChatStubOptions = {
   /** 각 POST /api/chat(·/stream) 응답 본문 */
   responses: string[];
   delayMs?: number;
+  /** POST body JSON 캡처( E2E context 검증용) */
+  onPost?: (url: string, body: Record<string, unknown>) => void;
 };
 
 /** `streamingClient`가 파싱하는 SSE 형식 (`content`·`done`·`fullContent`) */
@@ -34,6 +36,16 @@ export async function installComposerChatStub(
     postIndex += 1;
 
     const url = route.request().url();
+    if (options.onPost) {
+      try {
+        const raw = route.request().postData();
+        if (raw) {
+          options.onPost(url, JSON.parse(raw) as Record<string, unknown>);
+        }
+      } catch {
+        /* ignore malformed body */
+      }
+    }
     if (url.includes('/stream')) {
       await route.fulfill({
         status: 200,

@@ -1990,6 +1990,25 @@ Facebook이 만든 UI 라이브러리로, 컴포넌트 기반 개발을 지원�
             if re.search(pattern, query):
                 return QueryIntent.RECOMMENDATION
 
+        # 설명·분석·요약 요청 (부동산·일반 질문 포함)
+        analysis_request_patterns = [
+            r"파악",
+            r"분석",
+            r"분위기",
+            r"현황",
+            r"동향",
+            r"정리",
+            r"요약",
+            r"설명해",
+            r"말해줘",
+            r"알려줘",
+            r"해줘",
+            r"해주",
+        ]
+        for pattern in analysis_request_patterns:
+            if re.search(pattern, query):
+                return QueryIntent.EXPLANATION
+
         # 설명 요청
         explanation_patterns = [
             r"(?:뭐|무엇)",
@@ -11743,11 +11762,19 @@ AWS / GCP / Azure
         self, analysis: QueryAnalysis, thought: ThoughtProcess
     ) -> str:
         """일반 응답"""
+        query = analysis.original_query or ""
         if analysis.key_topics and analysis.key_topics[0] != "general":
             return self._generate_explanation_response(analysis, thought)
 
+        # 분석·파악·요약 등 실질 질문은 설명 경로로 (템플릿 '더 구체적으로' 회피)
+        if re.search(
+            r"파악|분석|분위기|현황|동향|정리|요약|설명|알려|말해|해줘|해주",
+            query,
+        ):
+            return self._generate_explanation_response(analysis, thought)
+
         # 인사 또는 일반 대화
-        return self._generate_conversational_response(analysis.original_query)
+        return self._generate_conversational_response(query)
 
     def _enhance_response(self, response: str, analysis: QueryAnalysis) -> str:
         """응답 품질 향상"""

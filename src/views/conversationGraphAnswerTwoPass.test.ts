@@ -21,8 +21,8 @@ describe('conversationGraphAnswerTwoPass', () => {
     localStorage.removeItem('corbu.conversationGraph.uiPrefs');
   });
 
-  it('env가 1이고 구조화 블록이 있으면 2-pass를 사용한다', () => {
-    process.env.REACT_APP_GRAPH_ANSWER_TWO_PASS = '1';
+  it('기본값은 2-pass가 켜져 있고 구조화 블록이 있으면 사용한다', () => {
+    delete process.env.REACT_APP_GRAPH_ANSWER_TWO_PASS;
     expect(isGraphAnswerTwoPassEnabled()).toBe(true);
     expect(
       shouldUseGraphAnswerTwoPass({
@@ -30,6 +30,11 @@ describe('conversationGraphAnswerTwoPass', () => {
       }),
     ).toBe(true);
     expect(shouldUseGraphAnswerTwoPass({})).toBe(false);
+  });
+
+  it('env가 0이면 기본 2-pass를 끈다', () => {
+    process.env.REACT_APP_GRAPH_ANSWER_TWO_PASS = '0';
+    expect(isGraphAnswerTwoPassEnabled()).toBe(false);
   });
 
   it('UI prefs가 env보다 우선한다', () => {

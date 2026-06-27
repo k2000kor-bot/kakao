@@ -25,6 +25,6 @@ npm run test:p4:services || {
 echo ""
 echo "=== 완성도 검증 완료 ==="
 echo "권장(별도): npm run verify:pre-deploy (sidebar + composer + 관계도 unit)"
-echo "풀 스택: npm run verify:final · E2E: test:e2e:composer-pipeline:all · verify:conversation-graph"
+echo "풀 스택: npm run verify:final · E2E: test:e2e:composer-pipeline:all · verify:conversation-graph · verify:conversation-graph:full"
 echo "원격 push: docs/PUSH_BLOCK_HANDOFF.md"
 echo "선택 점검: DOC_HUB_STRICT=1 npm run check:doc-verification-hub — TESTING_GUIDE.md · scripts/README.md"

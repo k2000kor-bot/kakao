@@ -1354,7 +1354,7 @@ function Layout() {
           )}
           {/* 대화 기록: 프로젝트 목록과 동일한 상단 슬롯(다단계 UI형 기본에서도 맨 위) */}
           <nav className="sidebar-nav sidebar-chatgpt-nav" aria-label="대화 기록">
-            {!sidebarCollapsed && <h3 className="sidebar-project-section-title">채팅</h3>}
+            {!sidebarCollapsed && <h3 className="sidebar-project-section-title">대화</h3>}
             <div className="sidebar-topic-list sidebar-chat-list" role="list">
               {(() => {
                 const q = coerceTrimmedString(menuSearch, '').toLowerCase();

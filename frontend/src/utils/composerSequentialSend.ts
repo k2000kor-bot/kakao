@@ -26,6 +26,18 @@ export function getComposerSequentialSendFlags(
   featureCtx: Record<string, unknown>,
   streamingSupported: boolean,
 ): ComposerSequentialSendFlags {
+  if (featureCtx.conversation_graph_analysis === true) {
+    return {
+      items: [],
+      multiRequestModeActive: false,
+      runSequentialMultiRequest: false,
+      bypassStreamForSequentialMultiRequest: false,
+      useSequentialStream: false,
+      runMultiStepMultiRequest: false,
+      bypassStreamForMultiStepMultiRequest: false,
+    };
+  }
+
   const items = getComposerSequentialMultiRequestItems(trimmedInput);
   const multiRequestModeActive = !!featureCtx.multi_request_mode;
   const runSequentialMultiRequest = shouldRunComposerSequentialMultiRequest(items, {

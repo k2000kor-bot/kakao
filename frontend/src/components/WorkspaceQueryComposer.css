@@ -85,8 +85,10 @@
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   box-shadow: none;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.8125rem;
+  line-height: 1;
 }
 
 .wq-composer__left--minimal-attach .wq-composer__icon-btn:hover {
@@ -115,8 +117,8 @@
   background: transparent;
   border: none;
   resize: none;
-  min-height: 72px;
-  max-height: 320px;
+  min-height: 77px;
+  max-height: min(65dvh, 720px);
   overflow-y: auto;
   overflow-x: hidden;
   transition: height 0.1s ease;

@@ -4,6 +4,8 @@ from api.conversation_graph_chat_hint import (
     attach_conversation_graph_instruction,
     build_structured_graph_answer_fallback,
     is_generic_chat_fallback,
+    is_sparse_graph_llm_answer,
+    should_use_graph_fallback_for_llm,
 )
 
 
@@ -118,3 +120,28 @@ def test_build_structured_graph_answer_fallback_from_snapshot() -> None:
     assert "베타" in text
     assert "mermaid" in text.lower()
     assert "flowchart" in text.lower()
+    assert "해석" in text
+    assert "실행 제안" in text
+
+
+def test_is_sparse_graph_llm_answer() -> None:
+    assert is_sparse_graph_llm_answer("짧은 답변")
+    assert is_sparse_graph_llm_answer("- 불릿1\n- 불릿2\n- 불릿3\n- 불릿4")
+    rich = "\n".join(
+        [
+            "## 한 줄 요약",
+            "알파와 베타의 관계를 정리했습니다.",
+            "## 해석",
+            "동조 축이 강합니다. " * 20,
+            "## 실행 제안",
+            "1. 중재자 역할을 명확히 합니다. " * 10,
+        ]
+    )
+    assert not is_sparse_graph_llm_answer(rich)
+
+
+def test_should_use_graph_fallback_respects_structured_sections() -> None:
+    sparse = "## 요약\n\n짧음."
+    ctx = {"conversation_graph_structured_sections": "## 참여자 표"}
+    assert not should_use_graph_fallback_for_llm(sparse, ctx)
+    assert should_use_graph_fallback_for_llm(sparse, {})

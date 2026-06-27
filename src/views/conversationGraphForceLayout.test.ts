@@ -5,12 +5,16 @@ import {
   CONVERSATION_GRAPH_SVG_HEIGHT,
   CONVERSATION_GRAPH_SVG_WIDTH,
   mountConversationGraphForceLayout,
+  resolveConversationGraphDimensions,
 } from './conversationGraphForceLayout';
 
 describe('conversationGraphForceLayout', () => {
-  it('SVG 크기 상수를 export한다', () => {
-    expect(CONVERSATION_GRAPH_SVG_WIDTH).toBe(800);
-    expect(CONVERSATION_GRAPH_SVG_HEIGHT).toBe(500);
+  it('SVG 크기 상수·반응형 치수를 export한다', () => {
+    expect(CONVERSATION_GRAPH_SVG_WIDTH).toBe(1120);
+    expect(CONVERSATION_GRAPH_SVG_HEIGHT).toBe(640);
+    const dims = resolveConversationGraphDimensions(1200);
+    expect(dims.width).toBeGreaterThanOrEqual(960);
+    expect(dims.height).toBeGreaterThanOrEqual(520);
   });
 
   it('노드가 없으면 undefined를 반환한다', () => {

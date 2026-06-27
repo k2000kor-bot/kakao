@@ -7,7 +7,7 @@ cd "$ROOT"
 # shellcheck source=push-remote-default.sh
 source "$ROOT/scripts/push-remote-default.sh"
 
-PR_NUMBER="${PR_NUMBER:-2}"
+PR_NUMBER="${PR_NUMBER:-3}"
 BASE="${PR_BASE_BRANCH:-main}"
 HEAD="${PR_HEAD_BRANCH:-dev-continue-2026-01-20}"
 

@@ -143,6 +143,8 @@
   --content-max-sm: 520px;
   --content-max-md: 600px;
   --content-max-lg: 800px;
+  /* Genspark형 컴포저·메시지 읽기 폭 (ChatInputDock·genspark-chat-messages-wrap) */
+  --composer-column-max: 52rem;
   --content-max-xl: 1200px;
   --content-max-form: 700px;
   --content-max-dashboard: 1400px;

@@ -2,7 +2,7 @@
 
 **마무리 한 줄**: `npm run verify:completion` (타입·린트·P4 서비스 스위트. 통과 시 완성도 검증 완료.)
 
-**사이드바·push(권장)**: `npm run test:sidebar-context` — [TESTING_GUIDE.md](../TESTING_GUIDE.md)(표 행) · **수동** 첨부·재생성·편집 [CHAT_UI_TEST_SCENARIOS §14.5](./guides/CHAT_UI_TEST_SCENARIOS.md) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
+**사이드바·push(권장)**: `npm run test:sidebar-context` — [TESTING_GUIDE.md](../TESTING_GUIDE.md)(표 행) · **수동** 첨부·재생성·편집 [CHAT_UI_TEST_SCENARIOS §14.5·§14.10](./guides/CHAT_UI_TEST_SCENARIOS.md) · 원격 `git push` 막힘 [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md)(`npm run maintain:push-block`).
 
 **문서 허브 단락(선택, 가벼움)**: `npm run check:doc-verification-hub` — [TESTING_GUIDE.md](../TESTING_GUIDE.md) · CI와 동일하게 보려면 `DOC_HUB_STRICT=1`(누락 시 exit 1).
 
@@ -45,7 +45,7 @@
 | scriptStyleAPI 100% 커버리지 | `npm run test:coverage -- --testPathPattern="scriptStyleAPI"` · 표 행과 교차 |
 | 문서·인프라 | DEVELOPMENT, BACKLOG, BRAINWAVE-UI, TTS 가이드, COMPONENT_ARCHITECTURE, DEVELOPMENT_CONTINUITY, dev:check 3단계, CI lint:strict · 표 행과 교차 |
 | Task B4 프로젝트 허브 | 검색/필터/통계/템플릿/공유 완료. projectAnalyticsService·ProjectHub 50 tests, projectShareService·ProjectShareDialog 42 tests. URL `?share=` 접근 시 프로젝트 자동 선택. · 표 행과 교차 |
-| 대화 질문 답변·대화 맥락 | ChatGPTInterface 응답 추출·백엔드 빈 응답 방지. context.conversation_history(최근 20턴)·대화방 재진입 시 conversations 우선·재생성·편집 경로 동일·consistency_instruction. `buildMergedFeatureContextFromInputAndAttachments`·일회 첨부 `conversation_file_*`(전송·재생성·편집). available_capabilities. 백엔드 _run_pre_generation_pipeline. CHAT_ANSWER_FLOW_VERIFICATION §5.6·§8(행 9 첨부·재생성·편집). CHAT_UI_TEST_SCENARIOS §14.5. · 표 행과 교차 |
+| 대화 질문 답변·대화 맥락 | ChatGPTInterface 응답 추출·백엔드 빈 응답 방지. context.conversation_history(최근 20턴)·`pickComposerHistoryMessages`(로컬·저장 중 긴 쪽)·재생성·편집 경로 동일·consistency_instruction. `shouldUseSimpleComposerOutboundMessageForTurn`(첨부·병합 본문 시 fast path 비활성). 대화 전환·삭제·메시지 전체 삭제 시 graph ref·첨부 초기화. `buildMergedFeatureContextFromInputAndAttachments`·일회 첨부 `conversation_file_*`(전송·재생성·편집). CHAT_ANSWER_FLOW_VERIFICATION §5.6·§8(행 9). CHAT_UI_TEST_SCENARIOS §14.5·§14.10. Jest `composerContextAfterClear.test` · E2E `test:e2e:composer-attach-context`. · 표 행과 교차 |
 | 사전 생성 파이프라인 | `_run_pre_generation_pipeline` 4단계(자료 수집→내용 정리→논리 구성→스타일). unified_ctx로 intelligent_engine·llm_service·notebook_llm에 반영. parsed_input·response_style·perspective 기반. 혁신 답변 품질 지시(논리 구조·결론 선행·독창적 관점·수식어 지양·creative 시 창의 모드). BACKLOG 2026-02-20·23차. · 표 행과 교차 |
 | 통합 생성글 품질(모든 입력창) | `generationPromptBuilder` — buildUnifiedGenerationPrompt·buildUnifiedChatContext·getInnovativeWritingInstructionBlock. SimpleChatView·IntegratedAIChat·UltimateChatGPTInterface·FileAnalysisChatSystem·NotebookLLM에 적용. /api/unified/chat 우선. generationPromptBuilder.test 12 tests. · 표 행과 교차 |
 | NotebookLM·답변 다양성 | 대화 시 project_id·context 전달(스트리밍/비스트리밍·재생성·편집). 백엔드 projectKnowledge 로드·폴백 반영. 같은 질문 n번 다른 답변: request_id·diversity·temperature 전송, _add_response_diversity(시작/마무리 문구) 적용. · 표 행과 교차 |
@@ -134,8 +134,8 @@
 |------|------|
 | **마무리 검증 (1·2 한 번에)** | `npm run verify:completion` · 표 행과 교차 |
 | **배포 직전 스크립트** | `npm run verify:final` → `scripts/final-verify.sh` — `test:frontend:chat-pipeline`·`verify:composer-pipeline` 필수 · [FINAL_CHECKLIST.md](./FINAL_CHECKLIST.md) · 표 행과 교차 |
-| **컴포저 파이프라인 (Jest)** | `npm run verify:composer-pipeline` | 19 suites, 147 tests · Council·자가 개발·재생성 유틸 · CI `composer-pipeline` · §14.7–14.9 |
-| **컴포저 E2E (선택)** | `npm run test:e2e:composer-pipeline:all` (로컬) · `...:ci:all` (CI) | 에이전트·다중요청·재생성 포함 · CI `composer-pipeline-e2e` · `composer-regenerate-e2e` |
+| **컴포저 파이프라인 (Jest)** | `npm run verify:composer-pipeline` | 20 suites, 152 tests · Council·자가 개발·재생성·`composerContextAfterClear` · CI `composer-pipeline` · §14.7–14.10 |
+| **컴포저 E2E (선택)** | `npm run test:e2e:composer-pipeline:all` (로컬) · `...:ci:all` (CI) | 에이전트·다중요청·재생성·**첨부+짧은 지시** 포함 · CI `composer-pipeline-e2e` · `composer-regenerate-e2e` |
 | **관계도 (Jest·E2E)** | `npm run verify:conversation-graph:unit` · `npm run verify:conversation-graph` | Jest 200+ · E2E 13 · 백엔드 15 · CI `conversation-graph` · `conversation-graph-e2e` |
 | **완성도 검증 (한 번에)** | `npm run dev:check` · 표 행과 교차 |
 | **E2E (chromium, 69 passed 6 skipped)** | `E2E_SERVER_READY=1 npx playwright test --project=chromium` (서버·playwright chromium 사전 필요) · 표 행과 교차 |
@@ -143,7 +143,7 @@
 | **확장 뷰·라우트 (22 suites, 137 tests)** | `npm run test:views` · 표 행과 교차 |
 | **라우트 설정만 (`routes.test`, 27 tests)** | `npm run test:routes` (`pretest` 포함) · 표 행과 교차 |
 | **통합 앱 셸 (`AppUnified.test`, 122 tests)** | `npm run test:app-unified` (`pretest` 포함) · 표 행과 교차 |
-| **사이드바 컨텍스트 회귀** | `npm run test:sidebar-context` (`pretest`·`sync:frontend-src` 포함; 동일 `make test-sidebar-context`) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·수동 §14.5 [CHAT_UI_TEST_SCENARIOS](./guides/CHAT_UI_TEST_SCENARIOS.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
+| **사이드바 컨텍스트 회귀** | `npm run test:sidebar-context` (`pretest`·`sync:frontend-src` 포함; 동일 `make test-sidebar-context`) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·수동 §14.5·§14.10 [CHAT_UI_TEST_SCENARIOS](./guides/CHAT_UI_TEST_SCENARIOS.md)·[PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
 | **활성 경로 md 허브 단락** | `npm run check:doc-verification-hub` (동일 `make check-doc-verification-hub`; Jest 없음) — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·[scripts/README.md](../scripts/README.md) · 표 행과 교차 |
 | **원격 `git push` 막힘 (로컬)** | `npm run maintain:push-block` (동일 `make maintain-push-block`) — [PUSH_BLOCK_HANDOFF.md](./PUSH_BLOCK_HANDOFF.md) |
 | **도구 뷰 서비스 (10 suites, 45 tests)** | `npm test -- --testPathPattern=ViewService --watchAll=false` 또는 `npm run test:views:services` · 표 행과 교차 |
@@ -156,7 +156,7 @@
 | **소스 탭 파일 업로드 (통합)** | `npm run verify:project-sources` — projectService·ChatGPTInterface 유닛 · 백엔드 `test_upload_project_file` · E2E `projectManagement.spec` 소스 탭 업로드 (`E2E_SERVER_READY=1`) · 표 행과 교차 |
 | 커버리지 확인 | `npm run test:coverage -- --watchAll=false` · 표 행과 교차 |
 | 대화 파이프라인 메타 (Jest) | `npm run test:frontend:chat-pipeline` | `chatInputUtils`·`streamingClient`·`generationPromptBuilder`·GensparkPipelineExtrasPanel. `frontend/src` 미러: `npm run sync:frontend-src`(전체·동일 `make sync-frontend`)·`chatInputUtils`만 `npm run sync:frontend-chat-input-utils`(동일 `make sync-frontend-chat-input`)·통합 대화(UI) 등 부분 `npm run sync:frontend-unified-chat`(동일 `make sync-frontend-unified-chat`) · `npm test`/`pretest`: `check:src-frontend-parity`(동일 `make check-frontend-parity`) · 표 행과 교차 |
-| ChatGPTInterface 등 (Jest) | `npm run test:sidebar-context`에 포함되거나, 예: `npm test -- --testPathPattern='ChatGPTInterface\\.test\\.tsx' --watchAll=false` — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·수동 §14.5 [CHAT_UI_TEST_SCENARIOS](./guides/CHAT_UI_TEST_SCENARIOS.md) · 표 행과 교차 |
+| ChatGPTInterface 등 (Jest) | `npm run test:sidebar-context`에 포함되거나, 예: `npm test -- --testPathPattern='ChatGPTInterface\\.test\\.tsx' --watchAll=false` — [TESTING_GUIDE.md](../TESTING_GUIDE.md)·수동 §14.5·§14.10 [CHAT_UI_TEST_SCENARIOS](./guides/CHAT_UI_TEST_SCENARIOS.md) · 표 행과 교차 |
 
 ---
 

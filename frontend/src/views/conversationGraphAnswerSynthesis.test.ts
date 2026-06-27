@@ -11,8 +11,11 @@ const structured = [
 ].join('\n');
 
 describe('mergeGraphAnswerWithDeterministicSections', () => {
-  it('LLM 본문이 없으면 구조화 블록만 반환', () => {
-    expect(mergeGraphAnswerWithDeterministicSections('', structured)).toContain('## 참여자 표');
+  it('LLM 본문이 없어도 구조화 블록과 해석·실행 골격을 합성한다', () => {
+    const merged = mergeGraphAnswerWithDeterministicSections('', structured);
+    expect(merged).toContain('## 참여자 표');
+    expect(merged).toContain('## 해석');
+    expect(merged).toContain('실행 제안');
   });
 
   it('LLM 서술과 구조화 블록을 합성한다', () => {

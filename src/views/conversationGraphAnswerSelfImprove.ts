@@ -13,6 +13,7 @@ export function buildGraphAnswerContextWithRevision(
   const prevInstruction = coerceTrimmedString(String(base.answer_quality_instruction ?? ''), '');
   const revisionLines = [
     '[자동 품질 검증 — 이전 초안 수정 필수]',
+    '이전 초안은 너무 짧거나 빈약했습니다. 전체 600자 이상, 섹션당 3문장 이상의 문단으로 다시 작성하세요. 한 줄·불릿만 있는 답변은 금지합니다.',
     ...issues.map((issue) => `- ${issue}`),
   ];
 

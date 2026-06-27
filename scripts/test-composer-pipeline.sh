@@ -12,9 +12,15 @@ cd "${PROJECT_ROOT}"
 
 npm run sync:frontend-src
 npm run pretest
-CI=true react-scripts test \
-  --testPathPattern='composerAttachmentPayload|composerMultiRequestProgress|composerSequential|composerMultiStep|runComposerSequentialMultiRequest|runComposerMultiStep|chatGptComposerPayload|composerAssistantTurnFinalize|composerRegenerateTurn|composerOversight|composerStreamResponseText|GensparkPipelineExtrasPanel|WorkspaceQueryComposer.test|ChatGPTInterface.test' \
-  --watchAll=false
+JEST_EXTRA_ARGS=()
+if [[ -n "${CI:-}" ]]; then
+  export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=4096"
+  JEST_EXTRA_ARGS=(--ci --runInBand --forceExit --testTimeout=90000)
+fi
+react-scripts test \
+  --testPathPattern='composerAttachmentPayload|composerMultiRequestProgress|composerSequential|composerMultiStep|runComposerSequentialMultiRequest|runComposerMultiStep|chatGptComposerPayload|composerAssistantTurnFinalize|composerRegenerateTurn|composerOversight|composerStreamResponseText|composerContextAfterClear|GensparkPipelineExtrasPanel|WorkspaceQueryComposer.test|ChatGPTInterface.test' \
+  --watchAll=false \
+  "${JEST_EXTRA_ARGS[@]}"
 
 if [ "${E2E_COMPOSER_PIPELINE:-}" = "1" ]; then
   echo ""

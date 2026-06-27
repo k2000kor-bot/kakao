@@ -32,8 +32,10 @@ describe('conversationGraphAnswerVerifier', () => {
       'flowchart TB',
       '  A[알파] --> B[베타]',
       '```',
+      '## 해석',
       '알파와 베타의 관계를 정리했습니다. 동조·반대 축을 스냅샷 근거만으로 서술했습니다.',
       '갈등 완화를 위해 중재자 역할이 필요할 수 있습니다(추정).',
+      '참여자 간 발화 빈도와 연결 강도는 표·Mermaid에서 확인할 수 있습니다.',
     ].join('\n');
     const result = verifyGraphAnswerAgainstContext(draft, {
       input_intent_hint: 'conversation_graph_create',
@@ -45,10 +47,19 @@ describe('conversationGraphAnswerVerifier', () => {
 
   it('[다중 요청] 문구가 있으면 실패한다', () => {
     const result = verifyGraphAnswerAgainstContext(
-      '[다중 요청] 항목1\n'.padEnd(150, 'x'),
+      '[다중 요청] 항목1\n'.padEnd(520, 'x'),
       { input_intent_hint: 'conversation_graph_answer' },
     );
     expect(result.pass).toBe(false);
     expect(result.issues.some((i) => i.includes('다중 요청'))).toBe(true);
+  });
+
+  it('짧고 섹션이 없는 관계도 답변은 실패한다', () => {
+    const result = verifyGraphAnswerAgainstContext('요약만 있습니다.', {
+      input_intent_hint: 'conversation_graph_answer',
+      conversation_graph_snapshot: '- 알파 → 베타: 동조',
+    });
+    expect(result.pass).toBe(false);
+    expect(result.issues.some((i) => i.includes('짧습니다') || i.includes('섹션'))).toBe(true);
   });
 });

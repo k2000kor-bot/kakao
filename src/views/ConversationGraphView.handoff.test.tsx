@@ -25,8 +25,9 @@ jest.mock('./conversationGraphForceLayout', () => ({
     resetZoom: jest.fn(),
     focusOnNode: jest.fn(),
   })),
-  CONVERSATION_GRAPH_SVG_WIDTH: 800,
-  CONVERSATION_GRAPH_SVG_HEIGHT: 500,
+  resolveConversationGraphDimensions: jest.fn(() => ({ width: 1120, height: 640 })),
+  CONVERSATION_GRAPH_SVG_WIDTH: 1120,
+  CONVERSATION_GRAPH_SVG_HEIGHT: 640,
 }));
 jest.mock('./conversationGraphExport');
 jest.mock('./conversationGraphCsvExport', () => ({ downloadConversationGraphCsv: jest.fn() }));

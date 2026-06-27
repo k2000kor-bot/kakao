@@ -1,44 +1,28 @@
-# PR #2 — merge·검증 완료 (2026-05-23)
+# PR #3 — feat/chat-composer-context-graph (2026-05-26)
 
-**PR:** https://github.com/k2000kor-bot/kakao/pull/2 · **merged**  
-**HEAD:** `ebe0e9083` · `origin/main` = `origin/dev-continue-2026-01-20`
+**PR:** https://github.com/k2000kor-bot/kakao/pull/3 · **open** (Draft)  
+**브랜치:** `feat/chat-composer-context-graph` → `main`  
+**HEAD:** `6e37cd1e5` (+ CI docker/e2e push 예정)
 
-## 완료 체크리스트
+## Summary
 
-| 항목 | 상태 |
-|------|------|
-| PR #2 merge | ✅ |
-| main · dev-continue 동기화 | ✅ |
-| GitHub default branch → `main` | ✅ |
-| `finish:post-merge` | ✅ |
-| `verify:pre-deploy` | ✅ |
-| `verify:completion` · `deploy:check` | ✅ |
-| `verify:final` (백엔드 :5002 포함) | ✅ |
-| E2E CI (`test:e2e:pipelines:ci:all`) | ✅ |
-| `deploy:package` | ✅ |
-| 로컬 `:3000` · `:5002` | ✅ |
-| `verify:handoff-artifacts` | ✅ |
+- 대화 삭제·초기화 후 첨부+짧은 지시 맥락 API 반영
+- conversation graph handoff·sparse 폴백·E2E
+- 컴포저 dock·UI · backend YouTube/workspace intent
 
-## 로컬 동기화
+## CI (`6e37cd1e5`)
 
-```bash
-git checkout main && git pull origin main
-npm run sync:frontend-src
-npm run verify:handoff-artifacts
-npm run repo:check-default-main
-```
+| Job | 상태 |
+|-----|------|
+| 코드 품질 검사 · 컴poser Jest · 관계도 · 백엔드 · 프론트 빌드 | ✅ |
+| Test Coverage Report | ✅ |
+| 컴poser·재생성·관계도 E2E (별도 job) | ✅ |
+| E2E Tests (e2e-tests smoke) | 실행 중 |
+| Docker 이미지 빌드 | PR push 실패 → `push: false` on PR 수정 예정 |
 
-## 풀 스택 검증 (선택)
+## 수동 (머지 전)
 
-```bash
-npm run restart:backend    # :5002
-npm run verify:final
-CI=1 npm run test:e2e:pipelines:ci:all
-```
+1. **Ready for review** (Draft 해제)
+2. 본문: [PR_COMPOSER_GRAPH_DRAFT.md](./PR_COMPOSER_GRAPH_DRAFT.md)
 
-## 핵심 기능 (graph-answer)
-
-- 14종 문서 형식 · 컴포저 순차 생성 · handoff
-- 상세: [CONVERSATION_GRAPH_ANSWER_FORMATS.md](./CONVERSATION_GRAPH_ANSWER_FORMATS.md)
-
-검증: [TESTING_GUIDE.md](../TESTING_GUIDE.md) · [PUSH_NEXT_STEPS.md](./PUSH_NEXT_STEPS.md)
+저장소 루트 검증 허브: [TESTING_GUIDE.md](../TESTING_GUIDE.md) — `npm run verify:completion` — [COMPLETION_CHECKLIST.md](./COMPLETION_CHECKLIST.md).

@@ -210,9 +210,29 @@ npm run deploy:dev      # 개발 서버 배포 (DEPLOY_DEV_HOST, DEPLOY_DEV_PATH
 npm run verify:completion   # 타입·린트·P4 148 tests
 npm run build              # build/ 생성
 # (선택) npm run test:views -- --watchAll=false  # 뷰·라우트 20 suites, 105 tests
+# (선택) npm run verify:conversation-graph:full  # 관계도 unit + API 스모크 + E2E(백엔드 5002·dev 서버 필요)
+# (선택) npm run verify:pre-deploy              # sync + sidebar + composer + 관계도 unit (빌드·E2E 제외)
+# (선택) npm run test:conversation-graph:chat-handoff  # /chat handoff·graph 재생성·편집 unit
+# (선택) E2E_GRAPH_CHAT_REGENERATE=1 npm run test:e2e:graph-chat-regenerate  # /chat graph 재생성 E2E
+# (선택) npm run test:composer-context-after-clear  # 삭제·초기화 후 첨부 맥락 Jest (5 tests)
+# (선택) E2E_COMPOSER_ATTACH_CONTEXT=1 npm run test:e2e:composer-attach-context  # 삭제·초기화 후 첨부+짧은 지시 E2E
 ```
 
 위 순서로 모두 통과하면 배포 가능 상태입니다.
+
+### 관계도·통합 대화 배포 전 검증 (선택)
+
+백엔드(`5002`)와 dev 서버(`3000`)가 떠 있는 환경에서:
+
+```bash
+npm run sync:frontend-src
+npm run verify:pre-deploy                  # handoff·composer·관계도 unit (빠른 회귀)
+npm run test:conversation-graph:chat-handoff  # /chat graph handoff·재생성·context ref
+npm run verify:conversation-graph:full       # unit + API + E2E 13 tests
+npm run dev:check:frontend                   # 타입·린트·테스트 import
+```
+
+로컬만(API 없이): `npm run verify:conversation-graph` (unit + E2E, E2E는 `E2E_SERVER_READY=1`).
 
 ### 상세 검증 항목
 

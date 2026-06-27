@@ -33,7 +33,7 @@ echo "$graph" | python3 -c "import sys,json; j=json.load(sys.stdin); d=j.get('da
 }
 
 echo ""
-echo "--- 관계도 답변 생성 (POST /api/chat, enhanced) ---"
+echo "--- 관계도 답변 생성 (POST /api/chat, ultimate) ---"
 chat_payload=$(python3 <<'PY'
 import json
 
@@ -41,7 +41,7 @@ print(
     json.dumps(
         {
             "message": "대화 관계도를 작성해 주세요.",
-            "quality": "enhanced",
+            "quality": "ultimate",
             "context": {
                 "conversation_graph_analysis": True,
                 "multi_request_mode": False,
@@ -92,6 +92,8 @@ if 'mermaid' not in low and 'flowchart' not in low and '참여자' not in text:
     raise SystemExit(f'FAIL: expected graph answer (mermaid/참여자), got: {text[:400]!r}')
 if '더 정확한 답변을 위해' in text and 'mermaid' not in low:
     raise SystemExit('FAIL: generic chat fallback instead of graph answer')
+if len(text.strip()) < 480:
+    raise SystemExit(f'FAIL: graph answer too short ({len(text.strip())} chars)')
 print('OK POST /api/chat (conversation_graph_analysis) → graph-style answer')
 " || {
   echo "FAIL POST /api/chat: ${chat_resp}"

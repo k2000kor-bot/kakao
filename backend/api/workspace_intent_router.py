@@ -191,14 +191,21 @@ def detect_workspace_intent(
     )
 
 
-def route_to_tool(intent_result: WorkspaceIntent) -> Optional[Dict[str, Any]]:
+def route_to_tool(
+    intent_result: WorkspaceIntent,
+    context: Optional[Dict[str, Any]] = None,
+) -> Optional[Dict[str, Any]]:
     """
     WorkspaceIntent를 기반으로 호출할 도구/API 정보를 반환합니다.
 
     Returns:
         {"tool": "project_create", "params": {...}} 형태 또는 None.
     """
+    context = context or {}
     if intent_result.confidence < DEFAULT_CONFIDENCE_THRESHOLD or not intent_result.suggested_tool:
+        return None
+    active_project = context.get("projectId") or context.get("project_id")
+    if intent_result.intent == "project_create" and active_project:
         return None
     return {
         "tool": intent_result.suggested_tool,
