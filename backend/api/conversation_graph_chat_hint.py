@@ -15,6 +15,13 @@ GENERIC_CHAT_MARKERS = (
     "Python으로 [원하는 기능]",
 )
 
+LOW_QUALITY_TEMPLATE_MARKERS = (
+    "# General",
+    "general은(는) 소프트웨어",
+    "어떤 언어/프레임워크",
+    "바로 시도해볼 수 있는 질문",
+)
+
 MIN_GRAPH_LLM_ANSWER_CHARS = 480
 
 
@@ -145,6 +152,14 @@ def is_generic_chat_fallback(text: str) -> bool:
     if not t:
         return True
     return any(marker in t for marker in GENERIC_CHAT_MARKERS)
+
+
+def is_low_quality_chat_response(text: str) -> bool:
+    """일반 안내·기술 General 템플릿 등 실질 답변이 아닌 응답."""
+    if is_generic_chat_fallback(text):
+        return True
+    t = (text or "").strip()
+    return any(marker in t for marker in LOW_QUALITY_TEMPLATE_MARKERS)
 
 
 def is_sparse_graph_llm_answer(text: str) -> bool:

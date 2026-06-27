@@ -69,6 +69,7 @@ try:
         attach_conversation_graph_instruction,
         build_structured_graph_answer_fallback,
         is_generic_chat_fallback,
+        is_low_quality_chat_response,
         is_sparse_graph_llm_answer,
         seal_context_for_conversation_graph_chat,
         should_use_graph_fallback_for_llm,
@@ -81,6 +82,9 @@ except ImportError:
         return ctx
 
     def is_generic_chat_fallback(text: str) -> bool:
+        return False
+
+    def is_low_quality_chat_response(text: str) -> bool:
         return False
 
     def is_sparse_graph_llm_answer(text: str) -> bool:
@@ -1216,6 +1220,65 @@ async def unified_chat_stream(request: ChatStreamRequest):
 async def unified_chat_stream_compat(request: ChatStreamRequest):
     """하위 호환: `/api/unified/chat/stream` 별칭"""
     return await unified_chat_stream(request)
+
+
+async def _try_direct_llm_answer(
+    message: str,
+    ctx: Optional[Dict[str, Any]],
+    preset: Optional[Dict[str, Any]],
+    *,
+    timeout_seconds: Optional[float] = None,
+    log_label: str = "LLM",
+) -> Optional[str]:
+    """사용자 질문에 LLM으로 직접 답변. 일반 채팅 템플릿 폴백은 거부."""
+    if not (LLM_SERVICE_AVAILABLE and llm_service_instance):
+        return None
+    import asyncio
+
+    enhanced_ctx = dict(ctx) if ctx else {}
+    preset = preset or {}
+    enhanced_ctx.setdefault("temperature", preset.get("temperature", 0.7))
+    enhanced_ctx.setdefault(
+        "max_tokens",
+        enhanced_ctx.get("max_tokens") or preset.get("max_tokens") or 4096,
+    )
+    _provider = getattr(llm_service_instance, "provider", None)
+    default_timeout = 90.0 if _provider in ("deepseek-local", "ollama") else 45.0
+    llm_timeout = float(
+        timeout_seconds or preset.get("llm_timeout_seconds") or default_timeout
+    )
+    try:
+        llm_result = await asyncio.wait_for(
+            llm_service_instance.generate_response(
+                message=message,
+                conversation_id=enhanced_ctx.get("conversation_id"),
+                context=enhanced_ctx,
+            ),
+            timeout=llm_timeout,
+        )
+        content = (llm_result.get("content") or "").strip() if llm_result else ""
+        if content and len(content) >= 20 and not is_low_quality_chat_response(content):
+            logger.info("✅ %s 직접 답변: %d자", log_label, len(content))
+            return content
+        if content and is_low_quality_chat_response(content):
+            logger.warning("⚠️ %s 응답이 저품질 템플릿 — 무시", log_label)
+    except asyncio.TimeoutError:
+        logger.warning("⚠️ %s 타임아웃 (%.0fs)", log_label, llm_timeout)
+    except Exception as e:
+        logger.warning("⚠️ %s 실패: %s", log_label, e)
+    return None
+
+
+def _context_has_user_question(ctx: Optional[Dict[str, Any]]) -> bool:
+    if not ctx or not isinstance(ctx, dict):
+        return False
+    if ctx.get("_user_question_instruction"):
+        return True
+    for key in ("user_question_primary", "original_user_message"):
+        val = ctx.get(key)
+        if isinstance(val, str) and val.strip():
+            return True
+    return False
 
 
 async def generate_chat_response(
@@ -3618,6 +3681,26 @@ async def generate_chat_response(
             context, web_research_result, web_research_evidence, investigative_mode
         )
 
+        # 사용자 원문 질문이 있으면 템플릿 엔진보다 LLM 우선 (ChatGPT/Gemini 스타일)
+        if (
+            _context_has_user_question(unified_ctx)
+            and not _as_bool((unified_ctx or {}).get("conversation_graph_analysis"))
+        ):
+            llm_direct = await _try_direct_llm_answer(
+                message,
+                unified_ctx,
+                _tuning_preset,
+                log_label="사용자 질문 LLM",
+            )
+            if llm_direct:
+                if web_research_result:
+                    llm_direct = _synthesize_responses_logically(
+                        llm_direct,
+                        web_research_evidence or web_research_result,
+                        investigative_mode,
+                    )
+                return llm_direct
+
         # 2단계: 혁신적인 답변 생성 엔진 사용 (파이프라인 튜닝에서 use_intelligent_engine 비활성화 시 건너뜀)
         if _tuning_preset.get("use_intelligent_engine", True):
             try:
@@ -3698,28 +3781,55 @@ async def generate_chat_response(
                             response_text, analysis.get("domain", "general")
                         )
                         if len(response_text.strip()) >= 10:
-                            response_text = response_enhancer.enhance_response(
-                                response_text,
-                                analysis.get("domain", "general"),
-                                quality,
-                                user_message=message,
-                            )
-                            logger.info(
-                                f"✅ 혁신적인 답변 생성 엔진으로 응답 생성 완료 (도메인: {analysis.get('domain', 'general')}, 길이: {len(response_text)})"
-                            )
-                            return response_text
+                            if is_low_quality_chat_response(response_text):
+                                logger.warning(
+                                    "저품질 템플릿 응답 감지 — LLM 경로로 진행"
+                                )
+                            else:
+                                response_text = response_enhancer.enhance_response(
+                                    response_text,
+                                    analysis.get("domain", "general"),
+                                    quality,
+                                    user_message=message,
+                                )
+                                logger.info(
+                                    f"✅ 혁신적인 답변 생성 엔진으로 응답 생성 완료 (도메인: {analysis.get('domain', 'general')}, 길이: {len(response_text)})"
+                                )
+                                return response_text
                     except Exception as e:
                         logger.warning(f"응답 향상 실패: {e}")
                         if isinstance(response_text, str) and len(response_text.strip()) >= 10:
-                            logger.info(
-                                f"✅ 기본 검증 통과 (도메인: {analysis.get('domain', 'general')}, 길이: {len(response_text)})"
+                            if not is_low_quality_chat_response(response_text):
+                                logger.info(
+                                    f"✅ 기본 검증 통과 (도메인: {analysis.get('domain', 'general')}, 길이: {len(response_text)})"
+                                )
+                                return response_text
+                            logger.warning(
+                                "일반 채팅 템플릿 폴백 — LLM 경로로 진행"
                             )
-                            return response_text
             except (ImportError, AttributeError, TypeError) as e:
                 logger.warning(f"혁신적인 답변 생성 엔진 사용 불가, 폴백 사용: {e}")
                 if web_research_result:
                     logger.info("✅ 웹 연구 결과를 기본 응답으로 사용")
                     return web_research_evidence or web_research_result
+
+        # 템플릿 엔진 실패 후 사용자 질문 LLM 재시도 (로컬 Ollama는 여유 타임아웃)
+        if _context_has_user_question(unified_ctx):
+            llm_retry = await _try_direct_llm_answer(
+                message,
+                unified_ctx,
+                _tuning_preset,
+                timeout_seconds=120.0,
+                log_label="사용자 질문 LLM 재시도",
+            )
+            if llm_retry:
+                if web_research_result:
+                    llm_retry = _synthesize_responses_logically(
+                        llm_retry,
+                        web_research_evidence or web_research_result,
+                        investigative_mode,
+                    )
+                return llm_retry
 
         # 3단계: 향상된 응답 생성기 사용 시도 (폴백)
         try:
@@ -3745,40 +3855,24 @@ async def generate_chat_response(
             logger.info("✅ 웹 연구 결과를 최종 응답으로 사용")
             return web_research_evidence or web_research_result
 
-        # 딥시크(DeepSeek) 설정 시 LLM 서비스를 우선 시도 — 대화이 설치형/API DeepSeek으로 동작하도록
-        import asyncio
+        # 딥시크(DeepSeek) / Ollama — LLM 최종 폴백
         _provider = getattr(llm_service_instance, "provider", None) if (LLM_SERVICE_AVAILABLE and llm_service_instance) else None
-        if _provider in ("deepseek", "deepseek-local"):
-            try:
-                logger.info(f"🤖 DeepSeek 우선 시도 (provider={_provider}): {message[:50]}...")
-                enhanced_ctx = dict(unified_ctx) if unified_ctx else (context.copy() if context else {})
-                enhanced_ctx["is_long_form"] = quality in ("ultimate", "detailed")
-                preset = enhanced_ctx.get("_pipeline_tuning_preset") or {}
-                enhanced_ctx["temperature"] = preset.get("temperature", 0.7)
-                enhanced_ctx["max_tokens"] = enhanced_ctx.get("max_tokens") or preset.get("max_tokens") or 16384
-                llm_timeout = float(preset.get("llm_timeout_seconds", 30))
-                llm_result = await asyncio.wait_for(
-                    llm_service_instance.generate_response(
-                        message=message,
-                        conversation_id=enhanced_ctx.get("conversation_id"),
-                        context=enhanced_ctx,
-                    ),
-                    timeout=llm_timeout,
-                )
-                if llm_result and llm_result.get("content") and len((llm_result.get("content") or "").strip()) >= 10:
-                    response_text = (llm_result.get("content") or "").strip()
-                    logger.info(f"✅ DeepSeek 응답 사용: {len(response_text)}자")
-                    if web_research_result and (web_research_evidence or web_research_result):
-                        response_text = _synthesize_responses_logically(
-                            response_text,
-                            web_research_evidence or web_research_result,
-                            investigative_mode,
-                        )
-                    return response_text
-            except asyncio.TimeoutError:
-                logger.warning("⚠️ DeepSeek 우선 시도 타임아웃, 다음 단계로 진행")
-            except Exception as e:
-                logger.warning(f"⚠️ DeepSeek 우선 시도 실패: {e}, 다음 단계로 진행")
+        if _provider in ("deepseek", "deepseek-local", "ollama"):
+            llm_final = await _try_direct_llm_answer(
+                message,
+                unified_ctx if unified_ctx else context,
+                _tuning_preset,
+                timeout_seconds=120.0 if _provider in ("deepseek-local", "ollama") else 60.0,
+                log_label=f"LLM 최종({_provider})",
+            )
+            if llm_final:
+                if web_research_result and (web_research_evidence or web_research_result):
+                    llm_final = _synthesize_responses_logically(
+                        llm_final,
+                        web_research_evidence or web_research_result,
+                        investigative_mode,
+                    )
+                return llm_final
 
         # 0. 고급 AI 응답 엔진 시도 (ChatGPT 수준, 파이프라인 컨텍스트 포함)
         if INTELLIGENT_ENGINE_AVAILABLE and intelligent_engine:
