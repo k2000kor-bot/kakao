@@ -652,11 +652,17 @@ body {
   white-space: pre;
 }
 .conversation-graph-mermaid-preview {
-  min-height: 120px;
+  min-height: min(32vh, 320px);
+  padding: var(--spacing-md);
+  overflow: auto;
+  background: var(--bg-primary);
 }
+
 .conversation-graph-mermaid-preview svg {
-  max-width: 100%;
+  width: 100%;
+  max-width: none;
   height: auto;
+  min-height: 180px;
 }
 .conversation-graph-contractor-counts {
   font-size: var(--font-size-xs);
@@ -732,15 +738,21 @@ body {
 }
 
 .conversation-graph-graph-stage {
-  overflow: auto;
-  max-width: 100%;
+  overflow: hidden;
+  max-width: none;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
 }
-.conversation-graph-graph-stage svg {
-  max-width: 100%;
-  height: auto;
+
+.conversation-graph-graph-stage:not(.conversation-graph-graph-stage--canvas) {
+  overflow: auto;
+}
+
+.conversation-graph-graph-stage svg,
+.conversation-graph-graph-svg {
+  display: block;
+  max-width: none;
 }
 
 .conversation-graph-graph-toolbar,

@@ -15,9 +15,8 @@ import {
 import { showToast } from '../utils/toast';
 import { coerceTrimmedString } from '../utils/chatInputUtils';
 import {
-  mountConversationGraphForceLayout,
   CONVERSATION_GRAPH_SVG_WIDTH,
-  CONVERSATION_GRAPH_SVG_HEIGHT,
+  mountConversationGraphForceLayout,
   type ConversationGraphLayoutMode,
   type ConversationGraphMountHandle,
 } from './conversationGraphForceLayout';
@@ -186,6 +185,8 @@ function ConversationGraphView() {
   const pendingAutoAnswerRef = useRef(false);
   const appliedLocationHandoffRef = useRef(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const graphCanvasRef = useRef<HTMLDivElement | null>(null);
+  const [graphCanvasWidth, setGraphCanvasWidth] = useState(CONVERSATION_GRAPH_SVG_WIDTH);
   const graphMountRef = useRef<ConversationGraphMountHandle | null>(null);
   const graphMountCleanupRef = useRef<(() => void) | null>(null);
   const listSectionRef = useRef<HTMLDivElement>(null);
@@ -779,6 +780,7 @@ function ConversationGraphView() {
           onNodeSelect: selectParticipant,
           nodeVisuals: nodeVisualMetrics,
           layoutMode: graphLayoutMode,
+          containerWidth: graphCanvasRef.current?.clientWidth ?? graphCanvasWidth,
         });
         graphMountRef.current = handle ?? null;
         graphMountCleanupRef.current = () => handle?.destroy();
@@ -786,8 +788,27 @@ function ConversationGraphView() {
         graphMountRef.current = null;
       }
     },
-    [filteredGraph, selectParticipant, nodeVisualMetrics, graphLayoutMode],
+    [filteredGraph, selectParticipant, nodeVisualMetrics, graphLayoutMode, graphCanvasWidth],
   );
+
+  useEffect(() => {
+    const el = graphCanvasRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect?.width;
+      if (typeof w === 'number' && w > 0) {
+        setGraphCanvasWidth(Math.round(w));
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [graph, graphViewMode]);
+
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el || !filteredGraph || (filteredGraph.nodes ?? []).length === 0) return;
+    bindGraphSvgRef(el);
+  }, [bindGraphSvgRef, filteredGraph, graphCanvasWidth, graphLayoutMode, graphViewMode]);
 
   useEffect(
     () => () => {
@@ -1344,7 +1365,7 @@ function ConversationGraphView() {
           >
             {graphStatusMessage}
           </div>
-          <div className="bw-features-card bw-detail-scroll conversation-graph-view__graph-card" aria-busy={loadingGraph}>
+          <div className="conversation-graph-view__graph-shell" aria-busy={loadingGraph}>
             {loadingGraph && (
               <p className="bw-label-block bw-detail-meta-text" aria-hidden="true">
                 관계도 생성 중…
@@ -1356,8 +1377,9 @@ function ConversationGraphView() {
               </p>
             )}
             {graph && (graph.nodes ?? []).length > 0 && (
-              <div className="conversation-graph-graph-stage">
-                <div className="bw-mt-sm conversation-graph-graph-toolbar">
+              <div className="conversation-graph-view__graph-workspace">
+                <div className="conversation-graph-view__graph-toolbar">
+                <div className="conversation-graph-graph-toolbar">
                   <button
                     type="button"
                     className="bw-btn-secondary"
@@ -1459,6 +1481,68 @@ function ConversationGraphView() {
                   </div>
                   <span className="conversation-graph-view__graph-toolbar-hint">노드·목록을 눌러 연결을 확인하세요. 휠 확대·드래그 이동.</span>
                 </div>
+                </div>
+                {(filteredGraph?.nodes ?? []).length === 0 ? (
+                  <p className="bw-label-block bw-detail-note bw-mt-md" data-testid="conversation-graph-filter-empty">
+                    선택한 입장에 해당하는 참여자가 없습니다. 위 필터를 조정해 주세요.
+                  </p>
+                ) : (
+                  <div className="conversation-graph-view__graph-main">
+                  <div className="conversation-graph-view__graph-display">
+                {graphViewMode === 'matrix' && filteredGraph ? (
+                  <ConversationGraphMatrixPanel
+                    graph={filteredGraph}
+                    analysis={graphAiAnalysis}
+                    selectedNodeId={selectedNodeId}
+                    onSelectParticipant={selectParticipant}
+                    exportBasename={exportBasename}
+                  />
+                ) : null}
+                {graphViewMode === 'graph' ? (
+                <div
+                  ref={graphCanvasRef}
+                  className="conversation-graph-graph-stage conversation-graph-graph-stage--canvas"
+                  data-testid="conversation-graph-canvas"
+                >
+                <svg
+                  ref={bindGraphSvgRef}
+                  className="conversation-graph-graph-svg"
+                  role="img"
+                  aria-label="대화 관계도 그래프"
+                />
+                <p className="conversation-graph-graph-stage__hint bw-detail-meta-text">
+                  위→아래 족보: 위가 대화를 이끈 사람, 아래가 응답·연결 관계. 노드 색=우세 입장, 크기=영향력. 휠 확대·드래그 이동.
+                </p>
+                <div
+                  className="conversation-graph-legend"
+                  data-testid="conversation-graph-legend"
+                >
+                  <p className="bw-label-block" style={{ marginBottom: 8 }}>
+                    연결 의미 (선·목록 공통)
+                  </p>
+                  <ul className="conversation-graph-legend-list">
+                    {GRAPH_EDGE_LEGEND.map((item) => (
+                      <li key={item.key} className="conversation-graph-legend-item">
+                        <span
+                          className="conversation-graph-legend-swatch"
+                          style={{ backgroundColor: item.color }}
+                          aria-hidden
+                        />
+                        <span className="conversation-graph-legend-label">{item.label}</span>
+                        <span className="conversation-graph-legend-hint">{item.hint}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="bw-detail-meta-text bw-mt-sm">
+                    노드: <span style={{ color: '#22c55e' }}>동조</span> ·{' '}
+                    <span style={{ color: '#ef4444' }}>반대</span> ·{' '}
+                    <span style={{ color: '#94a3b8' }}>중립</span> 입장 · 주도/응답=역할
+                  </p>
+                </div>
+                </div>
+                ) : null}
+                  </div>
+                  <aside className="conversation-graph-view__graph-sidebar">
                 <div className="conversation-graph-view__filters">
                 <fieldset
                   className="bw-mt-sm"
@@ -1559,118 +1643,6 @@ function ConversationGraphView() {
                     ))}
                   </div>
                 ) : null}
-                {graphDashboardKpi ? (
-                  <ConversationGraphDashboardPanel
-                    kpi={graphDashboardKpi}
-                    contractorSignals={graph?.meta?.contractor_signals}
-                  />
-                ) : null}
-                {graphStats ? (
-                  <div
-                    className="bw-mt-md bw-features-card"
-                    data-testid="conversation-graph-stats-panel"
-                    style={{ padding: 12 }}
-                  >
-                    <p className="bw-label-block">관계도 요약</p>
-                    <p className="bw-detail-meta-text bw-mt-sm" data-testid="conversation-graph-stats-stance">
-                      입장 분포: {formatStanceBreakdownText(graphStats.breakdown)}
-                    </p>
-                    {graphStats.topEdges.length > 0 ? (
-                      <div className="bw-mt-sm">
-                        <p className="bw-detail-meta-text">활발한 연결</p>
-                        <ul className="bw-detail-meta-text" style={{ margin: '8px 0 0', paddingLeft: 20 }}>
-                          {graphStats.topEdges.map((row) => (
-                            <li key={row.edgeKey}>
-                              <button
-                                type="button"
-                                className="bw-btn-secondary"
-                                style={{ marginTop: 4, fontSize: 12 }}
-                                data-testid={`conversation-graph-top-edge-${row.edgeKey.replace(/::/g, '--')}`}
-                                onClick={() => focusEdgeParticipants(row.sourceId, row.targetId)}
-                              >
-                                {row.summary}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : (
-                      <p className="bw-detail-meta-text bw-mt-sm">표시할 연결이 없습니다.</p>
-                    )}
-                  </div>
-                ) : null}
-                {graphAiAnalysis && aiNarrative ? (
-                  <ConversationGraphAiPanel
-                    analysis={graphAiAnalysis}
-                    narrative={aiNarrative}
-                    loadingAiNarrative={loadingAiNarrative}
-                    aiNarrativeSource={aiNarrativeSource}
-                    autoRequestAiNarrative={autoRequestAiNarrative}
-                    onAutoRequestAiNarrativeChange={setAutoRequestAiNarrative}
-                    onRequestAiNarrative={handleRequestAiNarrative}
-                    onExportJson={handleExportAiJson}
-                    onApplyStancePreset={applyFilterPreset}
-                    selectedInsight={selectedAiInsight}
-                  />
-                ) : null}
-                {(filteredGraph?.nodes ?? []).length === 0 ? (
-                  <p className="bw-label-block bw-detail-note bw-mt-md" data-testid="conversation-graph-filter-empty">
-                    선택한 입장에 해당하는 참여자가 없습니다. 위 필터를 조정해 주세요.
-                  </p>
-                ) : (
-                  <>
-                {graphViewMode === 'matrix' && filteredGraph ? (
-                  <ConversationGraphMatrixPanel
-                    graph={filteredGraph}
-                    analysis={graphAiAnalysis}
-                    selectedNodeId={selectedNodeId}
-                    onSelectParticipant={selectParticipant}
-                    exportBasename={exportBasename}
-                  />
-                ) : null}
-                {graphViewMode === 'graph' ? (
-                <>
-                <svg
-                  ref={bindGraphSvgRef}
-                  width={CONVERSATION_GRAPH_SVG_WIDTH}
-                  height={CONVERSATION_GRAPH_SVG_HEIGHT}
-                  role="img"
-                  aria-label="대화 관계도 그래프"
-                  style={{ display: 'block', margin: '0 auto', background: 'var(--surface-overlay)' }}
-                />
-                <p className="bw-detail-meta-text bw-mt-sm">
-                  위→아래 족보: 위가 대화를 이끈 사람, 아래가 응답·연결 관계. 노드 색=우세 입장, 크기=영향력. 선 가운데 글씨=연결 의미.
-                </p>
-                <div
-                  className="conversation-graph-legend bw-mt-sm"
-                  data-testid="conversation-graph-legend"
-                >
-                  <p className="bw-label-block" style={{ marginBottom: 8 }}>
-                    연결 의미 (선·목록 공통)
-                  </p>
-                  <ul className="conversation-graph-legend-list">
-                    {GRAPH_EDGE_LEGEND.map((item) => (
-                      <li key={item.key} className="conversation-graph-legend-item">
-                        <span
-                          className="conversation-graph-legend-swatch"
-                          style={{ backgroundColor: item.color }}
-                          aria-hidden
-                        />
-                        <span className="conversation-graph-legend-label">{item.label}</span>
-                        <span className="conversation-graph-legend-hint">{item.hint}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="bw-detail-meta-text bw-mt-sm">
-                    노드: <span style={{ color: '#22c55e' }}>동조</span> ·{' '}
-                    <span style={{ color: '#ef4444' }}>반대</span> ·{' '}
-                    <span style={{ color: '#94a3b8' }}>중립</span> 입장 · 주도/응답=역할
-                  </p>
-                </div>
-                </>
-                ) : null}
-                  </>
-                )}
                 <div className="bw-mt-md" data-testid="conversation-graph-participant-list">
                   <p className="bw-label-block">참여자</p>
                   <div
@@ -1727,6 +1699,66 @@ function ConversationGraphView() {
                     </div>
                   )}
                 </div>
+                  </aside>
+                  </div>
+                )}
+                <div className="conversation-graph-view__graph-meta">
+                {graphDashboardKpi ? (
+                  <ConversationGraphDashboardPanel
+                    kpi={graphDashboardKpi}
+                    contractorSignals={graph?.meta?.contractor_signals}
+                  />
+                ) : null}
+                {graphStats ? (
+                  <div
+                    className="bw-mt-md bw-features-card"
+                    data-testid="conversation-graph-stats-panel"
+                    style={{ padding: 12 }}
+                  >
+                    <p className="bw-label-block">관계도 요약</p>
+                    <p className="bw-detail-meta-text bw-mt-sm" data-testid="conversation-graph-stats-stance">
+                      입장 분포: {formatStanceBreakdownText(graphStats.breakdown)}
+                    </p>
+                    {graphStats.topEdges.length > 0 ? (
+                      <div className="bw-mt-sm">
+                        <p className="bw-detail-meta-text">활발한 연결</p>
+                        <ul className="bw-detail-meta-text" style={{ margin: '8px 0 0', paddingLeft: 20 }}>
+                          {graphStats.topEdges.map((row) => (
+                            <li key={row.edgeKey}>
+                              <button
+                                type="button"
+                                className="bw-btn-secondary"
+                                style={{ marginTop: 4, fontSize: 12 }}
+                                data-testid={`conversation-graph-top-edge-${row.edgeKey.replace(/::/g, '--')}`}
+                                onClick={() => focusEdgeParticipants(row.sourceId, row.targetId)}
+                              >
+                                {row.summary}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <p className="bw-detail-meta-text bw-mt-sm">표시할 연결이 없습니다.</p>
+                    )}
+                  </div>
+                ) : null}
+                {graphAiAnalysis && aiNarrative ? (
+                  <ConversationGraphAiPanel
+                    analysis={graphAiAnalysis}
+                    narrative={aiNarrative}
+                    loadingAiNarrative={loadingAiNarrative}
+                    aiNarrativeSource={aiNarrativeSource}
+                    autoRequestAiNarrative={autoRequestAiNarrative}
+                    onAutoRequestAiNarrativeChange={setAutoRequestAiNarrative}
+                    onRequestAiNarrative={handleRequestAiNarrative}
+                    onExportJson={handleExportAiJson}
+                    onApplyStancePreset={applyFilterPreset}
+                    selectedInsight={selectedAiInsight}
+                  />
+                ) : null}
+                </div>
+                <div className="conversation-graph-view__graph-details">
                 {selectedNodeDetail ? (
                   <p
                     className="bw-mt-sm bw-detail-meta-text"
@@ -1766,6 +1798,7 @@ function ConversationGraphView() {
                 {graph && (graph.nodes ?? []).length > 0 ? (
                   <ConversationGraphEvidencePanel graph={graph} selectedNodeId={selectedNodeId} />
                 ) : null}
+                </div>
               </div>
             )}
             {!graph && !loadingGraph && selectedId && (
@@ -1778,35 +1811,37 @@ function ConversationGraphView() {
                 관계도를 생성하는 중입니다…
               </p>
             )}
-            {showGraphAnswerPanel ? (
-              <ConversationGraphAnswerPanel
-                analysis={graphAiAnalysis ?? createPlaceholderGraphAnalysis()}
-                narrative={
-                  aiNarrative ||
-                  '대화를 분석해 족보형 관계도·참여자·연결 표·Mermaid 다이어그램을 답변으로 생성할 수 있습니다.'
-                }
-                narrativeSource={aiNarrativeSource}
-                analysisSummary={graphAnswerAnalysisSummary}
-                graphSnapshotText={graphSnapshotText}
-                conversationTitle={graphAnswerConversationTitle}
-                periodLabel={graphAnswerPeriodLabel}
-                selectedInsight={selectedAiInsight}
-                graph={graph}
-                expertLayer={expertLayer}
-                rawConversationText={answerRawConversationText}
-                onEnsureGraphBeforeAnswer={ensureGraphForAnswer}
-                autoGenerateTrigger={answerAutoTrigger}
-                handoffAutoCreateTrigger={handoffAutoCreateTrigger}
-                autoGenerateAnswer={autoGenerateAnswer}
-                onAutoGenerateAnswerChange={setAutoGenerateAnswer}
-                useStreamAnswer={useStreamAnswer}
-                onUseStreamAnswerChange={setUseStreamAnswer}
-                useTwoPassAnswer={useTwoPassAnswer}
-                onUseTwoPassAnswerChange={setUseTwoPassAnswer}
-                onOpenInChat={handleOpenGraphAnswerInChat}
-              />
-            ) : null}
           </div>
+          {showGraphAnswerPanel ? (
+            <div className="conversation-graph-view__answer-section">
+            <ConversationGraphAnswerPanel
+              analysis={graphAiAnalysis ?? createPlaceholderGraphAnalysis()}
+              narrative={
+                aiNarrative ||
+                '대화를 분석해 족보형 관계도·참여자·연결 표·Mermaid 다이어그램을 답변으로 생성할 수 있습니다.'
+              }
+              narrativeSource={aiNarrativeSource}
+              analysisSummary={graphAnswerAnalysisSummary}
+              graphSnapshotText={graphSnapshotText}
+              conversationTitle={graphAnswerConversationTitle}
+              periodLabel={graphAnswerPeriodLabel}
+              selectedInsight={selectedAiInsight}
+              graph={graph}
+              expertLayer={expertLayer}
+              rawConversationText={answerRawConversationText}
+              onEnsureGraphBeforeAnswer={ensureGraphForAnswer}
+              autoGenerateTrigger={answerAutoTrigger}
+              handoffAutoCreateTrigger={handoffAutoCreateTrigger}
+              autoGenerateAnswer={autoGenerateAnswer}
+              onAutoGenerateAnswerChange={setAutoGenerateAnswer}
+              useStreamAnswer={useStreamAnswer}
+              onUseStreamAnswerChange={setUseStreamAnswer}
+              useTwoPassAnswer={useTwoPassAnswer}
+              onUseTwoPassAnswerChange={setUseTwoPassAnswer}
+              onOpenInChat={handleOpenGraphAnswerInChat}
+            />
+            </div>
+          ) : null}
         </section>
       </div>
     </div>

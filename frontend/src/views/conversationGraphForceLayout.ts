@@ -24,11 +24,25 @@ import {
   genealogyLinkPath,
 } from './conversationGraphGenealogyLayout';
 
-export const CONVERSATION_GRAPH_SVG_WIDTH = 800;
-export const CONVERSATION_GRAPH_SVG_HEIGHT = 500;
+export const CONVERSATION_GRAPH_SVG_WIDTH = 1120;
+export const CONVERSATION_GRAPH_SVG_HEIGHT = 640;
 
 const SVG_WIDTH = CONVERSATION_GRAPH_SVG_WIDTH;
 const SVG_HEIGHT = CONVERSATION_GRAPH_SVG_HEIGHT;
+
+/** 컨테이너 폭에 맞춘 관계도 캔버스 크기 */
+export function resolveConversationGraphDimensions(containerWidth?: number): {
+  width: number;
+  height: number;
+} {
+  const base =
+    typeof containerWidth === 'number' && containerWidth > 320
+      ? containerWidth - 24
+      : SVG_WIDTH;
+  const width = Math.max(960, Math.min(base, 1440));
+  const height = Math.max(520, Math.min(Math.round(width * 0.58), 780));
+  return { width, height };
+}
 
 export type ConversationGraphLayoutMode = 'genealogy' | 'force';
 
@@ -43,6 +57,8 @@ export type ConversationGraphMountOptions = {
   nodeVisuals?: Map<string, ConversationGraphNodeVisual>;
   /** 기본: 족보형(이해하기 쉬운 위→아래) */
   layoutMode?: ConversationGraphLayoutMode;
+  /** 부모 `.conversation-graph-graph-stage` clientWidth */
+  containerWidth?: number;
 };
 
 export type ConversationGraphMountHandle = {
@@ -315,11 +331,20 @@ export function mountConversationGraphForceLayout(
     const svg = select<SVGSVGElement, unknown>(svgEl);
     svg.selectAll('*').remove();
 
+    const { width: baseWidth, height: baseHeight } = resolveConversationGraphDimensions(
+      options?.containerWidth,
+    );
     const genealogy =
-      layoutMode === 'genealogy' ? computeGenealogyLayout(graph, SVG_WIDTH, SVG_HEIGHT) : null;
-    const width = SVG_WIDTH;
-    const height = genealogy?.height ?? SVG_HEIGHT;
-    svg.attr('width', width).attr('height', height);
+      layoutMode === 'genealogy'
+        ? computeGenealogyLayout(graph, baseWidth, baseHeight)
+        : null;
+    const width = baseWidth;
+    const height = genealogy?.height ?? baseHeight;
+    svg
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet');
 
     const viewport = svg.append('g').attr('data-graph-viewport', 'true');
     appendEdgeMarkers(svg as unknown as Selection<SVGSVGElement, unknown, null, undefined>);

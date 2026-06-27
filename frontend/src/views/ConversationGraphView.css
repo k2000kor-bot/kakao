@@ -1,9 +1,8 @@
 /**
  * 대화 관계도 상세 (/conversation-graph)
- * ToolPageShell 안에서 전체 폭·높이 활용, 업로드/그래프/답변 생성 통일 스타일
+ * 전체 폭·높이 활용 — 관계도 캔버스·답변 출력 이중 박스 제거
  */
 
-/* 라우트 셸: 이중 박스·중복 힌트 제거 */
 .brainwave-chat-route-shell--tool:has([data-testid='conversation-graph-view']) .bw-tool-page-strip {
   padding: var(--spacing-sm) var(--spacing-md);
 }
@@ -19,7 +18,6 @@
   min-height: 0;
 }
 
-/* 루트: bw-detail-root 기본 테두리·그림자 제거(셸과 중복) */
 .bw-detail-root.conversation-graph-view {
   width: 100%;
   max-width: none;
@@ -42,7 +40,7 @@
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
   padding: 0 var(--spacing-md) var(--spacing-md);
   box-sizing: border-box;
 }
@@ -73,7 +71,6 @@
   box-shadow: none;
 }
 
-/* 상단: 업로드·목록·기간 — 좁은 가로 그리드 */
 .conversation-graph-view__setup {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
@@ -89,46 +86,142 @@
   min-height: 4.5rem;
 }
 
-/* 관계도 본문: 남은 높이 최대 활용 */
+/* 관계도 본문 */
 .conversation-graph-view__graph-section {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
-.conversation-graph-view__graph-section .bw-detail-section-title {
-  flex-shrink: 0;
-}
-
-.conversation-graph-view__graph-card {
-  flex: 1;
-  min-height: min(52vh, 640px);
+.conversation-graph-view__graph-shell {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  gap: var(--spacing-md);
+  min-width: 0;
+  width: 100%;
 }
 
-.conversation-graph-view__graph-card .conversation-graph-graph-stage {
-  flex: 1;
-  min-height: min(44vh, 520px);
-  overflow: auto;
-  margin-top: var(--spacing-xs);
+.conversation-graph-view__graph-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-width: 0;
+  width: 100%;
+}
+
+.conversation-graph-view__graph-toolbar {
+  flex-shrink: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.conversation-graph-view__graph-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: var(--spacing-md);
+  align-items: stretch;
+  min-width: 0;
+  width: 100%;
+}
+
+.conversation-graph-view__graph-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-width: 0;
+  max-height: min(72vh, 820px);
+  overflow-y: auto;
+  padding: var(--spacing-sm) var(--spacing-md);
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--radius-md);
-  background: var(--bg-secondary);
-  padding: var(--spacing-sm);
+  background: var(--bg-primary);
   box-sizing: border-box;
 }
 
-.conversation-graph-view__graph-card .conversation-graph-graph-stage svg {
-  display: block;
-  margin: 0 auto;
-  max-width: 100%;
-  height: auto;
+.conversation-graph-view__graph-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-width: 0;
+  width: 100%;
 }
 
-/* 툴바·필터 컴팩트 */
+.conversation-graph-view__graph-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+}
+
+.conversation-graph-view__graph-display {
+  min-width: 0;
+  width: 100%;
+  min-height: min(68vh, 760px);
+}
+
+.conversation-graph-view__graph-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+}
+
+/* 관계도 SVG 캔버스 — 전체 폭·큰 높이 */
+.conversation-graph-graph-stage--canvas {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  box-sizing: border-box;
+}
+
+.conversation-graph-graph-stage--canvas .conversation-graph-graph-svg {
+  flex: 1 1 auto;
+  display: block;
+  width: 100%;
+  min-height: min(56vh, 680px);
+  max-width: none;
+  height: auto;
+  background: var(--surface-overlay, var(--bg-primary));
+  touch-action: none;
+  cursor: grab;
+}
+
+.conversation-graph-graph-stage--canvas .conversation-graph-graph-svg:active {
+  cursor: grabbing;
+}
+
+.conversation-graph-graph-stage__hint {
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  border-top: var(--border-width) solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.conversation-graph-graph-stage--canvas .conversation-graph-legend {
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-top: var(--border-width) solid var(--border-color);
+  background: var(--bg-primary);
+}
+
 .conversation-graph-view__graph-toolbar-hint {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
@@ -140,7 +233,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: var(--spacing-sm);
-  margin-top: var(--spacing-sm);
 }
 
 .conversation-graph-view__filters fieldset {
@@ -158,15 +250,90 @@
   padding: 0;
 }
 
-/* 답변 생성 패널: 그래프 카드와 동일 톤 */
-.conversation-graph-view .conversation-graph-answer-panel {
+/* 답변 생성 — 그래프 shell 밖 전체 폭 섹션 */
+.conversation-graph-view__answer-section {
   margin-top: var(--spacing-sm);
-  padding-top: var(--spacing-sm);
-  border-top: var(--border-width) solid var(--border-color);
+  padding: var(--spacing-md);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-primary);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.conversation-graph-view .conversation-graph-answer-panel {
+  margin: 0;
+  padding: 0;
+  border: none;
 }
 
 .conversation-graph-view .conversation-graph-answer-panel__layout {
-  min-height: min(48vh, 520px);
+  grid-template-columns: 1fr;
+  min-height: 0;
+  gap: var(--spacing-md);
+}
+
+.conversation-graph-view .conversation-graph-answer-panel__output {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  min-height: min(40vh, 480px);
+}
+
+.conversation-graph-view .conversation-graph-answer-panel__input {
+  border: none;
+  border-top: var(--border-width) solid var(--border-color);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--spacing-md) 0 0;
+  margin-top: var(--spacing-xs);
+}
+
+.conversation-graph-view .conversation-graph-answer-turns {
+  max-height: none;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  margin-top: var(--spacing-sm);
+}
+
+.conversation-graph-view .conversation-graph-answer-turns--input {
+  max-height: min(24vh, 220px);
+}
+
+.conversation-graph-view .conversation-graph-mermaid-block {
+  margin: var(--spacing-md) 0;
+}
+
+.conversation-graph-view .conversation-graph-mermaid-preview {
+  min-height: min(36vh, 360px);
+  padding: var(--spacing-md);
+}
+
+.conversation-graph-view .conversation-graph-mermaid-preview svg {
+  width: 100%;
+  max-width: none;
+  height: auto;
+  min-height: 200px;
+}
+
+@media (max-width: 1100px) {
+  .conversation-graph-view__graph-main {
+    grid-template-columns: 1fr;
+  }
+
+  .conversation-graph-view__graph-sidebar {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .conversation-graph-view__graph-display {
+    min-height: min(62vh, 640px);
+  }
 }
 
 @media (max-width: 900px) {
@@ -178,7 +345,11 @@
     grid-template-columns: 1fr;
   }
 
-  .conversation-graph-view__graph-card {
-    min-height: min(44vh, 480px);
+  .conversation-graph-graph-stage--canvas {
+    min-height: min(52vh, 520px);
+  }
+
+  .conversation-graph-graph-stage--canvas .conversation-graph-graph-svg {
+    min-height: min(44vh, 440px);
   }
 }
